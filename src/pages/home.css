@@ -1,0 +1,91 @@
+/* Home Page Styles */
+
+.home-container {
+  margin-left: 240px;
+  margin-top: 70px;
+  margin-right: 250px;
+  padding: 24px;
+  min-height: calc(100vh - 70px);
+  background-color: #f9fafb;
+  transition: margin-left 0.3s ease, margin-right 0.3s ease;
+}
+
+.home-container.menubar-hidden {
+  margin-left: 0;
+}
+
+.home-container.friends-hidden {
+  margin-right: 0;
+}
+
+.main-content {
+  display: flex;
+  gap: 24px;
+}
+
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.post-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .home-container {
+    margin-left: 220px;
+    margin-right: 220px;
+  }
+
+  .main-content {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-container {
+    margin-left: 176px; /* Match menubar width on mobile */
+    margin-right: 200px;
+    margin-top: 60px;
+    padding: 16px;
+    min-height: calc(100vh - 60px);
+  }
+
+  .main-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .content-area {
+    gap: 16px;
+  }
+
+  /* Ensure menubar is always visible on mobile for logo display */
+  .home-container.menubar-visible {
+    margin-left: 176px; /* Match menubar width on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    margin-left: 180px;
+    margin-right: 0;
+    margin-top: 60px;
+    padding: 12px;
+    min-height: calc(100vh - 60px);
+  }
+
+  .main-content {
+    gap: 12px;
+  }
+
+  .content-area {
+    gap: 12px;
+  }
+}

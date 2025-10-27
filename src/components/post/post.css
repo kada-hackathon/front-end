@@ -1,0 +1,162 @@
+﻿.post {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto 20px;
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+}
+
+.post-user {
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.username {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #666;
+}
+
+.more-options {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.post-content {
+  padding: 0 16px;
+}
+
+.post-text {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #333;
+}
+
+.post-image {
+  width: 100%;
+  max-height: 500px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.post-actions {
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.action-btn.liked {
+  color: #e0245e;
+}
+
+.action-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.comments-section {
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  background-color: #fafafa;
+}
+
+.comment {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.comment-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
+}
+
+.comment-content {
+  flex: 1;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 18px;
+  font-size: 14px;
+}
+
+.comment-username {
+  font-weight: 600;
+  margin-right: 8px;
+  color: #333;
+}
+
+.comment-text {
+  color: #333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .post {
+    border-radius: 0;
+    margin: 0 0 10px;
+  }
+
+  .post-header,
+  .post-content,
+  .post-actions,
+  .comments-section {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
