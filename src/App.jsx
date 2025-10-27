@@ -1,14 +1,16 @@
-import { useState } from 'react'
 import './App.css'
-import Login from './components/Login/Login'
-import FloatingButton from './components/FloatingButton/FloatingButton'
-import UserProfile from './components/UserProfile/UserProfile'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/home';
+import PostPage from './pages/post/post';
 
 function App() {
-  return (
-    <div className="App">
-      <UserProfile />
-    </div>
+ return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/post/:id" element={<PostPage />} />
+      </Routes>
+    </Router>
   )
 }
 
