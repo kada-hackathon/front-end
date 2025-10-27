@@ -1,0 +1,269 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500&display=swap');
+@font-face {
+  font-family: 'Sensation';
+  src: url('../fonts/Sensation_Bold.woff2') format('woff2'),
+       url('../fonts/Sensation_Bold.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html, #root {
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: linear-gradient(180deg, #524AAD 0%, #FFFFFF 100%);
+  background-color: #f5f5f5;
+}
+
+.app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 20px;
+}
+
+.login-container {
+  background: linear-gradient(180deg, #000000 0%, #3C36BC 100%);
+  border-radius: 45px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  width: 80vw;
+  height: 80vh;
+  display: flex;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+}
+
+.login-content {
+  padding: 60px 80px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.welcome-section {
+  text-align: left;
+  margin-bottom: 50px;
+}
+
+.welcome-section h1 {
+  font-size: 32px;
+  font-weight: normal;
+  color: white;
+  line-height: 1.2;
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+}
+
+.nebwork-title {
+  font-weight: bold !important;
+  font-size: 38px !important;
+  margin-top: 5px;
+  color:"white";
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.input-group {
+  position: relative;
+  width: 40%;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: white;
+  font-family: 'Sensation', sans-serif;
+  font-weight: bold;
+}
+
+.input-field {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  padding: 8px 0;
+  background: transparent;
+  color: white
+}
+
+.underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #ddd;
+}
+
+.input-field:focus + .underline {
+  background-color: #35FFF8;
+}
+
+.input-field:focus {
+  color: white;
+}
+
+.login-button {
+  background-color: white;
+  color: #11009E;
+  border: none;
+  padding: 16px 35px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  border-radius: 15px;
+  cursor: pointer;
+  margin-top: 10px;
+  width: auto;
+  align-self: flex-start;
+  transition: background-color 0.2s;
+  min-width: 140px;
+}
+
+.login-button:hover {
+  background-color: #C4B0FF;
+  color: white;
+}
+
+.forgot-password {
+  text-align: left;
+  margin-top: 25px;
+  font-size: 14px;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+}
+
+.forgot-link {
+  color: #35FFF8;
+  text-decoration: underline;
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.separator {
+  position: absolute;
+  top: 50%;
+  left: 45%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 600px;
+  border: 2px solid white;
+  border-left: none;
+  border-radius: 0 300px 300px 0;
+}
+
+.docs-icon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: clamp(160px, 25vw, 240px);
+  height: auto;
+  z-index: 10;
+}
+
+.pencil-icon {
+  position: absolute;
+  top: 20px;
+  right: 400px;
+  width: clamp(80px, 12.5vw, 120px); 
+  height: auto;
+  z-index: 10;
+}
+
+.people-icon {
+  position: absolute;
+  top: 290px; 
+  right: 200px;
+  width: clamp(134.4px, 21vw, 201.6px);  
+  height: auto;
+  z-index: 10;
+}
+
+.folder-icon {
+  position: absolute;
+  top: 460px;  
+  right: 450px;
+  width: clamp(70.4px, 11vw, 105.6px); 
+  height: auto;
+  z-index: 10;
+}
+
+.magnifier-icon {
+  position: absolute;
+  bottom: 18px;  
+  right: 18px;
+  width: clamp(57.6px, 9vw, 86.4px); 
+  height: auto;
+  z-index: 10;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .login-container {
+    width: 85vw;
+    height: 85vh;
+    position: absolute;
+    margin: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .separator {
+    display: none; /* Hide separator on mobile */
+  }
+  
+  .login-content {
+    padding: 50px 60px;
+  }
+
+  .input-group {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .login-content {
+    padding: 40px 30px;
+  }
+  
+  .welcome-section h1 {
+    font-size: 28px;
+  }
+  
+  .nebwork-title {
+    font-size: 34px !important;
+  }
+}

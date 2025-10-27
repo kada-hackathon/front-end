@@ -1,0 +1,263 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.profile-form {
+  background: #EAE8FF;
+  padding: 40px 50px; /* Reduced padding from 50px 60px */
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 600px;
+  min-height: 545px; /* Reduced from 700px to make it shorter */
+}
+
+.photo-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px; /* Reduced from 40px */
+  gap: 15px;
+}
+
+.photo-label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  color: #1F1C60;
+  min-width: 120px;
+  text-align: left;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.photo-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.photo-container {
+  flex-shrink: 0;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #ddd;
+}
+
+.profile-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upload-btn,
+.delete-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.upload-btn {
+  background-color: #1F1C60;
+  color: white;
+  border: 1px solid #1F1C60;
+}
+
+.upload-btn:hover {
+  background-color: #C4B0FF;
+  color: #1F1C60;
+  border: 1px solid #1F1C60;
+}
+
+.delete-btn {
+  background-color: white;
+  color: #1F1C60;
+  border: 1px solid #1F1C60;
+}
+
+.delete-btn:hover {
+  background-color: rgb(193, 193, 193);
+}
+
+.profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Reduced from 25px */
+}
+
+.field-group {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 15px;
+  position: relative;
+  padding-top: 0;
+}
+
+label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  color: #1F1C60;
+  min-width: 120px;
+  text-align: left;
+  margin-bottom: 0;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  padding-top: 8px;
+}
+
+input {
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+}
+
+.name-input {
+  width: 100%;
+}
+
+.readonly-field {
+  position: relative;
+  width: 100%;
+}
+
+.readonly-field input {
+  width: 100%;
+  background-color: #D5D1F5; /* Changed from #f8f9fa to light purple */
+  color: #6B5BB3; /* Changed text color to darker purple */
+  cursor: not-allowed;
+  border: 1px solid #B8B0E8; /* Added border color */
+}
+
+.field-note {
+  position: absolute;
+  right: 0;
+  top: -15px;
+  font-size: 12px;
+  color: #BA0000;
+  font-style: italic;
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+}
+
+.save-btn {
+  width: 30%;
+  padding: 8px;
+  background-color: #1F1C60;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 35px auto 0; /* Reduced top margin from 30px to 25px */
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.save-btn:hover {
+  background-color: #C4B0FF;
+  color: #1F1C60;
+  border: 1px solid #1F1C60;
+}
+
+.success-message {
+  text-align: center;
+  color: #28a745;
+  margin-top: 10px;
+  font-size: 12px;
+  animation: fadeIn 0.5s;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .profile-form {
+    padding: 35px 30px; /* Adjusted padding */
+    min-height: auto;
+  }
+
+  .photo-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .photo-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .field-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  label {
+    text-align: left;
+    min-width: auto;
+  }
+  
+  input,
+  .name-input,
+  .readonly-field {
+    width: 100%;
+  }
+  
+  .field-note {
+    position: static;
+    transform: none;
+    margin-top: 5px;
+  }
+
+  .save-btn {
+    width: 50%;
+  }
+}
+
+@media (max-width: 600px) {
+  .profile-form {
+    padding: 30px 20px;
+  }
+  
+  .photo-buttons {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .save-btn {
+    width: 70%;
+  }
+}
