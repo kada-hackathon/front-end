@@ -1,16 +1,18 @@
 import { Home, MessageCircle, ClipboardList, ChevronLeft } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface MenubarProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
-  activeMenu: string;
-  onMenuChange: (menu: string) => void;
   recentProjects: string[];
 }
 
-const Menubar = ({ collapsed, onToggleCollapse, activeMenu, onMenuChange, recentProjects }: MenubarProps) => {
+const Menubar = ({ collapsed, onToggleCollapse, recentProjects }: MenubarProps) => {
+  const location = useLocation();
+  const activeMenu = location.pathname;
+
   return (
     <aside
       className={cn(
@@ -43,39 +45,42 @@ const Menubar = ({ collapsed, onToggleCollapse, activeMenu, onMenuChange, recent
         <div className="mb-6">
           {!collapsed && <p className="text-sm text-white/60 mb-3">Menus</p>}
           <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start gap-3 text-white hover:bg-[hsl(var(--sidebar-hover))]",
-                activeMenu === "home" && "bg-[hsl(var(--sidebar-active))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--sidebar-active))]"
-              )}
-              onClick={() => onMenuChange("home")}
-            >
-              <Home className="w-5 h-5" />
-              {!collapsed && <span>Home</span>}
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start gap-3 text-white hover:bg-[hsl(var(--sidebar-hover))]",
-                activeMenu === "chat" && "bg-[hsl(var(--sidebar-active))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--sidebar-active))]"
-              )}
-              onClick={() => onMenuChange("chat")}
-            >
-              <MessageCircle className="w-5 h-5" />
-              {!collapsed && <span>Chat Bot</span>}
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start gap-3 text-white hover:bg-[hsl(var(--sidebar-hover))]",
-                activeMenu === "work" && "bg-[hsl(var(--sidebar-active))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--sidebar-active))]"
-              )}
-              onClick={() => onMenuChange("work")}
-            >
-              <ClipboardList className="w-5 h-5" />
-              {!collapsed && <span>Work Log</span>}
-            </Button>
+            <Link to="/">
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start gap-3 text-white hover:bg-[hsl(var(--sidebar-hover))]",
+                  activeMenu === "/" && "bg-[hsl(var(--sidebar-active))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--sidebar-active))]"
+                )}
+              >
+                <Home className="w-5 h-5" />
+                {!collapsed && <span>Home</span>}
+              </Button>
+            </Link>
+            <Link to="/chatbot">
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start gap-3 text-white hover:bg-[hsl(var(--sidebar-hover))]",
+                  activeMenu === "/chatbot" && "bg-[hsl(var(--sidebar-active))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--sidebar-active))]"
+                )}
+              >
+                <MessageCircle className="w-5 h-5" />
+                {!collapsed && <span>Chat Bot</span>}
+              </Button>
+            </Link>
+            <Link to="/worklog">
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start gap-3 text-white hover:bg-[hsl(var(--sidebar-hover))]",
+                  activeMenu === "/worklog" && "bg-[hsl(var(--sidebar-active))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--sidebar-active))]"
+                )}
+              >
+                <ClipboardList className="w-5 h-5" />
+                {!collapsed && <span>Work Log</span>}
+              </Button>
+            </Link>
           </div>
         </div>
 

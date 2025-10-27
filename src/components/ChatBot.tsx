@@ -22,7 +22,6 @@ const ChatBot = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("home");
 
   const friends: Friend[] = [
     { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
@@ -69,8 +68,6 @@ const ChatBot = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        activeMenu={activeMenu}
-        onMenuChange={setActiveMenu}
         recentProjects={recentProjects}
       />
 
