@@ -1,8 +1,8 @@
 import { useState } from "react";
-import Menubar from "@/components/Menubar";
-import Navbar from "@/components/Navbar";
-import FriendsList from "@/components/FriendsList";
-import WorkLogContent from "@/components/WorkLogContent";
+import Menubar from "@/components/Menubar/Menubar";
+import Navbar from "@/components/Navbar/Navbar";
+import FriendsList from "@/components/FriendsList/FriendsList";
+import WorkLogContent from "@/components/WorkLogContent/WorkLogContent";
 
 interface Friend {
   id: string;

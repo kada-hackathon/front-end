@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import "./FriendsList.css";
 
 interface Friend {
   id: string;
@@ -13,18 +14,18 @@ interface FriendsListProps {
 
 const FriendsList = ({ friends }: FriendsListProps) => {
   return (
-    <aside className="w-72 border-l border-border bg-card p-6 hidden lg:block">
-      <h3 className="font-bold text-lg mb-6">Your Friends</h3>
-      <div className="space-y-4">
+    <aside className="friends-list">
+      <h3 className="friends-list-title">Your Friends</h3>
+      <div className="friends-list-container">
         {friends.map((friend) => (
-          <div key={friend.id} className="flex items-center gap-3 hover:bg-secondary/50 p-2 rounded-lg cursor-pointer transition-colors">
-            <Avatar className="w-12 h-12">
+          <div key={friend.id} className="friend-item">
+            <Avatar className="friend-avatar">
               <AvatarImage src={friend.avatar} />
               <AvatarFallback>{friend.name.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold text-sm">{friend.name}</p>
-              <p className="text-xs text-muted-foreground">{friend.division}</p>
+              <p className="friend-name">{friend.name}</p>
+              <p className="friend-division">{friend.division}</p>
             </div>
           </div>
         ))}

@@ -1,0 +1,133 @@
+.menubar {
+  background-color: hsl(var(--sidebar-bg));
+  color: hsl(var(--sidebar-text));
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  width: 16rem;
+}
+
+.menubar-collapsed {
+  width: 5rem;
+}
+
+.menubar-header {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menubar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menubar-logo-icon {
+  width: 2rem;
+  height: 2rem;
+  background-color: white;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menubar-logo-svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: hsl(var(--sidebar-bg));
+}
+
+.menubar-logo-text {
+  font-weight: bold;
+  font-size: 1.125rem;
+}
+
+.menubar-toggle-btn {
+  color: white;
+}
+
+.menubar-toggle-btn:hover {
+  background-color: hsl(var(--sidebar-hover));
+}
+
+.menubar-toggle-icon {
+  transition: transform 0.3s;
+}
+
+.menubar-toggle-icon-collapsed {
+  transform: rotate(180deg);
+}
+
+.menubar-nav {
+  flex: 1;
+  padding: 1rem;
+}
+
+.menubar-nav-section {
+  margin-bottom: 1.5rem;
+}
+
+.menubar-nav-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.75rem;
+}
+
+.menubar-nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.menubar-nav-button {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  color: white;
+}
+
+.menubar-nav-button:hover {
+  background-color: hsl(var(--sidebar-hover));
+}
+
+.menubar-nav-button-active {
+  background-color: hsl(var(--sidebar-active));
+  color: hsl(var(--primary));
+}
+
+.menubar-nav-button-active:hover {
+  background-color: hsl(var(--sidebar-active));
+}
+
+.menubar-nav-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.menubar-recent-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.5rem;
+}
+
+.menubar-recent-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.menubar-recent-button {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.menubar-recent-button:hover {
+  background-color: hsl(var(--sidebar-hover));
+}

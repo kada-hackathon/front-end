@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import "./ChatArea.css";
 
 interface Message {
   id: string;
@@ -22,43 +23,43 @@ interface ChatAreaProps {
 
 const ChatArea = ({ messages, inputValue, onInputChange, onSendMessage, onKeyPress }: ChatAreaProps) => {
   return (
-    <div className="flex-1 flex flex-col">
-      <ScrollArea className="flex-1 p-6">
+    <div className="chat-area">
+      <ScrollArea className="chat-area-scroll">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <h2 className="text-4xl font-bold text-[hsl(var(--accent))] mb-8">
+          <div className="chat-area-empty">
+            <div className="chat-area-empty-content">
+              <h2 className="chat-area-empty-title">
                 Where should we begin?
               </h2>
             </div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto space-y-4">
+          <div className="chat-area-messages">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={cn(
-                  "flex gap-3",
-                  message.sender === "user" ? "justify-end" : "justify-start"
+                  "chat-message",
+                  message.sender === "user" ? "chat-message-user" : "chat-message-bot"
                 )}
               >
                 {message.sender === "bot" && (
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-accent text-accent-foreground text-xs">AI</AvatarFallback>
+                  <Avatar className="chat-message-avatar">
+                    <AvatarFallback className="chat-message-avatar-bot">AI</AvatarFallback>
                   </Avatar>
                 )}
                 <div
                   className={cn(
-                    "rounded-2xl px-4 py-3 max-w-[70%]",
+                    "chat-message-bubble",
                     message.sender === "user"
-                      ? "bg-[hsl(var(--chat-bubble-user))] text-white"
-                      : "bg-[hsl(var(--chat-bubble-bot))] text-foreground"
+                      ? "chat-message-bubble-user"
+                      : "chat-message-bubble-bot"
                   )}
                 >
-                  <p className="text-sm">{message.text}</p>
+                  <p className="chat-message-text">{message.text}</p>
                 </div>
                 {message.sender === "user" && (
-                  <Avatar className="w-8 h-8">
+                  <Avatar className="chat-message-avatar">
                     <AvatarImage src="/placeholder.svg" />
                     <AvatarFallback>GA</AvatarFallback>
                   </Avatar>
@@ -69,25 +70,24 @@ const ChatArea = ({ messages, inputValue, onInputChange, onSendMessage, onKeyPre
         )}
       </ScrollArea>
 
-      {/* Input Area */}
-      <div className="border-t border-border p-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-2 bg-secondary/50 rounded-full px-4 py-2 border border-border">
-            <Plus className="w-5 h-5 text-muted-foreground" />
+      <div className="chat-area-input-wrapper">
+        <div className="chat-area-input-container">
+          <div className="chat-area-input">
+            <Plus className="chat-area-input-icon" />
             <Input
               value={inputValue}
               onChange={(e) => onInputChange(e.target.value)}
               onKeyPress={onKeyPress}
               placeholder="Ask Anything"
-              className="border-0 bg-transparent focus-visible:ring-0 flex-1"
+              className="chat-area-input-field"
             />
             <Button
               size="icon"
-              className="rounded-full bg-accent hover:bg-accent/90 text-accent-foreground h-10 w-10"
+              className="chat-area-send-button"
               onClick={onSendMessage}
               disabled={!inputValue.trim()}
             >
-              <Send className="w-5 h-5" />
+              <Send className="chat-area-send-icon" />
             </Button>
           </div>
         </div>

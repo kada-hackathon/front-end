@@ -1,8 +1,9 @@
 import { useState } from "react";
-import Menubar from "./Menubar";
-import Navbar from "./Navbar";
-import FriendsList from "./FriendsList";
-import ChatArea from "./ChatArea";
+import Menubar from "../Menubar/Menubar";
+import Navbar from "../Navbar/Navbar";
+import FriendsList from "../FriendsList/FriendsList";
+import ChatArea from "../ChatArea/ChatArea";
+import "./ChatBot.css";
 
 interface Message {
   id: string;
@@ -64,17 +65,17 @@ const ChatBot = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="chatbot-container">
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         recentProjects={recentProjects}
       />
 
-      <main className="flex-1 flex flex-col">
+      <main className="chatbot-main">
         <Navbar />
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="chatbot-content">
           <ChatArea
             messages={messages}
             inputValue={inputValue}
