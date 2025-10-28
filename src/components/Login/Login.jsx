@@ -11,6 +11,7 @@ function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Clear localStorage for testing
   const clearStorage = () => {
@@ -24,6 +25,7 @@ function Login() {
   // Handle login form submit
   const handleLogin = async (e) =>{
     e.preventDefault();
+    setErrorMessage('');
 
     try {
       const res = await fetch('http://localhost:5000/api/auth/login', {
@@ -44,14 +46,15 @@ function Login() {
         // Note: in this project the Home page is mounted at '/'
         navigate('/');
       } else {
-        alert(data.message || 'Login failed');
+        setErrorMessage(data.message || 'Login failed');
       }
     } catch (err) {
       console.error('Login error', err);
-      alert('Login failed, check console for details');
+      setErrorMessage('Login failed');
     }
   }
-    return (
+
+  return (
     <div className="app">
       <div className="login-container">
         <div className="separator"></div>
@@ -82,8 +85,8 @@ function Login() {
             
             <div className="input-group">
               <label>Password:</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 className="input-field"
                 placeholder=" "
                 value={password}
@@ -92,7 +95,10 @@ function Login() {
               />
               <div className="underline"></div>
             </div>
-            
+
+            {errorMessage && (
+              <p style={{ color: "red", fontSize: "0.9em" }}>{errorMessage}</p>
+            )}
             <button type="submit" className="login-button">
               LOGIN
             </button>
