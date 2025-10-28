@@ -2,7 +2,8 @@ import { useState } from "react";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
-import WorkLogContent from "@/components/WorkLogContent/WorkLogContent";
+import WorkLogList from "@/components/WorkLogList/WorkLogList";
+import WorkLogEditor from "@/components/WorkLogEditor/WorkLogEditor";
 
 interface Friend {
   id: string;
@@ -13,6 +14,7 @@ interface Friend {
 
 const WorkLog = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
 
   const friends: Friend[] = [
     { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
@@ -34,7 +36,11 @@ const WorkLog = () => {
         <Navbar />
 
         <div className="flex-1 flex overflow-hidden">
-          <WorkLogContent />
+          {showEditor ? (
+            <WorkLogEditor onBack={() => setShowEditor(false)} />
+          ) : (
+            <WorkLogList onCreateNew={() => setShowEditor(true)} />
+          )}
           <FriendsList friends={friends} />
         </div>
       </main>
