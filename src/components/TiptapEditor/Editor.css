@@ -1,0 +1,19 @@
+/* Image styles */
+.ProseMirror img,
+.editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1em 0;
+  display: block;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 3px solid #1F1C60;
+}
+
+/* Loading state for images */
+.ProseMirror img[src=""] {
+  opacity: 0.5;
+  background: #f0f0f0;
+}
