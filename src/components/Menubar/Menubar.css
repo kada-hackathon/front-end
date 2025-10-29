@@ -1,5 +1,5 @@
 .menubar {
-  background-color: hsl(var(--sidebar-bg));
+  background: linear-gradient(180deg, #1e3a8a, #9333ea);
   color: hsl(var(--sidebar-text));
   transition: all 0.3s;
   display: flex;
