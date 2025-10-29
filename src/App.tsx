@@ -7,6 +7,9 @@ import Index from "./pages/Index";
 import ChatBotPage from "./pages/ChatBotPage";
 import WorkLog from "./pages/WorkLog";
 import WorkLogVersion from "./pages/WorkLogVersion";
+import Profile from "./pages/Profile";
+import BlogEditor from "./pages/BlogEditor";
+import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +25,9 @@ const App = () => (
           <Route path="/chatbot" element={<ChatBotPage />} />
           <Route path="/worklog" element={<WorkLog />} />
           <Route path="/worklog/version" element={<WorkLogVersion />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/blog/editor" element={<BlogEditor />} />
+          <Route path="/blog/:id" element={<BlogPost />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

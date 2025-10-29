@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import "./WorkLogList.css";
 
 interface WorkLogItem {
@@ -16,6 +17,8 @@ interface WorkLogListProps {
 }
 
 const WorkLogList = ({ onCreateNew }: WorkLogListProps) => {
+  const navigate = useNavigate();
+
   const workLogs: WorkLogItem[] = [
     {
       id: "1",
@@ -60,7 +63,11 @@ const WorkLogList = ({ onCreateNew }: WorkLogListProps) => {
 
       <div className="worklog-items-container">
         {workLogs.map((log) => (
-          <article key={log.id} className="worklog-item">
+          <article 
+            key={log.id} 
+            className="worklog-item cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate('/blog/editor')}
+          >
             <div className="worklog-item-header">
               <span className="worklog-item-type">• {log.type}</span>
             </div>

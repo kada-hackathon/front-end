@@ -1,5 +1,5 @@
 import { Home, MessageCircle, ClipboardList, ChevronLeft } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import "./Menubar.css";
@@ -12,6 +12,7 @@ interface MenubarProps {
 
 const Menubar = ({ collapsed, onToggleCollapse, recentProjects }: MenubarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const activeMenu = location.pathname;
 
   return (
@@ -88,6 +89,7 @@ const Menubar = ({ collapsed, onToggleCollapse, recentProjects }: MenubarProps) 
                 <button
                   key={index}
                   className="menubar-recent-button"
+                  onClick={() => navigate('/blog/editor')}
                 >
                   {project}
                 </button>

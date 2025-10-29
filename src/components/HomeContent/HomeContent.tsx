@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
 import "./HomeContent.css";
 
 interface Post {
@@ -16,6 +17,8 @@ interface Post {
 }
 
 const HomeContent = () => {
+  const navigate = useNavigate();
+
   const posts: Post[] = [
     {
       id: "1",
@@ -63,7 +66,11 @@ const HomeContent = () => {
 
       <div className="posts-container">
         {posts.map((post) => (
-          <article key={post.id} className="post-card">
+          <article 
+            key={post.id} 
+            className="post-card cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate(`/blog/${post.id}`, { state: { post } })}
+          >
             <div className="post-header">
               <div className="post-author">
                 <Avatar className="post-avatar">
