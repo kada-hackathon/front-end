@@ -1,0 +1,4 @@
+@import "../shared/upload-shared.scss";
+
+@include upload-theme-variables("tiptap-video");
+@include upload-base-styles("tiptap-video");

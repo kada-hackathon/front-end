@@ -264,8 +264,8 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
     throw new Error("No file provided")
   }
 
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`File size exceeds maximum allowed (${MAX_FILE_SIZE / (1024 * 1024)}MB)`)
+  if (file.size > MAX_FILE_SIZE * 2) { // Allow up to 10MB for videos
+    throw new Error(`File size exceeds maximum allowed (${MAX_FILE_SIZE * 2 / (1024 * 1024)}MB)`)
   }
 
   // For demo/testing: Simulate upload progress. In production, replace the following code
@@ -278,7 +278,13 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
     onProgress?.({ progress })
   }
 
-  return "/images/tiptap-ui-placeholder-image.jpg"
+  // Create a blob URL for the file so it can be displayed immediately
+  // This works for images, videos, audio, and documents
+  const blobUrl = URL.createObjectURL(file)
+  
+  // Store the blob URL for cleanup later (optional)
+  // In production, this should return the actual uploaded file URL from your server
+  return blobUrl
 }
 
 const ATTR_WHITESPACE =

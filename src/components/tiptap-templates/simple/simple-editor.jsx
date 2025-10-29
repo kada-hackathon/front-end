@@ -25,6 +25,12 @@ import {
 
 // --- Tiptap Node ---
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
+import { VideoUploadNode } from "@/components/tiptap-node/video-upload-node/video-upload-node-extension"
+import { AudioUploadNode } from "@/components/tiptap-node/audio-upload-node/audio-upload-node-extension"
+import { DocumentUploadNode } from "@/components/tiptap-node/document-upload-node/document-upload-node-extension"
+import { VideoNode } from "@/components/tiptap-node/video-node/video-node-extension"
+import { AudioNode } from "@/components/tiptap-node/audio-node/audio-node-extension"
+import { DocumentNode } from "@/components/tiptap-node/document-node/document-node-extension"
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"
 import "@/components/tiptap-node/code-block-node/code-block-node.scss"
@@ -33,10 +39,16 @@ import "@/components/tiptap-node/list-node/list-node.scss"
 import "@/components/tiptap-node/image-node/image-node.scss"
 import "@/components/tiptap-node/heading-node/heading-node.scss"
 import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
+import "@/components/tiptap-node/video-upload-node/video-upload-node.scss"
+import "@/components/tiptap-node/audio-upload-node/audio-upload-node.scss"
+import "@/components/tiptap-node/document-upload-node/document-upload-node.scss"
+import "@/components/tiptap-node/video-node/video-node.scss"
+import "@/components/tiptap-node/audio-node/audio-node.scss"
+import "@/components/tiptap-node/document-node/document-node.scss"
 
 // --- Tiptap UI ---
 import { HeadingDropdownMenu } from "@/components/tiptap-ui/heading-dropdown-menu"
-import { ImageUploadButton } from "@/components/tiptap-ui/image-upload-button"
+import { MediaUploadDropdown } from "@/components/tiptap-ui/media-upload-dropdown"
 import { ListDropdownMenu } from "@/components/tiptap-ui/list-dropdown-menu"
 import { BlockquoteButton } from "@/components/tiptap-ui/blockquote-button"
 import { CodeBlockButton } from "@/components/tiptap-ui/code-block-button"
@@ -122,7 +134,7 @@ const MainToolbarContent = ({
       </ToolbarGroup>
       <ToolbarSeparator />
       <ToolbarGroup>
-        <ImageUploadButton text="Add" />
+        <MediaUploadDropdown text="Add Media" portal={isMobile} />
       </ToolbarGroup>
       <Spacer />
       {isMobile && <ToolbarSeparator />}
@@ -195,12 +207,36 @@ export function SimpleEditor() {
       Superscript,
       Subscript,
       Selection,
+      VideoNode,
+      AudioNode,
+      DocumentNode,
       ImageUploadNode.configure({
         accept: "image/*",
         maxSize: MAX_FILE_SIZE,
         limit: 3,
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
+      }),
+      VideoUploadNode.configure({
+        accept: "video/*",
+        maxSize: MAX_FILE_SIZE * 2, // 10MB for videos
+        limit: 1,
+        upload: handleImageUpload, // Reuse same upload handler
+        onError: (error) => console.error("Video upload failed:", error),
+      }),
+      AudioUploadNode.configure({
+        accept: "audio/*",
+        maxSize: MAX_FILE_SIZE,
+        limit: 1,
+        upload: handleImageUpload, // Reuse same upload handler
+        onError: (error) => console.error("Audio upload failed:", error),
+      }),
+      DocumentUploadNode.configure({
+        accept: ".pdf,.doc,.docx,.txt",
+        maxSize: MAX_FILE_SIZE,
+        limit: 1,
+        upload: handleImageUpload, // Reuse same upload handler
+        onError: (error) => console.error("Document upload failed:", error),
       }),
     ],
     content: "",
