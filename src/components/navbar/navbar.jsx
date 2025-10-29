@@ -1,8 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Navbar.css';
 
 const Navbar = ({ onToggleFriendsList }) => {
+  const [employee, setEmployee] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showSearchInput, setShowSearchInput] = useState(false);
+
+   useEffect(() => {
+  const token = localStorage.getItem('token'); // disimpan saat login
+  if (!token) {
+    setLoading(false);
+    return;
+  }
+
+  fetch('http://localhost:5000/api/auth/profile', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.user) {
+        setEmployee(data.user);
+      } else if (data) {
+        setEmployee(data);
+      }
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Error fetching user profile:', err);
+      setLoading(false);
+    });
+}, []);
 
   const toggleSearchInput = () => {
     setShowSearchInput(!showSearchInput);
@@ -80,9 +109,10 @@ const Navbar = ({ onToggleFriendsList }) => {
         {/* Profile Avatar - Mobile */}
         <div className="navbar-profile">
           <img
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+            src={employee?.profilePicture || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"}
             alt="Profile"
             className="profile-avatar"
+            title={employee?.name || 'User Profile'}
           />
         </div>
 
@@ -92,14 +122,14 @@ const Navbar = ({ onToggleFriendsList }) => {
           <div className="user-profile">
             <div className="profile-avatar">
               <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+                src={employee?.profilePicture || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"}
                 alt="Profile"
                 style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
               />
             </div>
             <div className="user-info">
-              <div className="user-name">Gideon A siagian</div>
-              <div className="user-division">Nama_Divisi</div>
+              <div className="user-name">{loading ? 'Loading...' : (employee?.name || 'User')}</div>
+              <div className="user-division">{loading ? 'Loading...' : (employee?.division || 'Employee')}</div>
             </div>
           </div>
         </div>
