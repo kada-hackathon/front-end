@@ -11,6 +11,8 @@ import Profile from "./pages/Profile";
 import BlogEditor from "./pages/BlogEditor";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
+import Login from "./components/Login/Login";
+import ProtectedRoute from './components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
@@ -21,14 +23,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/chatbot" element={<ChatBotPage />} />
-          <Route path="/worklog" element={<WorkLog />} />
-          <Route path="/worklog/version" element={<WorkLogVersion />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/blog-editor" element={<BlogEditor />} />
-          <Route path="/blog-post" element={<BlogPost />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          {/* PUBLIC ROUTES */}
+          <Route path="/login" element={<Login />} />
+          
+          {/* PROTECTED ROUTES */}
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/chatbot" element={<ProtectedRoute><ChatBotPage /></ProtectedRoute>} />
+          <Route path="/worklog" element={<ProtectedRoute><WorkLog /></ProtectedRoute>} />
+          <Route path="/worklog/version" element={<ProtectedRoute><WorkLogVersion /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/blog-editor" element={<ProtectedRoute><BlogEditor /></ProtectedRoute>} />
+          <Route path="/blog-post" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
+          
+          {/* CATCH-ALL ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
