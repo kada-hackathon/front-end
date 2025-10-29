@@ -9,14 +9,7 @@ const WorkLogList = ({ onCreateNew }) => {
     navigate(`/blog-editor?id=${logId}`);
   };
 
-<<<<<<< HEAD:src/components/WorkLogList/WorkLogList.tsx
-const WorkLogList = ({ onCreateNew }: WorkLogListProps) => {
-  const navigate = useNavigate();
-
-  const workLogs: WorkLogItem[] = [
-=======
   const workLogs = [
->>>>>>> newfrontend:src/components/WorkLogList/WorkLogList.jsx
     {
       id: "1",
       type: "Individual",
@@ -60,15 +53,7 @@ const WorkLogList = ({ onCreateNew }: WorkLogListProps) => {
 
       <div className="worklog-items-container">
         {workLogs.map((log) => (
-<<<<<<< HEAD:src/components/WorkLogList/WorkLogList.tsx
-          <article 
-            key={log.id} 
-            className="worklog-item cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => navigate('/blog/editor')}
-          >
-=======
           <article key={log.id} className="worklog-item" onClick={() => handleWorkLogClick(log.id)} style={{ cursor: "pointer" }}>
->>>>>>> newfrontend:src/components/WorkLogList/WorkLogList.jsx
             <div className="worklog-item-header">
               <span className="worklog-item-type">• {log.type}</span>
             </div>

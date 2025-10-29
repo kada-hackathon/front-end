@@ -12,12 +12,6 @@ const Navbar = ({ userName = "Gideon A siagian", userDivision = "Nama_Divisi", u
     navigate("/profile");
   };
 
-<<<<<<< HEAD:src/components/Navbar/Navbar.tsx
-const Navbar = ({ userName = "Gideon A siagian", userDivision = "Nama_Divisi", userAvatar = "/placeholder.svg" }: NavbarProps) => {
-  const navigate = useNavigate();
-
-=======
->>>>>>> newfrontend:src/components/Navbar/Navbar.jsx
   return (
     <header className="navbar">
       <div className="navbar-search">
@@ -31,11 +25,7 @@ const Navbar = ({ userName = "Gideon A siagian", userDivision = "Nama_Divisi", u
         <Button variant="ghost" size="icon">
           <Settings className="navbar-settings-icon" />
         </Button>
-<<<<<<< HEAD:src/components/Navbar/Navbar.tsx
-        <button onClick={() => navigate('/profile')} className="navbar-user cursor-pointer">
-=======
         <div className="navbar-user" onClick={handleProfileClick} style={{ cursor: "pointer" }}>
->>>>>>> newfrontend:src/components/Navbar/Navbar.jsx
           <Avatar className="navbar-user-avatar">
             <AvatarImage src={userAvatar} />
             <AvatarFallback>GA</AvatarFallback>
@@ -44,7 +34,7 @@ const Navbar = ({ userName = "Gideon A siagian", userDivision = "Nama_Divisi", u
             <p className="navbar-user-name">{userName}</p>
             <p className="navbar-user-division">{userDivision}</p>
           </div>
-        </button>
+     </div>
       </div>
     </header>
   );

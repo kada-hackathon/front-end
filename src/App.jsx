@@ -26,13 +26,8 @@ const App = () => (
           <Route path="/worklog" element={<WorkLog />} />
           <Route path="/worklog/version" element={<WorkLogVersion />} />
           <Route path="/profile" element={<Profile />} />
-<<<<<<< HEAD:src/App.tsx
-          <Route path="/blog/editor" element={<BlogEditor />} />
-          <Route path="/blog/:id" element={<BlogPost />} />
-=======
           <Route path="/blog-editor" element={<BlogEditor />} />
           <Route path="/blog-post" element={<BlogPost />} />
->>>>>>> newfrontend:src/App.jsx
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -112,7 +112,7 @@
 }
 
 .chat-area-input-field:focus-visible {
-  ring: 0;
+  text-rendering: 0;
 }
 
 .chat-area-send-button {

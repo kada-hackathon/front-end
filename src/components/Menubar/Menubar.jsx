@@ -1,8 +1,4 @@
-<<<<<<< HEAD:src/components/Menubar/Menubar.tsx
-import { Home, MessageCircle, ClipboardList, ChevronLeft } from "lucide-react";
-=======
 import { Home, MessageCircle, ClipboardList, ChevronLeft, FileText } from "lucide-react";
->>>>>>> newfrontend:src/components/Menubar/Menubar.jsx
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -91,11 +87,7 @@ const Menubar = ({ collapsed, onToggleCollapse, recentProjects }) => {
                 <button
                   key={index}
                   className="menubar-recent-button"
-<<<<<<< HEAD:src/components/Menubar/Menubar.tsx
-                  onClick={() => navigate('/blog/editor')}
-=======
                   onClick={() => handleRecentProjectClick(project)}
->>>>>>> newfrontend:src/components/Menubar/Menubar.jsx
                 >
                   {project}
                 </button>

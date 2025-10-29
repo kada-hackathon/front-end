@@ -5,15 +5,11 @@ import "./HomeContent.css";
 const HomeContent = () => {
   const navigate = useNavigate();
 
-<<<<<<< HEAD:src/components/HomeContent/HomeContent.tsx
-  const posts: Post[] = [
-=======
   const handlePostClick = (postId) => {
     navigate(`/blog-post?id=${postId}`);
   };
 
   const posts = [
->>>>>>> newfrontend:src/components/HomeContent/HomeContent.jsx
     {
       id: "1",
       author: {
@@ -60,15 +56,7 @@ const HomeContent = () => {
 
       <div className="posts-container">
         {posts.map((post) => (
-<<<<<<< HEAD:src/components/HomeContent/HomeContent.tsx
-          <article 
-            key={post.id} 
-            className="post-card cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => navigate(`/blog/${post.id}`, { state: { post } })}
-          >
-=======
           <article key={post.id} className="post-card" onClick={() => handlePostClick(post.id)} style={{ cursor: "pointer" }}>
->>>>>>> newfrontend:src/components/HomeContent/HomeContent.jsx
             <div className="post-header">
               <div className="post-author">
                 <Avatar className="post-avatar">
