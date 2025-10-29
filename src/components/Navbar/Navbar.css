@@ -5,6 +5,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
 .navbar-search {
@@ -27,7 +30,8 @@
 }
 
 .navbar-search-input:focus-visible {
-  ring: 1px;
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }
 
 .navbar-actions {
