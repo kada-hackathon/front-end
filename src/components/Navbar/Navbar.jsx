@@ -91,7 +91,7 @@ const Navbar = () => {
             <p className="navbar-user-name">{employee.name}</p>
             <p className="navbar-user-division">{employee.division}</p>
           </div>
-        </div>
+     </div>
       </div>
     </header>
   );

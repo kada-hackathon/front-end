@@ -1,0 +1,45 @@
+.tiptap-video-node {
+  margin: 1rem 0;
+  
+  .tiptap-video-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 100%;
+  }
+
+  .tiptap-video {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background-color: #000;
+    outline: none;
+
+    &:focus {
+      outline: 2px solid var(--tiptap-color-primary, #3b82f6);
+      outline-offset: 2px;
+    }
+  }
+
+  .tiptap-video-caption {
+    font-size: 0.875rem;
+    color: var(--tiptap-color-text-secondary, #6b7280);
+    text-align: center;
+    padding: 0.25rem 0.5rem;
+  }
+
+  &.ProseMirror-selectednode {
+    .tiptap-video-wrapper {
+      outline: 2px solid var(--tiptap-color-primary, #3b82f6);
+      outline-offset: 2px;
+      border-radius: 8px;
+    }
+  }
+}
+
+.dark .tiptap-video-node {
+  .tiptap-video-caption {
+    color: var(--tiptap-color-text-secondary, #9ca3af);
+  }
+}

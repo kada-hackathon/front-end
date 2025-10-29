@@ -14,6 +14,14 @@ const BlogPost = () => {
 
   const postId = searchParams.get("id");
 
+  const friends = [
+    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
+    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
+    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
+  ];
+
+  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
+
   // Mock data for posts (same as in HomeContent)
   const posts = [
     {
@@ -23,11 +31,17 @@ const BlogPost = () => {
         division: "Nama_Divisi",
         avatar: "/placeholder.svg",
       },
-      date: "23 Nov 2025",
-      title: "Cara Membuat Telur Gulung",
+      date: "28 November 2025",
+      time: "19.00 WIB",
+      title: "CARA MEMBUAT TELUR GULUNG",
       hashtags: ["#Telur Gulu", "#makanan"],
-      content:
-        "Misi kami di Cookpad adalah untuk membuat masak sehari-hari menyenangkan, karena kami percaya bahwa memasak adalah kunci menuju kehidupan yang lebih bahagia dan lebih sehat bagi manusia, komunitas, dan bumi .......",
+      content: `1. Siap kan wadah, pecahkan telur ke dalam wadah lalu campur dengan garam dan penyedap. Kocok telur hingga rata.
+2. Dalam gelas berisi air, masukan tepung tapioka/sagu lalu aduk.
+3. Tuang air yang sudah dicampur tepung tapioka/sagu kedalam kocokan telur. Aduk lagi hingga semua bahan tercampur.
+4. Panas kan wajan dengan minyak banyak (minyak harus banyak ya, supaya telur bisa kering dan tidak menjadi telur dadar hehehe). Tunggu sampai minyak benar2 panas.
+5. Masukkan 1 centong sayur adonan telur kedalam wajan, usahan jarak penungan telur agak tinggi dari minyak, sekitar 15-20cm diatas minyak (ini sangat disarankan untuk pemula, supaya anti gagal). Tunggu 5 detik, setelah itu gulung telur menggunakan tusuk sate (cukup ditarik dari pinggir wajan). Jika metodenya sudah benar saat menggulung tidak akan susah, Karena nanti telur akan tertarik sendiri mengikuti arah gulungan.
+6. Setelah telur sudah menempel sempurna ditusuk sate, padatkan lagi dengan cara ditekan2 ke pinggir wajan. Gunanya supaya mengurangi minyak dan membuat gulungan telur menjadi padat.
+7. Selamat mencoba ❤️`,
     },
     {
       id: "2",
@@ -56,33 +70,13 @@ const BlogPost = () => {
     },
   ];
 
-  const currentPost = posts.find(post => post.id === postId);
-
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
-
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
-
+  const currentPost = posts.find((p) => p.id === postId);
   const post = currentPost || {
-    author: {
-      name: "Moriee al haji",
-      division: "Nama_Divisi",
-      avatar: "/placeholder.svg",
-    },
-    date: "28 November 2025",
-    time: "19.00 WIB",
-    title: "CARA MEMBUAT TELUR GULUNG",
-    hashtags: ["#Telur Gulu", "#makanan"],
-    content: `1. Siap kan wadah, pecahkan telur ke dalam wadah lalu campur dengan garam dan penyedap. Kocok telur hingga rata.
-2. Dalam gelas berisi air, masukan tepung tapioka/sagu lalu aduk.
-3. Tuang air yang sudah dicampur tepung tapioka/sagu kedalam kocokan telur. Aduk lagi hingga semua bahan tercampur.
-4. Panas kan wajan dengan minyak banyak (minyak harus banyak ya, supaya telur bisa kering dan tidak menjadi telur dadar hehehe). Tunggu sampai minyak benar2 panas.
-5. Masukkan 1 centong sayur adonan telur kedalam wajan, usahan jarak penungan telur agak tinggi dari minyak, sekitar 15-20cm diatas minyak (ini sangat disarankan untuk pemula, supaya anti gagal). Tunggu 5 detik, setelah itu gulung telur menggunakan tusuk sate (cukup ditarik dari pinggir wajan). Jika metodenya sudah benar saat menggulung tidak akan susah, Karena nanti telur akan tertarik sendiri mengikuti arah gulungan.
-6. Setelah telur sudah menempel sempurna ditusuk sate, padatkan lagi dengan cara ditekan2 ke pinggir wajan. Gunanya supaya mengurangi minyak dan membuat gulungan telur menjadi padat.
-7. Selamat mencoba ❤️`,
+    author: { name: "Unknown", division: "N/A", avatar: "/placeholder.svg" },
+    date: "N/A",
+    title: "Post Not Found",
+    hashtags: [],
+    content: "This post could not be found.",
   };
 
   return (

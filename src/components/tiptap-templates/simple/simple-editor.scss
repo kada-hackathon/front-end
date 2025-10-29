@@ -1,0 +1,152 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
+body {
+  --tt-toolbar-height: 44px;
+  --tt-theme-text: var(--tt-gray-light-900);
+
+  .dark & {
+    --tt-theme-text: var(--tt-gray-dark-900);
+  }
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  color: var(--tt-theme-text);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  padding: 0;
+  overscroll-behavior-y: none;
+}
+
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
+html,
+body,
+#root,
+#app {
+  height: 100%;
+  background-color: var(--tt-bg-color);
+}
+
+::-webkit-scrollbar {
+  width: 0.25rem;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tt-scrollbar-color) transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--tt-scrollbar-color);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tiptap.ProseMirror {
+  font-family: "DM Sans", sans-serif;
+}
+
+/* Main wrapper - toolbar positioning handled here */
+.simple-editor-wrapper {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.toolbar-disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Toolbar is sticky at the top */
+.simple-editor-wrapper .tiptap-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: 100%;
+}
+
+/* Content area */
+.simple-editor-content {
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 2rem 4rem 30vh;
+  cursor: text;
+  transition: max-width 0.3s ease, padding 0.3s ease;
+
+  /* When sidebar is collapsed, expand the editor area */
+  &.sidebar-collapsed {
+    max-width: 1200px;
+    padding-left: 5rem;
+    padding-right: 5rem;
+  }
+}
+
+.simple-editor-content .tiptap.ProseMirror {
+  flex: 1;
+
+  /* Reduce line spacing */
+  p {
+    line-height: 1.5;
+    margin: 0.5rem 0;
+  }
+
+  /* Placeholder styles - only show when editor is completely empty */
+  &.is-editor-empty > p.is-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: var(--tt-gray-light-a-400, #9ca3af);
+    pointer-events: none;
+    height: 0;
+  }
+
+  /* Hide placeholder on all other empty paragraphs */
+  p.is-empty:not(:first-child)::before {
+    content: none !important;
+  }
+}
+
+.dark .simple-editor-content .tiptap.ProseMirror {
+  &.is-editor-empty > p.is-empty:first-child::before {
+    color: var(--tt-gray-dark-a-400, #6b7280);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .simple-editor-content {
+    max-width: 100%;
+    padding: 1.5rem 2rem 30vh;
+
+    &.sidebar-collapsed {
+      max-width: 100%;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .simple-editor-content {
+    padding: 1rem 1.5rem 30vh;
+
+    &.sidebar-collapsed {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+}
