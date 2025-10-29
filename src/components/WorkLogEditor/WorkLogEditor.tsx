@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Search, Users, MessageSquare, Save } from "lucide-react";
+import { ChevronLeft, Search, Users, MessageSquare, Save, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useNavigate } from "react-router-dom";
 import "./WorkLogEditor.css";
 
 interface WorkLogEditorProps {
@@ -17,8 +18,8 @@ interface WorkLogEditorProps {
 }
 
 const WorkLogEditor = ({ onBack }: WorkLogEditorProps) => {
+  const navigate = useNavigate();
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [versionOpen, setVersionOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,13 +56,6 @@ const WorkLogEditor = ({ onBack }: WorkLogEditorProps) => {
     setCommitMessage("");
   };
 
-  const workLogVersions = [
-    { id: "1", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-    { id: "2", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-    { id: "3", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-    { id: "4", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-  ];
-
   return (
     <div className="worklog-content">
       <div className="worklog-header">
@@ -84,9 +78,19 @@ const WorkLogEditor = ({ onBack }: WorkLogEditorProps) => {
             </AlertDialogTrigger>
             <AlertDialogContent className="max-w-2xl">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-center text-xl font-bold mb-4">
-                  INVITE YOUR PARTNER TEAM
-                </AlertDialogTitle>
+                <div className="flex items-center justify-between">
+                  <AlertDialogTitle className="text-xl font-bold flex-1 text-center">
+                    INVITE YOUR PARTNER TEAM
+                  </AlertDialogTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setInviteOpen(false)}
+                    className="h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </AlertDialogHeader>
               
               <div className="space-y-4">
@@ -133,43 +137,14 @@ const WorkLogEditor = ({ onBack }: WorkLogEditorProps) => {
             </AlertDialogContent>
           </AlertDialog>
 
-          <AlertDialog open={versionOpen} onOpenChange={setVersionOpen}>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <MessageSquare className="h-4 w-4" />
-                COMMIT
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="max-w-3xl max-h-[80vh]">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-2xl font-bold">
-                  Name of Project
-                </AlertDialogTitle>
-              </AlertDialogHeader>
-              
-              <div className="space-y-3 overflow-y-auto max-h-[60vh] pr-2">
-                {workLogVersions.map((version) => (
-                  <div key={version.id} className="bg-muted/50 p-4 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={version.avatar}
-                          alt={version.author}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="font-semibold">{version.author}</p>
-                          <p className="text-sm text-muted-foreground">{version.division}</p>
-                        </div>
-                      </div>
-                      <span className="text-sm text-muted-foreground">{version.updatedAt}</span>
-                    </div>
-                    <p className="font-semibold">{version.message}</p>
-                  </div>
-                ))}
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => navigate('/worklog/version')}
+          >
+            <MessageSquare className="h-4 w-4" />
+            COMMIT
+          </Button>
           
           <AlertDialog open={saveOpen} onOpenChange={setSaveOpen}>
             <AlertDialogTrigger asChild>
@@ -180,9 +155,19 @@ const WorkLogEditor = ({ onBack }: WorkLogEditorProps) => {
             </AlertDialogTrigger>
             <AlertDialogContent className="max-w-2xl">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-center text-xl font-bold mb-4">
-                  SAVE YOUR WORK LOG
-                </AlertDialogTitle>
+                <div className="flex items-center justify-between">
+                  <AlertDialogTitle className="text-xl font-bold flex-1 text-center">
+                    SAVE YOUR WORK LOG
+                  </AlertDialogTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSaveOpen(false)}
+                    className="h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </AlertDialogHeader>
               
               <div className="space-y-4">

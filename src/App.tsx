@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ChatBotPage from "./pages/ChatBotPage";
 import WorkLog from "./pages/WorkLog";
+import WorkLogVersion from "./pages/WorkLogVersion";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/chatbot" element={<ChatBotPage />} />
           <Route path="/worklog" element={<WorkLog />} />
+          <Route path="/worklog/version" element={<WorkLogVersion />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
