@@ -8,10 +8,11 @@ const HomeContent = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("User");
+  const [userDivision, setUserDivision] = useState("");
   const [searchParams] = useSearchParams();
   const selectedTag = searchParams.get('tag');  // ← Extract ?tag=AI
 
-  // Fetch user profile untuk greeting
+  // Fetch user profile untuk greeting + divisi
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -26,6 +27,7 @@ const HomeContent = () => {
         const data = await response.json();
         const userData = data.user || data;
         setUserName(userData.name || "User");
+        setUserDivision(userData.division || "");
       } catch (err) {
         console.error('Error fetching user profile:', err);
       }
@@ -50,6 +52,13 @@ const HomeContent = () => {
         
         // Convert worklogs ke format posts
         let worklogsArray = data.worklogs || data || [];
+        
+        // Filter by same division as current user
+        if (userDivision) {
+          worklogsArray = worklogsArray.filter(worklog =>
+            worklog.user?.division === userDivision
+          );
+        }
         
         // Filter berdasarkan selectedTag jika ada
         if (selectedTag) {
@@ -84,7 +93,7 @@ const HomeContent = () => {
       }
     };
     fetchWorklogs();
-  }, [selectedTag]);
+  }, [selectedTag, userDivision]);
 
   // detail post => navigate ke halaman blog-post
   const handlePostClick = (postId) => {
