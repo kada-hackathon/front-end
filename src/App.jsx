@@ -6,15 +6,17 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import ChatBotPage from "./pages/ChatBotPage";
-import WorkLog from "./pages/WorkLog";
+import WorkLog from "./pages/WorkLog/WorkLog";
 import WorkLogVersion from "./pages/WorkLogVersion";
 import Profile from "./pages/Profile";
 import BlogEditor from "./pages/BlogEditor";
 import BlogPost from "./pages/BlogPost";
+import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import NewPassword from "./pages/NewPassword/NewPassword";
 import NotFound from "./pages/NotFound";
-import Login from "./components/Login/Login";
 import ProtectedRoute from './components/ProtectedRoute';
 import { validateAndCleanupToken } from './utils/authUtils';
+import Login from "./pages/Login/Login";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,9 @@ const App = () => {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/blog-editor" element={<ProtectedRoute><BlogEditor /></ProtectedRoute>} />
             <Route path="/blog-post" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/new-password" element={<NewPassword />} />
+          <Route path="/login" element={<Login />} />
             
             {/* CATCH-ALL ROUTE */}
             <Route path="*" element={<NotFound />} />
