@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
@@ -23,7 +23,7 @@ import {
 } from "@/components/tiptap-ui-primitive/tooltip";
 import "./WorkLog.css";
 
-const WorkLog = () => {
+function WorkLog() {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
@@ -32,24 +32,51 @@ const WorkLog = () => {
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
+  const [friends, setFriends] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
 
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
+  // Fetch friends dari backend
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/admin/employees', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        console.log('Friends response:', data);
+        const friendsList = data.data || data.employees || data || [];
+        setFriends(friendsList);
+        setLoadingFriends(false);
+      } catch (err) {
+        console.error('Error fetching friends:', err);
+        setLoadingFriends(false);
+      }
+    };
+    fetchFriends();
+  }, []);
+
+
 
   const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
 
-  const filteredFriends = friends.filter((friend) =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter friends berdasarkan search query
+  const filteredFriends = friends.filter((friend) => 
+    (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  ).map((friend) => ({
+    id: friend._id || friend.id,
+    name: friend.name || friend.full_name || "Unknown",
+    avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg"
+  }));
 
   const toggleFriendSelection = (friendId) => {
-    setSelectedFriends((prev) =>
-      prev.includes(friendId)
-        ? prev.filter((id) => id !== friendId)
-        : [...prev, friendId]
+    setSelectedFriends((prev) => prev.includes(friendId)
+      ? prev.filter((id) => id !== friendId)
+      : [...prev, friendId]
     );
   };
 
@@ -75,8 +102,7 @@ const WorkLog = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
-      />
+        recentProjects={recentProjects} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
@@ -87,11 +113,10 @@ const WorkLog = () => {
               <div className="flex-1 flex flex-col relative">
                 {/* SimpleEditor with toolbar - toolbar will be sticky */}
                 <div className="flex-1 overflow-y-auto">
-                  <SimpleEditor 
+                  <SimpleEditor
                     onBack={() => setShowEditor(false)}
                     onVersion={handleVersion}
-                    sidebarCollapsed={sidebarCollapsed}
-                  />
+                    sidebarCollapsed={sidebarCollapsed} />
                 </div>
                 
                 {/* Sticky Action Buttons - stick to bottom right of editor area */}
@@ -101,9 +126,9 @@ const WorkLog = () => {
                     <Tooltip delay={200}>
                       <AlertDialogTrigger asChild>
                         <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
+                          <Button
+                            variant="outline"
+                            size="icon"
                             className="rounded-full h-14 w-14"
                           >
                             <Users style={{ width: '20px', height: '20px' }} />
@@ -112,65 +137,61 @@ const WorkLog = () => {
                       </AlertDialogTrigger>
                       <TooltipContent>Invite</TooltipContent>
                     </Tooltip>
-                      <AlertDialogContent className="max-w-2xl">
-                        <AlertDialogHeader>
-                          <div className="flex items-center justify-between">
-                            <AlertDialogTitle className="text-xl font-bold flex-1 text-center">
-                              INVITE YOUR PARTNER TEAM
-                            </AlertDialogTitle>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setInviteOpen(false)}
-                              className="h-8 w-8"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </AlertDialogHeader>
-
-                        <div className="space-y-4">
-                          <div className="relative">
-                            <Input
-                              placeholder="Search"
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              className="pl-10"
-                            />
-                          </div>
-
-                          <div className="flex gap-4 justify-center py-4">
-                            {filteredFriends.map((friend) => (
-                              <button
-                                key={friend.id}
-                                onClick={() => toggleFriendSelection(friend.id)}
-                                className={`relative transition-all ${
-                                  selectedFriends.includes(friend.id)
-                                    ? "ring-2 ring-primary ring-offset-2 rounded-full"
-                                    : "opacity-70 hover:opacity-100"
-                                }`}
-                              >
-                                <img
-                                  src={friend.avatar}
-                                  alt={friend.name}
-                                  className="w-20 h-20 rounded-full object-cover"
-                                />
-                              </button>
-                            ))}
-                          </div>
-
-                          <div className="flex justify-center pt-4">
-                            <Button
-                              onClick={handleInvite}
-                              disabled={selectedFriends.length === 0}
-                              className="px-12"
-                            >
-                              INVITE
-                            </Button>
-                          </div>
+                    <AlertDialogContent className="max-w-2xl">
+                      <AlertDialogHeader>
+                        <div className="flex items-center justify-between">
+                          <AlertDialogTitle className="text-xl font-bold flex-1 text-center">
+                            INVITE YOUR PARTNER TEAM
+                          </AlertDialogTitle>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setInviteOpen(false)}
+                            className="h-8 w-8"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                      </AlertDialogHeader>
+
+                      <div className="space-y-4">
+                        <div className="relative">
+                          <Input
+                            placeholder="Search"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10" />
+                        </div>
+
+                        <div className="flex gap-4 justify-center py-4">
+                          {filteredFriends.map((friend) => (
+                            <button
+                              key={friend.id}
+                              onClick={() => toggleFriendSelection(friend.id)}
+                              className={`relative transition-all ${selectedFriends.includes(friend.id)
+                                  ? "ring-2 ring-primary ring-offset-2 rounded-full"
+                                  : "opacity-70 hover:opacity-100"}`}
+                            >
+                              <img
+                                src={friend.avatar}
+                                alt={friend.name}
+                                className="w-20 h-20 rounded-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-center pt-4">
+                          <Button
+                            onClick={handleInvite}
+                            disabled={selectedFriends.length === 0}
+                            className="px-12"
+                          >
+                            INVITE
+                          </Button>
+                        </div>
+                      </div>
+                    </AlertDialogContent>
+                  </AlertDialog>
 
                     {/* SAVE WORKLOG DIALOG */}
                     <AlertDialog open={saveOpen} onOpenChange={setSaveOpen}>
@@ -205,18 +226,17 @@ const WorkLog = () => {
                           </div>
                         </AlertDialogHeader>
 
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-center block mb-2 font-medium">
-                              What task/changes did you do?
-                            </label>
-                            <Textarea
-                              value={commitMessage}
-                              onChange={(e) => setCommitMessage(e.target.value)}
-                              className="min-h-[200px] resize-none"
-                              placeholder="Describe your changes..."
-                            />
-                          </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-center block mb-2 font-medium">
+                            What task/changes did you do?
+                          </label>
+                          <Textarea
+                            value={commitMessage}
+                            onChange={(e) => setCommitMessage(e.target.value)}
+                            className="min-h-[200px] resize-none"
+                            placeholder="Describe your changes..." />
+                        </div>
 
                           <div className="flex justify-center pt-4">
                             <Button
@@ -236,12 +256,12 @@ const WorkLog = () => {
           ) : (
             <WorkLogList onCreateNew={() => setShowEditor(true)} />
           )}
-          <FriendsList friends={friends} />
+          <FriendsList />
         </div>
       </main>
     </div>
   );
-};
+}
 
 export default WorkLog;
 
