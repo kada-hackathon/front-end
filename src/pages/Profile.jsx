@@ -111,10 +111,12 @@ const Profile = () => {
                   </p>
                 )}
               </div>
+              
             </div>
           </div>
 
           <FriendsList friends={friends} />
+  
         </div>
       </main>
     </div>
