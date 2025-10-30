@@ -84,7 +84,7 @@ const WorkLog = () => {
         <div className="flex-1 flex overflow-hidden">
           {showEditor ? (
             <>
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col relative">
                 {/* SimpleEditor with toolbar - toolbar will be sticky */}
                 <div className="flex-1 overflow-y-auto">
                   <SimpleEditor 
@@ -94,8 +94,8 @@ const WorkLog = () => {
                   />
                 </div>
                 
-                {/* Action Buttons - circular icon-only buttons stacked vertically */}
-                <div className="flex flex-col gap-2 px-4 py-2 items-end">
+                {/* Sticky Action Buttons - stick to bottom right of editor area */}
+                <div className="sticky bottom-6 self-end mr-6 mb-6 flex flex-col gap-3 z-50" style={{ marginTop: '-120px' }}>
                   {/* INVITE DIALOG */}
                   <AlertDialog open={inviteOpen} onOpenChange={setInviteOpen}>
                     <Tooltip delay={200}>
@@ -106,7 +106,7 @@ const WorkLog = () => {
                             size="icon" 
                             className="rounded-full h-14 w-14"
                           >
-                            <Users className="h-7 w-7" />
+                            <Users style={{ width: '20px', height: '20px' }} />
                           </Button>
                         </TooltipTrigger>
                       </AlertDialogTrigger>
@@ -182,7 +182,7 @@ const WorkLog = () => {
                               size="icon" 
                               className="rounded-full h-14 w-14"
                             >
-                              <Save className="h-7 w-7" />
+                              <Save style={{ width: '20px', height: '20px' }} />
                             </Button>
                           </TooltipTrigger>
                         </AlertDialogTrigger>
@@ -230,8 +230,8 @@ const WorkLog = () => {
                         </div>
                       </AlertDialogContent>
                     </AlertDialog>
-                  </div>
                 </div>
+              </div>
             </>
           ) : (
             <WorkLogList onCreateNew={() => setShowEditor(true)} />

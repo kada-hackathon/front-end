@@ -17,10 +17,15 @@ body, html, #root {
   height: 100%;
 }
 
+#root {
+  background: transparent;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   background: linear-gradient(180deg, #524AAD 0%, #FFFFFF 100%);
-  background-color: #f5f5f5;
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
 .app {
@@ -30,6 +35,7 @@ body {
   min-height: 100vh;
   width: 100%;
   padding: 20px;
+  background: transparent;
 }
 
 .login-container {
@@ -58,23 +64,47 @@ body {
 
 .welcome-section {
   text-align: left;
-  margin-bottom: 50px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.logo-only {
+  width: 100px;
+  height: 100px;
+  margin-top: -10px;
+  margin-bottom: 0px;
+  object-fit: contain;
+  object-position: left center;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .welcome-section h1 {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: normal;
   color: white;
   line-height: 1.2;
   font-family: 'Inter', sans-serif;
   font-weight: 300;
+  margin-bottom: 5px;
 }
 
-.nebwork-title {
-  font-weight: bold !important;
-  font-size: 38px !important;
-  margin-top: 5px;
-  color:"white";
+.text-only {
+  width: 250px;
+  height: 60px;
+  margin-top: -10px;
+  object-fit: contain;
+  object-position: left center;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .login-form {
@@ -128,17 +158,16 @@ body {
   background-color: white;
   color: #11009E;
   border: none;
-  padding: 16px 35px;
+  padding: 10px 35px;
   font-size: 16px;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   border-radius: 15px;
   cursor: pointer;
   margin-top: 10px;
-  width: auto;
+  width: 40%;
   align-self: flex-start;
   transition: background-color 0.2s;
-  min-width: 140px;
 }
 
 .login-button:hover {
@@ -160,10 +189,12 @@ body {
   text-decoration: underline;
   font-family: 'Inter', sans-serif;
   font-weight: 300;
+  cursor: pointer;
 }
 
 .forgot-link:hover {
   text-decoration: underline;
+  opacity: 0.8;
 }
 
 .separator {
@@ -181,58 +212,124 @@ body {
 .docs-icon {
   position: absolute;
   top: 20px;
-  right: 20px;
-  width: clamp(160px, 25vw, 240px);
+  right: 5px;
+  width: clamp(200px, 37.5vw, 300px);
   height: auto;
   z-index: 10;
+  color: #FFFFFF;
+  transform: rotate(8deg);
+}
+
+.docs-icon svg {
+  width: 100%;
+  height: auto;
 }
 
 .pencil-icon {
   position: absolute;
   top: 20px;
-  right: 400px;
-  width: clamp(80px, 12.5vw, 120px); 
+  right: 390px;
+  width: clamp(130px, 12.5vw, 170px); 
   height: auto;
   z-index: 10;
+  color: #FFFFFF;
+  transform: rotate(-78deg);
+}
+
+.pencil-icon svg {
+  width: 100%;
+  height: auto;
 }
 
 .people-icon {
   position: absolute;
   top: 290px; 
-  right: 200px;
-  width: clamp(134.4px, 21vw, 201.6px);  
+  right: 205px;
+  width: clamp(145px, 25vw, 215px);  
   height: auto;
   z-index: 10;
+  color: #FFFFFF;
+  transform: rotate(-4deg);
+}
+
+.people-icon svg {
+  width: 100%;
+  height: auto;
 }
 
 .folder-icon {
   position: absolute;
   top: 460px;  
   right: 450px;
-  width: clamp(70.4px, 11vw, 105.6px); 
+  width: clamp(80px, 11vw, 115px); 
   height: auto;
   z-index: 10;
+  color: #FFFFFF;
+  transform: rotate(10deg);
+}
+
+.folder-icon svg {
+  width: 100%;
+  height: auto;
 }
 
 .magnifier-icon {
   position: absolute;
-  bottom: 18px;  
-  right: 18px;
-  width: clamp(57.6px, 9vw, 86.4px); 
+  bottom: 5px;  
+  right: 5px;
+  width: clamp(75px, 9vw, 105px); 
   height: auto;
   z-index: 10;
+  color: #FFFFFF;
+}
+
+.magnifier-icon svg {
+  width: 100%;
+  height: auto;
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .login-container {
     width: 85vw;
     height: 85vh;
-    position: absolute;
-    margin: 0;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+  }
+
+  .login-content {
+    padding: 50px 60px;
+  }
+
+  .docs-icon {
+    width: clamp(140px, 22vw, 200px);
+    right: 15px;
+  }
+
+  .pencil-icon {
+    right: 350px;
+    width: clamp(70px, 11vw, 100px);
+  }
+
+  .people-icon {
+    right: 180px;
+    top: 280px;
+    width: clamp(120px, 19vw, 180px);
+  }
+
+  .folder-icon {
+    right: 400px;
+    top: 450px;
+    width: clamp(65px, 10vw, 95px);
+  }
+
+  .magnifier-icon {
+    width: clamp(50px, 8vw, 75px);
+  }
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    width: 90vw;
+    height: 90vh;
   }
 
   .separator {
@@ -240,15 +337,36 @@ body {
   }
   
   .login-content {
-    padding: 50px 60px;
+    padding: 40px 40px;
   }
 
   .input-group {
-    width: 100%;
+    width: 70%;
+  }
+
+  .login-button {
+    width: 70%;
+  }
+
+  .welcome-section {
+    margin-bottom: 40px;
+  }
+
+  /* Hide decorative icons on tablet */
+  .docs-icon,
+  .pencil-icon,
+  .people-icon,
+  .folder-icon,
+  .magnifier-icon {
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
+  .app {
+    padding: 0;
+  }
+
   .login-container {
     width: 100vw;
     height: 100vh;
@@ -256,14 +374,49 @@ body {
   }
 
   .login-content {
-    padding: 40px 30px;
+    padding: 30px 25px;
   }
   
+  .welcome-section {
+    margin-bottom: 35px;
+  }
+
+  .logo-only {
+    width: 60px;
+  }
+
   .welcome-section h1 {
-    font-size: 28px;
+    font-size: 24px;
   }
   
-  .nebwork-title {
-    font-size: 34px !important;
+  .text-only {
+    width: 200px;
+  }
+
+  .input-group {
+    width: 100%;
+  }
+
+  .login-form {
+    gap: 25px;
+  }
+
+  .input-group label {
+    font-size: 13px;
+  }
+
+  .input-field {
+    font-size: 15px;
+  }
+
+  .login-button {
+    width: 100%;
+    font-size: 15px;
+    padding: 12px 20px;
+  }
+
+  .forgot-password {
+    font-size: 13px;
+    margin-top: 20px;
   }
 }

@@ -5,12 +5,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ChatBotPage from "./pages/ChatBotPage";
-import WorkLog from "./pages/WorkLog";
+import WorkLog from "./pages/WorkLog/WorkLog";
 import WorkLogVersion from "./pages/WorkLogVersion";
 import Profile from "./pages/Profile";
 import BlogEditor from "./pages/BlogEditor";
 import BlogPost from "./pages/BlogPost";
+import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import NewPassword from "./pages/NewPassword/NewPassword";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login/Login";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +31,9 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/blog-editor" element={<BlogEditor />} />
           <Route path="/blog-post" element={<BlogPost />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/new-password" element={<NewPassword />} />
+          <Route path="/login" element={<Login />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
