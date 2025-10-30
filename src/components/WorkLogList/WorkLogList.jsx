@@ -1,46 +1,122 @@
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import "./WorkLogList.css";
 
-const WorkLogList = ({ onCreateNew }) => {
+const WorkLogList = ({ onCreateNew, filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [searchParams] = useSearchParams();
 
   const handleWorkLogClick = (logId) => {
     navigate(`/blog-editor?id=${logId}`);
   };
 
-  const workLogs = [
-    {
-      id: "1",
-      type: "Individual",
-      title: "Cara agar menjadi waras saat masalah melanda anda",
-      hashtags: ["#Administration", "#Financial"],
-      description:
-        "Banyak manusia yang mengakhiri hidupnya ketika dia menghadapi sebuah masalah, ini disebabkan karena seseorang yang belum siap dalam kondisi mental......",
-      date: "28 November 2025",
-      time: "19.00 WIB",
-    },
-    {
-      id: "2",
-      type: "Individual",
-      title: "Cara agar menjadi waras saat masalah melanda anda",
-      hashtags: ["#Administration", "#Financial"],
-      description:
-        "Banyak manusia yang mengakhiri hidupnya ketika dia menghadapi sebuah masalah, ini disebabkan karena seseorang yang belum siap dalam kondisi mental......",
-      date: "28 November 2025",
-      time: "19.00 WIB",
-    },
-    {
-      id: "3",
-      type: "Individual",
-      title: "Cara agar menjadi waras saat masalah melanda anda",
-      hashtags: ["#Administration", "#Financial"],
-      description:
-        "Banyak manusia yang mengakhiri hidupnya ketika dia menghadapi sebuah masalah, ini disebabkan karena seseorang yang belum siap dalam kondisi mental......",
-      date: "28 November 2025",
-      time: "19.00 WIB",
-    },
-  ];
+  useEffect(() => {
+    const fetchUserWorklogs = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        
+        // Fetch current user ID
+        const userResponse = await fetch('http://localhost:5000/api/auth/profile', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const userData = await userResponse.json();
+        const currentUserId = userData.user?.id || userData.user?._id || userData.id || userData._id;
+        
+        // Fetch all worklogs
+        const worklogsResponse = await fetch('http://localhost:5000/api/worklogs', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const worklogsData = await worklogsResponse.json();
+        let allWorklogs = worklogsData.worklogs || worklogsData || [];
+        
+        // Filter: hanya yang user adalah owner atau collaborator
+        const userWorklogs = allWorklogs.filter(worklog => {
+          const isOwner = worklog.user?._id === currentUserId || worklog.user?.id === currentUserId;
+          const isCollaborator = worklog.collaborators?.some(collab => 
+            collab._id === currentUserId || collab.id === currentUserId
+          );
+          return isOwner || isCollaborator;
+        });
+        
+        // Convert ke format untuk display
+        const convertedPosts = userWorklogs.map((worklog) => ({
+          id: worklog._id || worklog.id,
+          title: worklog.title || "Untitled",
+          hashtags: worklog.tag || [],
+          description: worklog.content?.substring(0, 100) || "No description",
+          date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID'),
+          time: new Date(worklog.datetime || worklog.createdAt).toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })
+        }));
+        
+        // Sort by date terbaru
+        convertedPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        setPosts(convertedPosts);
+      } catch (error) {
+        console.error('Error fetching worklogs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserWorklogs();
+  }, []);
+
+  // Apply filters setiap kali filters berubah
+  useEffect(() => {
+    let filtered = [...posts];
+
+    // Filter by search query (title, content, or user name)
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      filtered = filtered.filter(post =>
+        post.title?.toLowerCase().includes(query) ||
+        post.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by selected tags (OR logic)
+    if (filters.selectedTags.length > 0) {
+      filtered = filtered.filter(post =>
+        post.hashtags && filters.selectedTags.some(selectedTag => post.hashtags.includes(selectedTag))
+      );
+    }
+
+    // Filter by date range
+    if (filters.dateRange.start || filters.dateRange.end) {
+      filtered = filtered.filter(post => {
+        const postDate = new Date(post.date);
+        if (filters.dateRange.start) {
+          const startDate = new Date(filters.dateRange.start);
+          if (postDate < startDate) return false;
+        }
+        if (filters.dateRange.end) {
+          const endDate = new Date(filters.dateRange.end);
+          endDate.setHours(23, 59, 59, 999);
+          if (postDate > endDate) return false;
+        }
+        return true;
+      });
+    }
+
+    setFilteredPosts(filtered);
+  }, [posts, filters]);
 
   return (
     <div className="worklog-list">
@@ -52,27 +128,34 @@ const WorkLogList = ({ onCreateNew }) => {
       <h2 className="worklog-list-title">MY WORK PROJECT</h2>
 
       <div className="worklog-items-container">
-        {workLogs.map((log) => (
-          <article key={log.id} className="worklog-item" onClick={() => handleWorkLogClick(log.id)} style={{ cursor: "pointer" }}>
-            <div className="worklog-item-header">
-              <span className="worklog-item-type">• {log.type}</span>
-            </div>
+        {loading ? (
+          <div className="text-center py-8">Loading work logs...</div>
+        ) : filteredPosts.length === 0 ? (
+          <div className="text-center py-8">No work logs found</div>
+        ) : (
+          filteredPosts.map((log) => (
+            <article 
+              key={log.id} 
+              className="worklog-item" 
+              onClick={() => handleWorkLogClick(log.id)} 
+              style={{ cursor: "pointer" }}
+            >
+              <h3 className="worklog-item-title">{log.title}</h3>
 
-            <h3 className="worklog-item-title">{log.title}</h3>
+              <p className="worklog-item-hashtags">{log.hashtags.map(tag => `#${tag}`).join(" ")}</p>
 
-            <p className="worklog-item-hashtags">{log.hashtags.join(" ")}</p>
+              <p className="worklog-item-description">{log.description}</p>
 
-            <p className="worklog-item-description">{log.description}</p>
-
-            <div className="worklog-item-footer">
-              <span className="worklog-item-date">
-                {log.date}
-                <br />
-                {log.time}
-              </span>
-            </div>
-          </article>
-        ))}
+              <div className="worklog-item-footer">
+                <span className="worklog-item-date">
+                  {log.date}
+                  <br />
+                  {log.time}
+                </span>
+              </div>
+            </article>
+          ))
+        )}
       </div>
     </div>
   );

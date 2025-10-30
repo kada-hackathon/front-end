@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./HomeContent.css";
 
-const HomeContent = () => {
+const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +49,7 @@ const HomeContent = () => {
         });
         const data = await response.json();
         console.log('Worklogs response:', data);
+        console.log('Current filters:', filters); // DEBUG
         
         // Convert worklogs ke format posts
         let worklogsArray = data.worklogs || data || [];
@@ -60,11 +61,48 @@ const HomeContent = () => {
           );
         }
         
-        // Filter berdasarkan selectedTag jika ada
+        // Filter berdasarkan selectedTag dari URL (hashtag click)
         if (selectedTag) {
           worklogsArray = worklogsArray.filter(worklog => 
             worklog.tag && worklog.tag.includes(selectedTag)
           );
+        }
+        
+        // Filter by search query (title, content, or user name)
+        if (filters?.searchQuery) {
+          const query = filters.searchQuery.toLowerCase();
+          worklogsArray = worklogsArray.filter(worklog =>
+            worklog.title?.toLowerCase().includes(query) ||
+            worklog.content?.toLowerCase().includes(query) ||
+            worklog.user?.name?.toLowerCase().includes(query)
+          );
+          console.log('After search filter:', worklogsArray.length); // DEBUG
+        }
+        
+        // Filter by selected tags (checklist - OR logic)
+        if (filters?.selectedTags?.length > 0) {
+          worklogsArray = worklogsArray.filter(worklog =>
+            worklog.tag && filters.selectedTags.some(tag => worklog.tag.includes(tag))
+          );
+          console.log('After tag filter:', worklogsArray.length); // DEBUG
+        }
+        
+        // Filter by date range
+        if (filters?.dateRange?.start || filters?.dateRange?.end) {
+          worklogsArray = worklogsArray.filter(worklog => {
+            const worklogDate = new Date(worklog.datetime || worklog.createdAt);
+            if (filters.dateRange.start) {
+              const startDate = new Date(filters.dateRange.start);
+              if (worklogDate < startDate) return false;
+            }
+            if (filters.dateRange.end) {
+              const endDate = new Date(filters.dateRange.end);
+              endDate.setHours(23, 59, 59, 999);
+              if (worklogDate > endDate) return false;
+            }
+            return true;
+          });
+          console.log('After date filter:', worklogsArray.length); // DEBUG
         }
         
         const convertedPosts = worklogsArray.map((worklog) => ({
@@ -93,7 +131,7 @@ const HomeContent = () => {
       }
     };
     fetchWorklogs();
-  }, [selectedTag, userDivision]);
+  }, [selectedTag, userDivision, filters]);
 
   // detail post => navigate ke halaman blog-post
   const handlePostClick = (postId) => {
