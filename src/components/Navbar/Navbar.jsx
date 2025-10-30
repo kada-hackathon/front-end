@@ -1,9 +1,10 @@
-import { Search, Settings } from "lucide-react";
+import { Search, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { logout } from "@/utils/authUtils";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -69,6 +70,10 @@ const Navbar = () => {
     navigate("/profile");
   };
 
+  const handleLogout = () => {
+    logout(navigate);
+  };
+
   return (
     <header className="navbar">
       <div className="navbar-search">
@@ -81,6 +86,14 @@ const Navbar = () => {
       <div className="navbar-actions">
         <Button variant="ghost" size="icon">
           <Settings className="navbar-settings-icon" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={handleLogout}
+          title="Logout"
+        >
+          <LogOut className="navbar-settings-icon" />
         </Button>
         <div className="navbar-user" onClick={handleProfileClick} style={{ cursor: "pointer" }}>
           <Avatar className="navbar-user-avatar">

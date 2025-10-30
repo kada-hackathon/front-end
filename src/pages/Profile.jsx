@@ -17,18 +17,13 @@ const Profile = () => {
   
   // Form data dari database
   const [profileData, setProfileData] = useState({
+    id: "",
     name: "",
     division: "",
     email: "",
     profilePicture: "/placeholder.svg",
     dateOfJoin: ""
   });
-
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
 
   const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
 
@@ -210,12 +205,24 @@ const Profile = () => {
       .then(data => {
         console.log('Profile data:', data);
         const user = data.user || data;
+        
+        // Format date dari ISO string ke YYYY-MM-DD
+        const formatDateToInput = (date) => {
+          if (!date) return "";
+          const d = new Date(date);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+
         setProfileData({
+          id: user.id || user._id || "",
           name: user.name || "",
           division: user.division || "",
           email: user.email || "",
           profilePicture: user.profilePicture || "/placeholder.svg",
-          dateOfJoin: user.dateOfJoin || ""
+          dateOfJoin: formatDateToInput(user.dateOfJoin)
         });
         setLoading(false);
       })
@@ -362,7 +369,8 @@ const Profile = () => {
             </div>
           </div>
 
-          <FriendsList friends={friends} />
+          {/* FriendsList akan auto-fetch data sendiri */}
+          <FriendsList />
         </div>
       </main>
     </div>

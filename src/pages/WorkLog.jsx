@@ -22,6 +22,7 @@ import {
   TooltipTrigger,
 } from "@/components/tiptap-ui-primitive/tooltip";
 import "./WorkLog.css";
+import FriendsList from "@/components/FriendsList/FriendsList";
 
 const WorkLog = () => {
   const navigate = useNavigate();
@@ -33,11 +34,7 @@ const WorkLog = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
 
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
+ 
 
   const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
 
@@ -236,7 +233,7 @@ const WorkLog = () => {
           ) : (
             <WorkLogList onCreateNew={() => setShowEditor(true)} />
           )}
-          <FriendsList friends={friends} />
+          <FriendsList />
         </div>
       </main>
     </div>

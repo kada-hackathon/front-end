@@ -5,7 +5,7 @@ import peopleIcon from '../../assets/icons/icon-people.svg'
 import folderIcon from '../../assets/icons/icon-folder.svg'
 import magnifierIcon from '../../assets/icons/icon-magnifier.svg'
 import { useNavigate } from 'react-router-dom';
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 
 function Login() {
   const navigate = useNavigate();
@@ -13,14 +13,12 @@ function Login() {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Clear localStorage for testing
-  const clearStorage = () => {
+  // Auto clear expired token on component mount
+  useEffect(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    console.log('Storage cleared');
-    alert('Storage cleared - try accessing protected routes now');
-  };
-
+    console.log('✅ Cleared expired/old tokens on login page load');
+  }, []);
 
   // Handle login form submit
   const handleLogin = async (e) =>{
@@ -107,15 +105,6 @@ function Login() {
           <div className="forgot-password">
             Forgot password? <a href="#" className="forgot-link">Click here!</a>
           </div>
-
-          {/* Debug button - remove in production */}
-          <button 
-            type="button" 
-            onClick={clearStorage}
-            style={{marginTop: '10px', padding: '5px 10px', fontSize: '12px', background: '#ff4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'}}
-          >
-            Clear Storage (Debug)
-          </button>
         </div>
       </div>
     </div>
