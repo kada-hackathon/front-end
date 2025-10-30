@@ -35,74 +35,60 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
     fetchUserProfile();
   }, []);
 
-  // Fetch worklogs dari backend dan convert ke posts format
+  // Fetch worklogs dari backend dengan filters applied
   useEffect(() => {
     const fetchWorklogs = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/worklogs', {
+        
+        // Build query params
+        const params = new URLSearchParams();
+        if (filters?.searchQuery) params.append('search', filters.searchQuery);
+        if (filters?.selectedTags?.length > 0) params.append('tag', filters.selectedTags.join(','));
+        if (filters?.dateRange?.start) params.append('from', filters.dateRange.start);
+        if (filters?.dateRange?.end) params.append('to', filters.dateRange.end);
+        if (selectedTag) params.append('tag', selectedTag); // URL query param priority
+        
+        const queryString = params.toString();
+        const url = `http://localhost:5000/api/worklogs/filter${queryString ? '?' + queryString : ''}`;
+        
+        console.log('Fetching from:', url); // DEBUG
+        
+        const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
         });
+
+        if (!response.ok) {
+          console.error('Filter response error:', response.status);
+          setPosts([]);
+          setLoading(false);
+          return;
+        }
+
         const data = await response.json();
-        console.log('Worklogs response:', data);
-        console.log('Current filters:', filters); // DEBUG
+        console.log('Filter response:', data);
         
         // Convert worklogs ke format posts
-        let worklogsArray = data.worklogs || data || [];
+        let worklogsArray = Array.isArray(data) ? data : (data?.worklogs || []);
         
-        // Filter by same division as current user
+        // Validate it's an array
+        if (!Array.isArray(worklogsArray)) {
+          console.error('Response worklogs is not an array:', worklogsArray);
+          setPosts([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Filter by same division as current user (frontend only)
         if (userDivision) {
           worklogsArray = worklogsArray.filter(worklog =>
             worklog.user?.division === userDivision
           );
-        }
-        
-        // Filter berdasarkan selectedTag dari URL (hashtag click)
-        if (selectedTag) {
-          worklogsArray = worklogsArray.filter(worklog => 
-            worklog.tag && worklog.tag.includes(selectedTag)
-          );
-        }
-        
-        // Filter by search query (title, content, or user name)
-        if (filters?.searchQuery) {
-          const query = filters.searchQuery.toLowerCase();
-          worklogsArray = worklogsArray.filter(worklog =>
-            worklog.title?.toLowerCase().includes(query) ||
-            worklog.content?.toLowerCase().includes(query) ||
-            worklog.user?.name?.toLowerCase().includes(query)
-          );
-          console.log('After search filter:', worklogsArray.length); // DEBUG
-        }
-        
-        // Filter by selected tags (checklist - OR logic)
-        if (filters?.selectedTags?.length > 0) {
-          worklogsArray = worklogsArray.filter(worklog =>
-            worklog.tag && filters.selectedTags.some(tag => worklog.tag.includes(tag))
-          );
-          console.log('After tag filter:', worklogsArray.length); // DEBUG
-        }
-        
-        // Filter by date range
-        if (filters?.dateRange?.start || filters?.dateRange?.end) {
-          worklogsArray = worklogsArray.filter(worklog => {
-            const worklogDate = new Date(worklog.datetime || worklog.createdAt);
-            if (filters.dateRange.start) {
-              const startDate = new Date(filters.dateRange.start);
-              if (worklogDate < startDate) return false;
-            }
-            if (filters.dateRange.end) {
-              const endDate = new Date(filters.dateRange.end);
-              endDate.setHours(23, 59, 59, 999);
-              if (worklogDate > endDate) return false;
-            }
-            return true;
-          });
-          console.log('After date filter:', worklogsArray.length); // DEBUG
         }
         
         const convertedPosts = worklogsArray.map((worklog) => ({
@@ -124,9 +110,10 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         }));
         
         setPosts(convertedPosts);
-        setLoading(false);
       } catch (err) {
         console.error('Error fetching worklogs:', err);
+        setPosts([]);
+      } finally {
         setLoading(false);
       }
     };

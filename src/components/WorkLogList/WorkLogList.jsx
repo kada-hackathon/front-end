@@ -31,16 +31,42 @@ const WorkLogList = ({ onCreateNew, filters = { searchQuery: "", selectedTags: [
         const userData = await userResponse.json();
         const currentUserId = userData.user?.id || userData.user?._id || userData.id || userData._id;
         
-        // Fetch all worklogs
-        const worklogsResponse = await fetch('http://localhost:5000/api/worklogs', {
+        // Build query params for filter
+        const params = new URLSearchParams();
+        if (filters?.searchQuery) params.append('search', filters.searchQuery);
+        if (filters?.selectedTags?.length > 0) params.append('tag', filters.selectedTags.join(','));
+        if (filters?.dateRange?.start) params.append('from', filters.dateRange.start);
+        if (filters?.dateRange?.end) params.append('to', filters.dateRange.end);
+        
+        const queryString = params.toString();
+        const url = `http://localhost:5000/api/worklogs/filter${queryString ? '?' + queryString : ''}`;
+        
+        // Fetch all worklogs dengan filters
+        const worklogsResponse = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
         });
+
+        if (!worklogsResponse.ok) {
+          console.error('Filter response error:', worklogsResponse.status);
+          setFilteredPosts([]);
+          setLoading(false);
+          return;
+        }
+
         const worklogsData = await worklogsResponse.json();
-        let allWorklogs = worklogsData.worklogs || worklogsData || [];
+        let allWorklogs = Array.isArray(worklogsData) ? worklogsData : (worklogsData?.worklogs || []);
+        
+        // Validate it's an array
+        if (!Array.isArray(allWorklogs)) {
+          console.error('Response worklogs is not an array:', allWorklogs);
+          setFilteredPosts([]);
+          setLoading(false);
+          return;
+        }
         
         // Filter: hanya yang user adalah owner atau collaborator
         const userWorklogs = allWorklogs.filter(worklog => {
@@ -67,16 +93,17 @@ const WorkLogList = ({ onCreateNew, filters = { searchQuery: "", selectedTags: [
         // Sort by date terbaru
         convertedPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        setPosts(convertedPosts);
+        setFilteredPosts(convertedPosts);
       } catch (error) {
         console.error('Error fetching worklogs:', error);
+        setFilteredPosts([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserWorklogs();
-  }, []);
+  }, [filters]);
 
   // Apply filters setiap kali filters berubah
   useEffect(() => {
