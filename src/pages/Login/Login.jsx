@@ -1,16 +1,60 @@
-import { useNavigate } from 'react-router-dom'
 import './login.css'
 import logoOnly from '../../assets/Logo/Logo Only_White.png'
 import textOnly from '../../assets/Logo/Text Only_White.png'
+import { useNavigate } from 'react-router-dom';
+import {useState, useEffect} from 'react';
 
 function Login() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
-    const handleForgotPassword = (e) => {
-      e.preventDefault();
-      navigate('/reset-password');
-    };
-    return (
+  // Auto clear expired token on component mount
+  useEffect(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    console.log('✅ Cleared expired/old tokens on login page load');
+  }, []);
+
+  // Handle login form submit
+  const handleLogin = async (e) =>{
+    e.preventDefault();
+    setErrorMessage('');
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({email, password})
+      });
+
+      const data = await res.json();
+      if(res.ok){
+        // Save token and user (if returned) to localStorage
+        localStorage.setItem('token', data.token || '');
+        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Navigate to the root/home route defined in App.jsx
+        // Note: in this project the Home page is mounted at '/'
+        navigate('/');
+      } else {
+        setErrorMessage(data.message || 'Login failed');
+      }
+    } catch (err) {
+      console.error('Login error', err);
+      setErrorMessage('Login failed');
+    }
+  }
+
+  // Handle forgot password link click
+  const handleForgotPassword = () => {
+    navigate('/reset-password');
+  };
+
+  return (
     <div className="app">
       <div className="login-container">
         <div className="separator"></div>
@@ -60,13 +104,16 @@ function Login() {
             <img src={textOnly} alt="Nebwork" className="text-only" />
           </div>
           
-          <form className="login-form">
+          <form className="login-form" onSubmit={handleLogin}>
             <div className="input-group">
               <label>Email:</label>
               <input 
                 type="email" 
                 className="input-field"
                 placeholder=" "
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
               <div className="underline"></div>
             </div>
@@ -77,10 +124,16 @@ function Login() {
                 type="password" 
                 className="input-field"
                 placeholder=" "
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
               <div className="underline"></div>
             </div>
             
+            {errorMessage && (
+              <p style={{ color: "red", fontSize: "0.9em" }}>{errorMessage}</p>
+            )}
             <button type="submit" className="login-button">
               LOGIN
             </button>
