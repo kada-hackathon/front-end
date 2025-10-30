@@ -1,10 +1,7 @@
-import { Search, Settings, LogOut } from "lucide-react";
+import { Search, Settings, LogOut, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { logout } from "@/utils/authUtils";
@@ -18,6 +15,9 @@ const Navbar = () => {
     profilePicture: "/placeholder.svg"
   });
   const [loading, setLoading] = useState(true);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterByFriends, setFilterByFriends] = useState(false);
+  const [filterByHashtags, setFilterByHashtags] = useState(false);
 
   useEffect(() => {
     // Fetch user profile dari backend
@@ -72,8 +72,6 @@ const Navbar = () => {
   const handleProfileClick = () => {
     navigate("/profile");
   };
-  const [filterByFriends, setFilterByFriends] = useState(false);
-  const [filterByHashtags, setFilterByHashtags] = useState(false);
 
   const handleLogout = () => {
     logout(navigate);
@@ -87,51 +85,37 @@ const Navbar = () => {
           placeholder="Search"
           className="navbar-search-input"
         />
-             <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Filter className="navbar-settings-icon" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64">
-            <div className="space-y-4">
-              <h4 className="font-semibold text-sm">Filter Search</h4>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="friends" 
-                    checked={filterByFriends}
-                    onCheckedChange={(checked) => setFilterByFriends(checked)}
-                  />
-                  <Label 
-                    htmlFor="friends" 
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    Filter by Friends
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="hashtags" 
-                    checked={filterByHashtags}
-                    onCheckedChange={(checked) => setFilterByHashtags(checked)}
-                  />
-                  <Label 
-                    htmlFor="hashtags" 
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    Filter by Hashtags
-                  </Label>
-                </div>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="navbar-actions">
-        <Button variant="ghost" size="icon">
-          <Settings className="navbar-settings-icon" />
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setShowFilter(!showFilter)}
+          className={showFilter ? "text-primary" : ""}
+        >
+          <Filter className="navbar-settings-icon" />
         </Button>
+      </div>
+
+      {/* Filter dropdown */}
+      {showFilter && (
+        <div className="absolute top-16 right-64 bg-card border rounded-lg p-4 shadow-lg z-50 w-56">
+          <h4 className="font-semibold text-sm mb-3">Filter Search</h4>
+          <div className="space-y-2">
+            <button 
+              onClick={() => setFilterByFriends(!filterByFriends)}
+              className={`w-full text-left p-2 rounded ${filterByFriends ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}`}
+            >
+              {filterByFriends ? '✓' : '○'} Filter by Friends
+            </button>
+            <button 
+              onClick={() => setFilterByHashtags(!filterByHashtags)}
+              className={`w-full text-left p-2 rounded ${filterByHashtags ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}`}
+            >
+              {filterByHashtags ? '✓' : '○'} Filter by Hashtags
+            </button>
+          </div>
+        </div>
+      )}
+        <div className="navbar-actions">
         <Button 
           variant="ghost" 
           size="icon"

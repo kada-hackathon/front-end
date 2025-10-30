@@ -25,70 +25,112 @@ const BlogEditor = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
   const [blogContent, setBlogContent] = useState("");
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [friends, setFriends] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [hasAccess, setHasAccess] = useState(false);
 
   const postId = searchParams.get("id");
-
-  // Mock data for posts (same as in HomeContent)
-  const posts = [
-    {
-      id: "1",
-      author: {
-        name: "Moriee al haji",
-        division: "Nama_Divisi",
-        avatar: "/placeholder.svg",
-      },
-      date: "23 Nov 2025",
-      title: "Cara Membuat Telur Gulung",
-      hashtags: ["#Telur Gulu", "#makanan"],
-      content:
-        "Misi kami di Cookpad adalah untuk membuat masak sehari-hari menyenangkan, karena kami percaya bahwa memasak adalah kunci menuju kehidupan yang lebih bahagia dan lebih sehat bagi manusia, komunitas, dan bumi .......",
-    },
-    {
-      id: "2",
-      author: {
-        name: "Netta muji maju",
-        division: "Nama_Divisi",
-        avatar: "/placeholder.svg",
-      },
-      date: "23 Nov 2025",
-      title: "PEMBUATAN IOT BERBASIS AI",
-      hashtags: ["#AI", "#IOT", "#Tanaman"],
-      content: "",
-      image: "/placeholder.svg",
-    },
-    {
-      id: "3",
-      author: {
-        name: "Regina alhajiz",
-        division: "Nama_Divisi",
-        avatar: "/placeholder.svg",
-      },
-      date: "23 Nov 2025",
-      title: "Menghapus Postingan dari akun",
-      hashtags: [],
-      content: "",
-    },
-  ];
-
-  const currentPost = posts.find(post => post.id === postId);
-
-  useEffect(() => {
-    if (currentPost) {
-      setBlogContent(currentPost.content);
-    }
-  }, [currentPost]);
-
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
-
   const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
 
+  // Get current user ID
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/auth/profile', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        const userData = data.user || data;
+        setCurrentUserId(userData.id || userData._id);
+      } catch (err) {
+        console.error('Error fetching current user:', err);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
+  // Fetch worklog detail
+  useEffect(() => {
+    if (!postId) return;
+
+    const fetchPost = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        console.log('Post response:', data);
+        setPost(data);
+        setBlogContent(data.content || "");
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching post:', err);
+        setLoading(false);
+      }
+    };
+    fetchPost();
+  }, [postId]);
+
+  // Check access (owner atau collaborator)
+  useEffect(() => {
+    if (post && currentUserId) {
+      const isOwner = post.user?._id === currentUserId || post.user?.id === currentUserId;
+      const isCollaborator = post.collaborators?.some(collab => 
+        collab._id === currentUserId || collab.id === currentUserId
+      );
+      const canAccess = isOwner || isCollaborator;
+      
+      setHasAccess(canAccess);
+      
+      if (!canAccess) {
+        console.warn('Access denied: Not owner or collaborator');
+        navigate(-1); // Go back jika tidak punya akses
+      }
+    }
+  }, [post, currentUserId, navigate]);
+
+  // Fetch friends dari backend
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/admin/employees', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        const friendsList = data.data || data.employees || data || [];
+        setFriends(friendsList);
+      } catch (err) {
+        console.error('Error fetching friends:', err);
+      }
+    };
+    fetchFriends();
+  }, []);
+
   const filteredFriends = friends.filter((friend) =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  ).map((friend) => ({
+    id: friend._id || friend.id,
+    name: friend.name || friend.full_name || "Unknown",
+    division: friend.division || "Unknown",
+    avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg"
+  }));
 
   const toggleFriendSelection = (friendId) => {
     setSelectedFriends((prev) =>
@@ -105,11 +147,31 @@ const BlogEditor = () => {
     setSearchQuery("");
   };
 
-  const handleSaveBlog = () => {
+  const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
-    setSaveOpen(false);
-    setCommitMessage("");
-    navigate("/");
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: post.title,
+          content: blogContent,
+          tag: post.tag || [],
+          collaborators: selectedFriends
+        })
+      });
+      const data = await response.json();
+      console.log('Blog saved:', data);
+      setSaveOpen(false);
+      setCommitMessage("");
+      navigate("/");
+    } catch (err) {
+      console.error('Error saving blog:', err);
+    }
   };
 
   return (
@@ -126,10 +188,12 @@ const BlogEditor = () => {
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 p-8 overflow-y-auto bg-background">
             <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/worklog")}>
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                 <ChevronLeft className="h-6 w-6" />
               </Button>
-              <h1 className="flex-1 text-3xl font-bold text-foreground">{currentPost ? currentPost.title : "Untitled-1"}</h1>
+              <h1 className="flex-1 text-3xl font-bold text-foreground">
+                {loading ? "Loading..." : post?.title || "Untitled"}
+              </h1>
 
               <div className="flex gap-3">
                 {/* INVITE DIALOG */}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
@@ -32,11 +32,46 @@ function WorkLog() {
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
+  const [friends, setFriends] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
+
+  // Fetch friends dari backend
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/admin/employees', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        console.log('Friends response:', data);
+        const friendsList = data.data || data.employees || data || [];
+        setFriends(friendsList);
+        setLoadingFriends(false);
+      } catch (err) {
+        console.error('Error fetching friends:', err);
+        setLoadingFriends(false);
+      }
+    };
+    fetchFriends();
+  }, []);
 
 
 
   const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
-  const filteredFriends = []; 
+
+  // Filter friends berdasarkan search query
+  const filteredFriends = friends.filter((friend) => 
+    (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  ).map((friend) => ({
+    id: friend._id || friend.id,
+    name: friend.name || friend.full_name || "Unknown",
+    avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg"
+  }));
 
   const toggleFriendSelection = (friendId) => {
     setSelectedFriends((prev) => prev.includes(friendId)
