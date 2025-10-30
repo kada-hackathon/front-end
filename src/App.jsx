@@ -11,6 +11,7 @@ import Profile from "./pages/Profile";
 import BlogEditor from "./pages/BlogEditor";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
+import employee from "./pages/Employee/Employee";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/employee" element={<employee />} />
           <Route path="/" element={<Index />} />
           <Route path="/chatbot" element={<ChatBotPage />} />
           <Route path="/worklog" element={<WorkLog />} />

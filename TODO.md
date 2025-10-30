@@ -1,3 +1,5 @@
-- [x] Update import in src/components/Navbar/Navbar.jsx: change Settings to Filter
-- [x] Update JSX in src/components/Navbar/Navbar.jsx: replace <Settings with <Filter
-- [x] Update className from navbar-settings-icon to navbar-filter-icon for consistency
+- [x] Fix import CSS from './login.css' to './Employee.css'
+- [x] Add import for Lucide icons: FileText, Pen, Users, Folder, Search
+- [x] Replace img tags with Lucide icon components
+- [x] Rename function from Login to Employee
+- [x] Update export default to Employee
