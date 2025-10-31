@@ -86,7 +86,6 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
           emp.division === division && emp._id !== id
         );
 
-        console.log('FriendsList: filtered friends:', filteredFriends);
 
         // Map ke format yang sesuai dengan FriendsList
         const formattedFriends = filteredFriends.map(emp => ({
@@ -96,7 +95,7 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
           avatar: emp.profile_photo || '/placeholder.svg'
         }));
 
-        console.log('FriendsList: Formatted friends:', formattedFriends);
+        //console.log('FriendsList: Formatted friends:', formattedFriends);
         setFriends(formattedFriends);
         setLoading(false);
       })

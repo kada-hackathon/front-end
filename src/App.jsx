@@ -44,9 +44,8 @@ const App = () => {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/blog-editor" element={<ProtectedRoute><BlogEditor /></ProtectedRoute>} />
             <Route path="/blog-post" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/new-password" element={<NewPassword />} />
-          <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/new-password/:token" element={<NewPassword />} />
             
             {/* CATCH-ALL ROUTE */}
             <Route path="*" element={<NotFound />} />

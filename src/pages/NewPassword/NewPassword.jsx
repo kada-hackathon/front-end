@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import '../Login/login.css';
 import './NewPassword.css';
 
 const NewPassword = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token'); // Get token from URL query params
+  const { token } = useParams(); // Get token dari URL params (/new-password/:token)
 
   const [formData, setFormData] = useState({
     newPassword: '',
@@ -49,41 +48,42 @@ const NewPassword = () => {
       return;
     }
 
+    if (!token) {
+      setSubmitError('Invalid reset link');
+      return;
+    }
+
     // Submit the form
     setIsLoading(true);
     setSubmitError('');
 
-    // Simulate API call
-    setTimeout(() => {
+    // Call backend API to reset password
+    fetch('http://localhost:5000/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        token: token,
+        newPassword: formData.newPassword 
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
       setIsLoading(false);
-      setIsSubmitted(true);
-      
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    }, 1000);
-
-    // TODO: Replace with actual API call
-    // Example:
-    // fetch('/api/reset-password', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ 
-    //     token: token,
-    //     newPassword: formData.newPassword 
-    //   })
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //   setIsLoading(false);
-    //   setIsSubmitted(true);
-    //   setTimeout(() => navigate('/login'), 3000);
-    // })
-    // .catch(error => {
-    //   setIsLoading(false);
-    //   setError('Failed to reset password. Please try again.');
-    // });
+      if (data.message === 'Password reset successfully') {
+        setIsSubmitted(true);
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      } else {
+        setSubmitError(data.message || 'Failed to reset password');
+      }
+    })
+    .catch(error => {
+      setIsLoading(false);
+      console.error('Error:', error);
+      setSubmitError('Failed to reset password. Please try again.');
+    });
   };
 
   const handleBackToLogin = () => {

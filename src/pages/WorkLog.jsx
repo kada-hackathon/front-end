@@ -34,7 +34,6 @@ function WorkLog() {
   const [commitMessage, setCommitMessage] = useState("");
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
-  const [filters, setFilters] = useState({ searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } });
 
   // Fetch friends dari backend
   useEffect(() => {
@@ -98,10 +97,6 @@ function WorkLog() {
     navigate("/worklog/version");
   };
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
-
   return (
     <div className="flex h-screen bg-background">
       <Menubar
@@ -110,12 +105,12 @@ function WorkLog() {
         recentProjects={recentProjects} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <Navbar onFilterChange={handleFilterChange} />
+        <Navbar />
 
         <div className="flex-1 flex overflow-hidden">
           {showEditor ? (
             <>
-              <div className="flex-1 flex flex-col relative">
+              <div className="flex-1 flex flex-col">
                 {/* SimpleEditor with toolbar - toolbar will be sticky */}
                 <div className="flex-1 overflow-y-auto">
                   <SimpleEditor
@@ -123,9 +118,9 @@ function WorkLog() {
                     onVersion={handleVersion}
                     sidebarCollapsed={sidebarCollapsed} />
                 </div>
-                
-                {/* Sticky Action Buttons - stick to bottom right of editor area */}
-                <div className="sticky bottom-6 self-end mr-6 mb-6 flex flex-col gap-3 z-50" style={{ marginTop: '-120px' }}>
+
+                {/* Action Buttons - circular icon-only buttons stacked vertically */}
+                <div className="flex flex-col gap-2 px-4 py-2 items-end">
                   {/* INVITE DIALOG */}
                   <AlertDialog open={inviteOpen} onOpenChange={setInviteOpen}>
                     <Tooltip delay={200}>
@@ -136,7 +131,7 @@ function WorkLog() {
                             size="icon"
                             className="rounded-full h-14 w-14"
                           >
-                            <Users style={{ width: '20px', height: '20px' }} />
+                            <Users className="h-7 w-7" />
                           </Button>
                         </TooltipTrigger>
                       </AlertDialogTrigger>
@@ -165,8 +160,7 @@ function WorkLog() {
                             placeholder="Search"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
-                          />
+                            className="pl-10" />
                         </div>
 
                         <div className="flex gap-4 justify-center py-4">
@@ -181,8 +175,7 @@ function WorkLog() {
                               <img
                                 src={friend.avatar}
                                 alt={friend.name}
-                                className="w-20 h-20 rounded-full object-cover"
-                              />
+                                className="w-20 h-20 rounded-full object-cover" />
                             </button>
                           ))}
                         </div>
@@ -205,12 +198,12 @@ function WorkLog() {
                     <Tooltip delay={200}>
                       <AlertDialogTrigger asChild>
                         <TooltipTrigger asChild>
-                          <Button 
-                            variant="default" 
-                            size="icon" 
+                          <Button
+                            variant="default"
+                            size="icon"
                             className="rounded-full h-14 w-14"
                           >
-                            <Save style={{ width: '20px', height: '20px' }} />
+                            <Save className="h-7 w-7" />
                           </Button>
                         </TooltipTrigger>
                       </AlertDialogTrigger>
@@ -242,8 +235,7 @@ function WorkLog() {
                             value={commitMessage}
                             onChange={(e) => setCommitMessage(e.target.value)}
                             className="min-h-[200px] resize-none"
-                            placeholder="Describe your changes..."
-                          />
+                            placeholder="Describe your changes..." />
                         </div>
 
                         <div className="flex justify-center pt-4">
@@ -262,7 +254,7 @@ function WorkLog() {
               </div>
             </>
           ) : (
-            <WorkLogList onCreateNew={() => setShowEditor(true)} filters={filters} />
+            <WorkLogList onCreateNew={() => setShowEditor(true)} />
           )}
           <FriendsList />
         </div>
