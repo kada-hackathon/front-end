@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./WorkLogList.css";
 
-const WorkLogList = ({ onCreateNew, filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
+const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +11,11 @@ const WorkLogList = ({ onCreateNew, filters = { searchQuery: "", selectedTags: [
   const [searchParams] = useSearchParams();
 
   const handleWorkLogClick = (logId) => {
-    navigate(`/blog-editor?id=${logId}`);
+    navigate(`/blog-post?id=${logId}`);
+  };
+
+  const handleCreateNew = () => {
+    navigate('/blog-editor'); // Navigate to BlogEditor without ID for create mode
   };
 
   useEffect(() => {
@@ -147,7 +151,7 @@ const WorkLogList = ({ onCreateNew, filters = { searchQuery: "", selectedTags: [
 
   return (
     <div className="worklog-list">
-      <Button onClick={onCreateNew} className="create-new-button">
+      <Button onClick={handleCreateNew} className="create-new-button">
         <span className="create-new-icon">📋</span>
         CREATE NEW
       </Button>

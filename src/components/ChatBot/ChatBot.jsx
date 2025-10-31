@@ -16,8 +16,6 @@ const ChatBot = () => {
     { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
   ];
 
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
-
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
 
@@ -55,7 +53,6 @@ const ChatBot = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
       />
 
       <main className="chatbot-main">

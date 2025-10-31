@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, FileText } from "lucide-react";
+import { ChevronLeft, FileText, Pencil } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
@@ -17,8 +17,6 @@ const BlogPost = () => {
   const [loading, setLoading] = useState(true);
   const [friends, setFriends] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
-
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
 
   // Get current user ID
   useEffect(() => {
@@ -123,7 +121,6 @@ const BlogPost = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
       />
 
       <main className="flex-1 flex flex-col">
@@ -131,16 +128,23 @@ const BlogPost = () => {
 
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 p-8 overflow-y-auto bg-background">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate(-1)}
-              className="mb-6"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-
             <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(-1)}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                
+                {canEdit && (
+                  <Button onClick={handleEditClick} className="gap-2 h-9">
+                    <Pencil className="h-4 w-4" />
+                    Edit Work Log
+                  </Button>
+                )}
+              </div>
               <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-8">
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
@@ -155,20 +159,13 @@ const BlogPost = () => {
                       <p className="text-sm text-muted-foreground">{post.user?.division || "N/A"}</p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-3">
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>{new Date(post.datetime || post.createdAt).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}</p>
-                      <p>19.00 WIB</p>
-                    </div>
-                    {canEdit && (
-                      <Button onClick={handleEditClick} className="gap-2">
-                        EDIT
-                      </Button>
-                    )}
+                  <div className="text-right text-sm text-muted-foreground">
+                    <p>{new Date(post.datetime || post.createdAt).toLocaleDateString('id-ID', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}</p>
+                    <p>19.00 WIB</p>
                   </div>
                 </div>
 

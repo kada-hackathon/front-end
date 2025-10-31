@@ -25,8 +25,6 @@ const Profile = () => {
     dateOfJoin: ""
   });
 
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
-
   // Update input field
   const handleInputChange = (field, value) => {
     setProfileData(prev => ({
@@ -237,7 +235,6 @@ const Profile = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
       />
 
       <main className="flex-1 flex flex-col">

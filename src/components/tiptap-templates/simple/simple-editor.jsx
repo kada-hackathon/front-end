@@ -182,7 +182,7 @@ const MobileToolbarContent = ({
   </>
 )
 
-export function SimpleEditor({ onBack, onVersion, sidebarCollapsed }) {
+export function SimpleEditor({ onBack, onVersion, sidebarCollapsed, initialContent = "", onContentChange, initialTitle = "", initialTags = [], onTitleChange, onTagsChange }) {
   const isMobile = useIsMobile()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = React.useState("main")
@@ -263,13 +263,27 @@ export function SimpleEditor({ onBack, onVersion, sidebarCollapsed }) {
         onError: (error) => console.error("Document upload failed:", error),
       }),
     ],
-    content: "",
+    content: initialContent || "",
+    onUpdate: ({ editor }) => {
+      // Call onContentChange callback when content changes
+      if (onContentChange) {
+        const html = editor.getHTML();
+        onContentChange(html);
+      }
+    },
   })
 
   const rect = useCursorVisibility({
     editor,
     overlayHeight: toolbarRef.current?.getBoundingClientRect().height ?? 0,
   })
+
+  // Load initial content when it changes
+  React.useEffect(() => {
+    if (editor && initialContent && editor.getHTML() !== initialContent) {
+      editor.commands.setContent(initialContent);
+    }
+  }, [initialContent, editor]);
 
   React.useEffect(() => {
     if (!isMobile && mobileView !== "main") {
@@ -317,7 +331,14 @@ export function SimpleEditor({ onBack, onVersion, sidebarCollapsed }) {
           className={`simple-editor-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} 
           onClick={handleContentClick}
         >
-          <EnhancedEditor onFocusChange={setIsToolbarDisabled} editor={editor} />
+          <EnhancedEditor 
+            onFocusChange={setIsToolbarDisabled} 
+            editor={editor}
+            initialTitle={initialTitle}
+            initialTags={initialTags}
+            onTitleChange={onTitleChange}
+            onTagsChange={onTagsChange}
+          />
           <EditorContent editor={editor} role="presentation" />
         </div>
       </EditorContext.Provider>
