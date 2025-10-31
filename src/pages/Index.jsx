@@ -14,8 +14,6 @@ const Index = () => {
     { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
   ];
 
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
-
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
   };
@@ -25,7 +23,6 @@ const Index = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
       />
 
       <main className="flex-1 flex flex-col">

@@ -115,13 +115,24 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-left: 0.5rem; /* shift to the right to match recent projects */
+}
+
+.menubar-nav-items a {
+  width: 100%;
+  display: block;
 }
 
 .menubar-nav-button {
   width: 100%;
-  justify-content: flex-start;
+  justify-content: flex-start !important;
   gap: 0.75rem;
   color: white;
+  padding: 0.5rem; /* reset padding */
+  padding-left: 1.25rem; /* shift icons to the right to align with recent projects */
+  text-align: left;
+  display: flex;
+  align-items: center;
 }
 
 .menubar-nav-button:hover {
@@ -151,12 +162,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-left: 0.5rem; /* shift recent projects to the right */
 }
 
 .menubar-recent-button {
-  width: 100%;
+  width: calc(100% - 0.5rem);
   text-align: left;
   padding: 0.75rem;
+  padding-left: 1.25rem; /* align text with menu items (accounting for icon width) */
   font-size: 0.875rem;
   border-radius: 0.5rem;
   transition: background-color 0.2s;

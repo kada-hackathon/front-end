@@ -35,6 +35,13 @@ export const TitleEditor = ({ onChange, initialValue = "" }) => {
     },
   })
 
+  // Update content when initialValue changes
+  React.useEffect(() => {
+    if (editor && initialValue && editor.getText() !== initialValue) {
+      editor.commands.setContent(initialValue)
+    }
+  }, [initialValue, editor])
+
   React.useEffect(() => {
     if (!editor) return
 

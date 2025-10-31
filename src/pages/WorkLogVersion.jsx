@@ -16,8 +16,6 @@ const WorkLogVersion = () => {
     { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
   ];
 
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
-
   const workLogVersions = [
     { id: "1", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
     { id: "2", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
@@ -30,7 +28,6 @@ const WorkLogVersion = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
       />
 
       <main className="flex-1 flex flex-col">
@@ -42,7 +39,7 @@ const WorkLogVersion = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate("/blog-editor")}
+                onClick={() => navigate(-1)}
                 className="text-foreground"
               >
                 <ChevronLeft className="h-6 w-6" />

@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Search, Users, MessageSquare, Save, X } from "lucide-react";
+import { Search, Users, Save, X } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/tiptap-ui-primitive/tooltip";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -14,6 +19,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
+import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 
 const BlogEditor = () => {
   const navigate = useNavigate();
@@ -25,14 +31,15 @@ const BlogEditor = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
   const [blogContent, setBlogContent] = useState("");
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [blogTitle, setBlogTitle] = useState("");
+  const [blogTags, setBlogTags] = useState([]);
   const [friends, setFriends] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [hasAccess, setHasAccess] = useState(false);
+  const [postOwnerId, setPostOwnerId] = useState(null);
+  const [postCollaborators, setPostCollaborators] = useState([]);
 
   const postId = searchParams.get("id");
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
+  const isEditMode = !!postId; // Determine if we're editing or creating
 
   // Get current user ID
   useEffect(() => {
@@ -56,9 +63,15 @@ const BlogEditor = () => {
     fetchCurrentUser();
   }, []);
 
-  // Fetch worklog detail
+  // Fetch worklog detail (only in edit mode)
   useEffect(() => {
-    if (!postId) return;
+    if (!postId) {
+      // CREATE MODE: Set initial empty state
+      setBlogTitle("");
+      setBlogTags([]);
+      setBlogContent("");
+      return;
+    }
 
     const fetchPost = async () => {
       try {
@@ -72,34 +85,34 @@ const BlogEditor = () => {
         });
         const data = await response.json();
         console.log('Post response:', data);
-        setPost(data);
+        
+        // Check access before setting data
+        if (currentUserId) {
+          const isOwner = data.user?._id === currentUserId || data.user?.id === currentUserId;
+          const isCollaborator = data.collaborators?.some(collab => 
+            collab._id === currentUserId || collab.id === currentUserId
+          );
+          
+          if (!isOwner && !isCollaborator) {
+            console.warn('Access denied: Not owner or collaborator');
+            navigate(-1);
+            return;
+          }
+        }
+        
+        // Set data
+        setBlogTitle(data.title || "");
+        setBlogTags(data.tag || []);
         setBlogContent(data.content || "");
-        setLoading(false);
+        setPostOwnerId(data.user?._id || data.user?.id);
+        setPostCollaborators(data.collaborators || []);
       } catch (err) {
         console.error('Error fetching post:', err);
-        setLoading(false);
+        navigate(-1);
       }
     };
     fetchPost();
-  }, [postId]);
-
-  // Check access (owner atau collaborator)
-  useEffect(() => {
-    if (post && currentUserId) {
-      const isOwner = post.user?._id === currentUserId || post.user?.id === currentUserId;
-      const isCollaborator = post.collaborators?.some(collab => 
-        collab._id === currentUserId || collab.id === currentUserId
-      );
-      const canAccess = isOwner || isCollaborator;
-      
-      setHasAccess(canAccess);
-      
-      if (!canAccess) {
-        console.warn('Access denied: Not owner or collaborator');
-        navigate(-1); // Go back jika tidak punya akses
-      }
-    }
-  }, [post, currentUserId, navigate]);
+  }, [postId, currentUserId, navigate]);
 
   // Fetch friends dari backend
   useEffect(() => {
@@ -151,24 +164,48 @@ const BlogEditor = () => {
     console.log("Saving blog with message:", commitMessage);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          title: post.title,
-          content: blogContent,
-          tag: post.tag || [],
-          collaborators: selectedFriends
-        })
-      });
-      const data = await response.json();
-      console.log('Blog saved:', data);
+      
+      if (isEditMode) {
+        // EDIT MODE: Update existing worklog
+        const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: blogTitle || "Untitled Work Log",
+            content: blogContent,
+            tag: blogTags || [],
+            collaborators: selectedFriends,
+            commitMessage: commitMessage
+          })
+        });
+        const data = await response.json();
+        console.log('Blog updated:', data);
+      } else {
+        // CREATE MODE: Create new worklog
+        const response = await fetch('http://localhost:5000/api/worklogs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: blogTitle || "Untitled Work Log",
+            content: blogContent,
+            tag: blogTags || [],
+            collaborators: selectedFriends,
+            commitMessage: commitMessage
+          })
+        });
+        const data = await response.json();
+        console.log('Blog created:', data);
+      }
+      
       setSaveOpen(false);
       setCommitMessage("");
-      navigate("/");
+      navigate("/worklog");
     } catch (err) {
       console.error('Error saving blog:', err);
     }
@@ -179,31 +216,46 @@ const BlogEditor = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
       />
 
       <main className="flex-1 flex flex-col">
         <Navbar />
 
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 p-8 overflow-y-auto bg-background">
-            <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ChevronLeft className="h-6 w-6" />
-              </Button>
-              <h1 className="flex-1 text-3xl font-bold text-foreground">
-                {loading ? "Loading..." : post?.title || "Untitled"}
-              </h1>
+          <div className="flex-1 flex flex-col relative">
+            {/* SimpleEditor with toolbar - toolbar will be sticky */}
+            <div className="flex-1 overflow-y-auto">
+              <SimpleEditor
+                initialContent={blogContent}
+                onContentChange={(content) => setBlogContent(content)}
+                initialTitle={blogTitle}
+                initialTags={blogTags}
+                onTitleChange={(title) => setBlogTitle(title)}
+                onTagsChange={(tags) => setBlogTags(tags)}
+                sidebarCollapsed={sidebarCollapsed}
+                onBack={() => navigate(-1)}
+                onVersion={() => navigate("/worklog/version")}
+              />
+            </div>
 
-              <div className="flex gap-3">
-                {/* INVITE DIALOG */}
-                <AlertDialog open={inviteOpen} onOpenChange={setInviteOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="gap-2">
-                      <Users className="h-4 w-4" />
-                      INVITE
-                    </Button>
-                  </AlertDialogTrigger>
+            {/* Sticky Action Buttons - stick to bottom right of editor area */}
+            <div className="sticky bottom-6 self-end mr-6 mb-6 flex flex-col gap-3 z-50" style={{ marginTop: '-120px' }}>
+              {/* INVITE DIALOG */}
+              <AlertDialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                <Tooltip delay={200}>
+                  <TooltipTrigger asChild>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full h-14 w-14"
+                      >
+                        <Users style={{ width: '20px', height: '20px' }} />
+                      </Button>
+                    </AlertDialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Invite</TooltipContent>
+                </Tooltip>
                   <AlertDialogContent className="max-w-2xl">
                     <AlertDialogHeader>
                       <div className="flex items-center justify-between">
@@ -263,26 +315,24 @@ const BlogEditor = () => {
                       </div>
                     </div>
                   </AlertDialogContent>
-                </AlertDialog>
+              </AlertDialog>
 
-                {/* COMMIT BUTTON */}
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => navigate("/worklog/version")}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  COMMIT
-                </Button>
-
-                {/* SAVE WORKLOG DIALOG */}
-                <AlertDialog open={saveOpen} onOpenChange={setSaveOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button className="gap-2">
-                      <Save className="h-4 w-4" />
-                      SAVE WORKLOG
-                    </Button>
-                  </AlertDialogTrigger>
+              {/* SAVE WORKLOG DIALOG */}
+              <AlertDialog open={saveOpen} onOpenChange={setSaveOpen}>
+                <Tooltip delay={200}>
+                  <TooltipTrigger asChild>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="default"
+                        size="icon"
+                        className="rounded-full h-14 w-14"
+                      >
+                        <Save style={{ width: '20px', height: '20px' }} />
+                      </Button>
+                    </AlertDialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Save Work Log</TooltipContent>
+                </Tooltip>
                   <AlertDialogContent className="max-w-2xl">
                     <AlertDialogHeader>
                       <div className="flex items-center justify-between">
@@ -324,16 +374,8 @@ const BlogEditor = () => {
                       </div>
                     </div>
                   </AlertDialogContent>
-                </AlertDialog>
-              </div>
+              </AlertDialog>
             </div>
-
-            <textarea
-              className="w-full min-h-[500px] p-4 border border-border rounded-lg bg-card text-foreground resize-vertical focus:outline-none focus:border-primary"
-              placeholder="Start writing your blog..."
-              value={blogContent}
-              onChange={(e) => setBlogContent(e.target.value)}
-            />
           </div>
 
           <FriendsList friends={friends} />
