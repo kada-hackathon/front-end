@@ -6,6 +6,7 @@ import HomeContent from "@/components/HomeContent/HomeContent";
 
 const Index = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [filters, setFilters] = useState({ searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } });
 
   const friends = [
     { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
@@ -14,6 +15,10 @@ const Index = () => {
   ];
 
   const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -24,10 +29,10 @@ const Index = () => {
       />
 
       <main className="flex-1 flex flex-col">
-        <Navbar />
+        <Navbar onFilterChange={handleFilterChange} />
 
         <div className="flex-1 flex overflow-hidden">
-          <HomeContent />
+          <HomeContent filters={filters} />
           <FriendsList friends={friends} />
         </div>
       </main>
