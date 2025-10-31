@@ -72,42 +72,77 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
 
         const data = await response.json();
         console.log('Filter response:', data);
+        console.log('Filter response type:', typeof data);
+        console.log('Filter response keys:', Object.keys(data || {}));
         
-        // Convert worklogs ke format posts
-        let worklogsArray = Array.isArray(data) ? data : (data?.worklogs || []);
+        // Convert worklogs ke format posts - handle berbagai format response
+        let worklogsArray = [];
+        
+        if (Array.isArray(data)) {
+          worklogsArray = data;
+        } else if (data?.worklogs && Array.isArray(data.worklogs)) {
+          worklogsArray = data.worklogs;
+        } else if (data?.data && Array.isArray(data.data)) {
+          worklogsArray = data.data;
+        } else {
+          console.warn('Unexpected response format:', data);
+          // Try to get any array from the response
+          for (const key in data) {
+            if (Array.isArray(data[key])) {
+              worklogsArray = data[key];
+              break;
+            }
+          }
+        }
+        
+        console.log('Extracted worklogsArray:', worklogsArray);
         
         // Validate it's an array
         if (!Array.isArray(worklogsArray)) {
-          console.error('Response worklogs is not an array:', worklogsArray);
+          console.error('worklogsArray is not an array:', worklogsArray);
           setPosts([]);
           setLoading(false);
           return;
         }
         
-        // Filter by same division as current user (frontend only)
-        if (userDivision) {
-          worklogsArray = worklogsArray.filter(worklog =>
-            worklog.user?.division === userDivision
-          );
+        console.log('Processing', worklogsArray.length, 'worklogs');
+        
+        // ✅ NO NEED TO FILTER BY DIVISION - Backend already filtered!
+        // Backend filterWorkLogs() now handles division filtering with JWT token
+        
+        // Log first worklog structure for debugging
+        if (worklogsArray.length > 0) {
+          console.log('First worklog structure:', worklogsArray[0]);
         }
         
-        const convertedPosts = worklogsArray.map((worklog) => ({
-          id: worklog._id || worklog.id,
-          author: {
-            name: worklog.user?.name || "User",
-            division: worklog.user?.division || "Unknown Division",
-            avatar: worklog.user?.profilePicture || worklog.user?.profile_photo || "/placeholder.svg",
-          },
-          date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          }),
-          title: worklog.title || "Work Log",
-          hashtags: worklog.tag || [],
-          content: worklog.content || "",
-          image: worklog.media?.[0] || null,
-        }));
+        const convertedPosts = worklogsArray.map((worklog, index) => {
+          console.log(`Converting worklog ${index}:`, {
+            id: worklog._id || worklog.id,
+            title: worklog.title,
+            author: worklog.user?.name,
+            division: worklog.user?.division,
+            datetime: worklog.datetime,
+            content: worklog.content?.substring(0, 50)
+          });
+          
+          return {
+            id: worklog._id || worklog.id,
+            author: {
+              name: worklog.user?.name || "User",
+              division: worklog.user?.division || "Unknown Division",
+              avatar: worklog.user?.profilePicture || worklog.user?.profile_photo || "/placeholder.svg",
+            },
+            date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }),
+            title: worklog.title || "Work Log",
+            hashtags: worklog.tag || [],
+            content: worklog.content || "",
+            image: worklog.media?.[0] || null,
+          };
+        });
         
         setPosts(convertedPosts);
       } catch (err) {
@@ -118,7 +153,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
       }
     };
     fetchWorklogs();
-  }, [selectedTag, userDivision, filters]);
+  }, [selectedTag, filters]);
 
   // detail post => navigate ke halaman blog-post
   const handlePostClick = (postId) => {
@@ -136,6 +171,10 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
           <button onClick={() => navigate('/')}> Clear Filter</button>
         </div>
       )}
+      
+      {/* DEBUG LOG */}
+      {!loading && posts.length > 0 && console.log('DEBUG: posts ready to render:', posts.length)}
+      
       {loading ? (
         <div className="text-center py-8">Loading posts...</div>
       ) : posts.length === 0 ? (

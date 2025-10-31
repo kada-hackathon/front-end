@@ -8,26 +8,78 @@ const ResetPassword = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!email) {
-      alert("Please enter your email address");
+      setError("Please enter your email address");
       return;
     }
 
     setIsLoading(true);
-    
-    // Simulate API call - replace with actual backend call later
-    setTimeout(() => {
-      setIsSubmitted(true);
+    setError("");
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({email})
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setIsSubmitted(true);
+      } else {
+        setError(data.message || 'Failed to send reset email');
+      }
+    } catch (err) {
+      console.error('Error during password reset request:', err);
+      setError('Failed to send reset email. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleBackToLogin = () => {
     navigate("/login");
+  };
+
+  const handleResendEmail = async () => {
+    if (!email) {
+      setError("Email address is required");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({email})
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert("Email reset link sent successfully!");
+      } else {
+        setError(data.message || 'Failed to resend email');
+      }
+    } catch (err) {
+      console.error('Error during password reset request:', err);
+      setError('Failed to resend email. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,12 +103,18 @@ const ResetPassword = () => {
                     id="email"
                     className="input-field"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError("");
+                    }}
                     placeholder="Enter your email"
                     required
+                    disabled={isLoading}
                   />
                   <div className="underline"></div>
                 </div>
+
+                {error && <p className="error-message" style={{color: 'red', marginTop: '10px'}}>{error}</p>}
 
                 <button 
                   type="submit" 
@@ -85,11 +143,22 @@ const ResetPassword = () => {
                 Please check your inbox and click the link to reset your password.
                 If you don't see the email, check your spam folder.
               </p>
+              
               <button 
                 className="login-button back-to-login-button"
                 onClick={handleBackToLogin}
+                style={{marginBottom: '10px'}}
               >
                 Back to Login
+              </button>
+
+              <button 
+                className="login-button"
+                onClick={handleResendEmail}
+                disabled={isLoading}
+                style={{backgroundColor: '#6b7280'}}
+              >
+                {isLoading ? "Resending..." : "Resend Email"}
               </button>
             </div>
           )}

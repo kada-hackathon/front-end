@@ -70,7 +70,7 @@ const Navbar = ({ children, onFilterChange }) => {
     if (!userDivision) return;
 
     const token = localStorage.getItem('token');
-    fetch('http://localhost:5000/api/worklogs', {
+    fetch('http://localhost:5000/api/worklogs/filter', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -80,10 +80,7 @@ const Navbar = ({ children, onFilterChange }) => {
       .then(res => res.json())
       .then(data => {
         const worklogs = data.worklogs || data || [];
-        
-        // Filter by same division
         const divisionWorklogs = worklogs.filter(w => w.user?.division === userDivision);
-        
         // Extract unique tags
         const tags = new Set();
         divisionWorklogs.forEach(w => {
