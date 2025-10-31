@@ -12,7 +12,8 @@
 }
 
 .menubar-header {
-  padding: 1rem;
+  /* slightly reduce vertical padding so the header border aligns better with the nav area */
+  padding: 1.38rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -26,8 +27,8 @@
 }
 
 .menubar-logo-icon {
-  width: 2rem;
-  height: 2rem;
+  width: 3rem;
+  height: 3rem;
   background-color: white;
   border-radius: 9999px;
   display: flex;
@@ -62,9 +63,42 @@
   transform: rotate(180deg);
 }
 
+.menubar-toggle-container {
+  display: flex;
+  justify-content: flex-end; /* align the toggle to the right */
+  margin-bottom: 0.25rem; /* tighten spacing so the border lines align */
+}
+
+.menubar-logo-img {
+  height: 1.7rem; /* a bit bigger */
+  width: auto;
+  display: block;
+  object-fit: contain; /* maintain aspect ratio, no squishing */
+}
+
+.menubar-collapsed-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menubar-collapsed-logo-img {
+  height: 2.5rem;
+  width: auto;
+  display: block;
+  object-fit: contain; /* maintain aspect ratio, no squishing */
+}
+
+.menubar-collapsed .menubar-toggle-container {
+  justify-content: center; /* centers it instead of flex-end */
+}
+
 .menubar-nav {
   flex: 1;
-  padding: 1rem;
+  /* match top padding with header vertical padding so separators align */
+  padding: 0.75rem 1rem;
 }
 
 .menubar-nav-section {
