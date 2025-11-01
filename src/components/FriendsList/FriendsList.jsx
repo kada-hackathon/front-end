@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import "./FriendsList.css";
+import { AUTH_ENDPOINTS, ADMIN_ENDPOINTS } from "../../config/api";
 
 const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
   const [friends, setFriends] = useState([]);
@@ -20,7 +21,7 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
     }
 
     // Fetch current user profile
-    fetch('http://localhost:5000/api/auth/profile', {
+    fetch(AUTH_ENDPOINTS.PROFILE, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -55,7 +56,7 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
     }
 
     // Fetch all employees
-    fetch('http://localhost:5000/api/admin/employees', {
+    fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

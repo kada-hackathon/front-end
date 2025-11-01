@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
+import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../config/api";
 
 const BlogPost = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const BlogPost = () => {
     const fetchCurrentUser = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -47,7 +48,7 @@ const BlogPost = () => {
     const fetchPost = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -71,7 +72,7 @@ const BlogPost = () => {
     const fetchFriends = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/admin/employees', {
+        const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

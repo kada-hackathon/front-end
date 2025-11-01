@@ -20,6 +20,7 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../config/api";
 
 const BlogEditor = () => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ const BlogEditor = () => {
     const fetchCurrentUser = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ const BlogEditor = () => {
     const fetchPost = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -119,7 +120,7 @@ const BlogEditor = () => {
     const fetchFriends = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/admin/employees', {
+        const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -167,7 +168,7 @@ const BlogEditor = () => {
       
       if (isEditMode) {
         // EDIT MODE: Update existing worklog
-        const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -185,7 +186,7 @@ const BlogEditor = () => {
         console.log('Blog updated:', data);
       } else {
         // CREATE MODE: Create new worklog
-        const response = await fetch('http://localhost:5000/api/worklogs', {
+        const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

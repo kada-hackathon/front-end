@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { logout } from "@/utils/authUtils";
 import "./Navbar.css";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../../config/api";
 
 const Navbar = ({ children, onFilterChange }) => {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ const Navbar = ({ children, onFilterChange }) => {
       return;
     }
 
-    fetch('http://localhost:5000/api/auth/profile', {
+    fetch(AUTH_ENDPOINTS.PROFILE, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -70,15 +71,22 @@ const Navbar = ({ children, onFilterChange }) => {
     if (!userDivision) return;
 
     const token = localStorage.getItem('token');
-    fetch('http://localhost:5000/api/worklogs/filter', {
+    fetch(WORKLOG_ENDPOINTS.FILTER, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       }
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          console.error('Navbar fetch tags - error status:', res.status);
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log('Navbar - Tags fetch response:', data);
         const worklogs = data.worklogs || data || [];
         const divisionWorklogs = worklogs.filter(w => w.user?.division === userDivision);
         // Extract unique tags
@@ -91,7 +99,10 @@ const Navbar = ({ children, onFilterChange }) => {
         
         setAvailableTags(Array.from(tags).sort());
       })
-      .catch(err => console.error('Error fetching tags:', err));
+      .catch(err => {
+        console.error('Error fetching tags:', err);
+        setAvailableTags([]);
+      });
   }, [userDivision]);
 
   // Handle filter changes - notify parent

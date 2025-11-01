@@ -10,12 +10,6 @@ const WorkLogVersion = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
-
   const workLogVersions = [
     { id: "1", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
     { id: "2", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
@@ -70,7 +64,7 @@ const WorkLogVersion = () => {
             </div>
           </div>
 
-          <FriendsList friends={friends} />
+          <FriendsList/>
         </div>
       </main>
     </div>

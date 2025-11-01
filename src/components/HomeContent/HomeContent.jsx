@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./HomeContent.css";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS} from "../../config/api";
 
 const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -51,7 +52,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         if (selectedTag) params.append('tag', selectedTag); // URL query param priority
         
         const queryString = params.toString();
-        const url = `http://localhost:5000/api/worklogs/filter${queryString ? '?' + queryString : ''}`;
+        const url = `${WORKLOG_ENDPOINTS.FILTER}${queryString ? '?' + queryString : ''}`;
         
         console.log('Fetching from:', url); // DEBUG
         
@@ -64,7 +65,9 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
           console.error('Filter response error:', response.status);
+          console.error('Error response:', errorText);
           setPosts([]);
           setLoading(false);
           return;

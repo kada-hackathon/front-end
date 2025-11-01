@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./WorkLogList.css";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../../config/api";
 
 const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
-  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filteredPosts, setFilteredPosts] = useState([]);
   const [searchParams] = useSearchParams();
@@ -25,7 +25,7 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         const token = localStorage.getItem('token');
         
         // Fetch current user ID
-        const userResponse = await fetch('http://localhost:5000/api/auth/profile', {
+        const userResponse = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -43,7 +43,7 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         if (filters?.dateRange?.end) params.append('to', filters.dateRange.end);
         
         const queryString = params.toString();
-        const url = `http://localhost:5000/api/worklogs/filter${queryString ? '?' + queryString : ''}`;
+        const url = `${WORKLOG_ENDPOINTS.FILTER}${queryString ? '?' + queryString : ''}`;
         
         // Fetch all worklogs dengan filters
         const worklogsResponse = await fetch(url, {
@@ -108,46 +108,6 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
 
     fetchUserWorklogs();
   }, [filters]);
-
-  // Apply filters setiap kali filters berubah
-  useEffect(() => {
-    let filtered = [...posts];
-
-    // Filter by search query (title, content, or user name)
-    if (filters.searchQuery) {
-      const query = filters.searchQuery.toLowerCase();
-      filtered = filtered.filter(post =>
-        post.title?.toLowerCase().includes(query) ||
-        post.description?.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by selected tags (OR logic)
-    if (filters.selectedTags.length > 0) {
-      filtered = filtered.filter(post =>
-        post.hashtags && filters.selectedTags.some(selectedTag => post.hashtags.includes(selectedTag))
-      );
-    }
-
-    // Filter by date range
-    if (filters.dateRange.start || filters.dateRange.end) {
-      filtered = filtered.filter(post => {
-        const postDate = new Date(post.date);
-        if (filters.dateRange.start) {
-          const startDate = new Date(filters.dateRange.start);
-          if (postDate < startDate) return false;
-        }
-        if (filters.dateRange.end) {
-          const endDate = new Date(filters.dateRange.end);
-          endDate.setHours(23, 59, 59, 999);
-          if (postDate > endDate) return false;
-        }
-        return true;
-      });
-    }
-
-    setFilteredPosts(filtered);
-  }, [posts, filters]);
 
   return (
     <div className="worklog-list">

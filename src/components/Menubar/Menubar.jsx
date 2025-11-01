@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import "./Menubar.css";
 import logoWithText from "@/assets/Logo/Logo with Text_White.png";
 import logoOnly from "@/assets/Logo/Logo Only_White.png";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../../config/api";
 
 const Menubar = ({ collapsed, onToggleCollapse }) => {
   const location = useLocation();
@@ -18,9 +19,13 @@ const Menubar = ({ collapsed, onToggleCollapse }) => {
     const fetchRecentProjects = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          console.warn('No token available');
+          return;
+        }
         
         // Get current user ID
-        const userResponse = await fetch('http://localhost:5000/api/auth/profile', {
+        const userResponse = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -29,9 +34,10 @@ const Menubar = ({ collapsed, onToggleCollapse }) => {
         });
         const userData = await userResponse.json();
         const currentUserId = userData.user?.id || userData.user?._id || userData.id || userData._id;
+        console.log('Current user ID:', currentUserId);
         
         // Fetch all worklogs
-        const worklogsResponse = await fetch('http://localhost:5000/api/worklogs/filter', {
+        const worklogsResponse = await fetch(WORKLOG_ENDPOINTS.FILTER, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -39,14 +45,27 @@ const Menubar = ({ collapsed, onToggleCollapse }) => {
           }
         });
         
+        if (!worklogsResponse.ok) {
+          console.error('Worklog filter error:', worklogsResponse.status);
+          const errorText = await worklogsResponse.text();
+          console.error('Error response:', errorText);
+          setRecentProjects([]);
+          return;
+        }
+        
         const worklogsData = await worklogsResponse.json();
+        console.log('Worklogs response:', worklogsData);
+        
         let allWorklogs = Array.isArray(worklogsData) ? worklogsData : (worklogsData?.worklogs || []);
+        console.log('All worklogs count:', allWorklogs.length);
         
         // Filter: only works created by current user (owner)
         const userWorklogs = allWorklogs.filter(worklog => {
           const isOwner = worklog.user?._id === currentUserId || worklog.user?.id === currentUserId;
           return isOwner;
         });
+        
+        console.log('User worklogs count:', userWorklogs.length);
         
         // Sort by date (newest first) and take top 3
         const sortedWorklogs = userWorklogs.sort((a, b) => {
@@ -60,6 +79,7 @@ const Menubar = ({ collapsed, onToggleCollapse }) => {
           title: worklog.title || "Untitled"
         }));
         
+        console.log('Recent 3 projects:', recent3);
         setRecentProjects(recent3);
       } catch (err) {
         console.error('Error fetching recent projects:', err);

@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
+import { AUTH_ENDPOINTS } from "../config/api";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ const Profile = () => {
           const token = localStorage.getItem('token');
           console.log('Uploading photo, base64 length:', base64String.length);
           
-          const res = await fetch('http://localhost:5000/api/auth/profile', {
+          const res = await fetch(AUTH_ENDPOINTS.PROFILE, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     
     try {
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch(AUTH_ENDPOINTS.PROFILE, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +158,7 @@ const Profile = () => {
         isBase64: updateData.profilePicture.startsWith('data:image')
       });
 
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch(AUTH_ENDPOINTS.PROFILE, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -192,7 +193,7 @@ const Profile = () => {
       return;
     }
 
-    fetch('http://localhost:5000/api/auth/profile', {
+    fetch(AUTH_ENDPOINTS.PROFILE, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -10,11 +10,6 @@ const ChatBot = () => {
   const [inputValue, setInputValue] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -67,7 +62,7 @@ const ChatBot = () => {
             onKeyPress={handleKeyPress}
           />
 
-          <FriendsList friends={friends} />
+          <FriendsList />
         </div>
       </main>
     </div>
