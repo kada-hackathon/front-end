@@ -10,6 +10,13 @@ import { useState, useEffect, useCallback } from "react";
 import { logout } from "@/utils/authUtils";
 import "./Navbar.css";
 
+// Utility function to ensure hashtag has only one #
+const formatHashtag = (tag) => {
+  if (!tag) return "";
+  // Remove all # from start, then add one #
+  return `#${tag.replace(/^#+/, '')}`;
+};
+
 const Navbar = ({ children, onFilterChange }) => {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState({
@@ -176,12 +183,12 @@ const Navbar = ({ children, onFilterChange }) => {
                       key={tag}
                       onClick={() => toggleTag(tag)}
                       className={`px-3 py-1 rounded text-sm transition-all ${
-                        selectedTags.includes(tag)
+                        selectedTags.includes(tag.replace(/^#+/, ''))
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted hover:bg-muted/80'
                       }`}
                     >
-                      #{tag}
+                      {formatHashtag(tag)}
                     </button>
                   ))}
                 </div>

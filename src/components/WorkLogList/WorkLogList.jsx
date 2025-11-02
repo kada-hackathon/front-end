@@ -3,6 +3,21 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./WorkLogList.css";
 
+// Utility function to strip HTML tags
+const stripHtmlTags = (html) => {
+  if (!html) return "";
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
+
+// Utility function to ensure hashtag has only one #
+const formatHashtag = (tag) => {
+  if (!tag) return "";
+  // Remove all # from start, then add one #
+  return `#${tag.replace(/^#+/, '')}`;
+};
+
 const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
@@ -82,17 +97,22 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         });
         
         // Convert ke format untuk display
-        const convertedPosts = userWorklogs.map((worklog) => ({
-          id: worklog._id || worklog.id,
-          title: worklog.title || "Untitled",
-          hashtags: worklog.tag || [],
-          description: worklog.content?.substring(0, 100) || "No description",
-          date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID'),
-          time: new Date(worklog.datetime || worklog.createdAt).toLocaleTimeString('id-ID', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
-        }));
+        const convertedPosts = userWorklogs.map((worklog) => {
+          // Strip HTML tags from content
+          const plainTextContent = stripHtmlTags(worklog.content);
+          
+          return {
+            id: worklog._id || worklog.id,
+            title: worklog.title || "Untitled",
+            hashtags: worklog.tag || [],
+            description: plainTextContent?.substring(0, 100) || "No description",
+            date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID'),
+            time: new Date(worklog.datetime || worklog.createdAt).toLocaleTimeString('id-ID', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })
+          };
+        });
         
         // Sort by date terbaru
         convertedPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -173,7 +193,7 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
             >
               <h3 className="worklog-item-title">{log.title}</h3>
 
-              <p className="worklog-item-hashtags">{log.hashtags.map(tag => `#${tag}`).join(" ")}</p>
+              <p className="worklog-item-hashtags">{log.hashtags.map(tag => formatHashtag(tag)).join(" ")}</p>
 
               <p className="worklog-item-description">{log.description}</p>
 
