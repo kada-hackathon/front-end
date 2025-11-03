@@ -56,7 +56,10 @@ const CollabList = ({ owner, collaborators = [], onRemoveCollaborator, isOwner =
           ) : (
             collaborators.map((collaborator) => (
               <div key={collaborator.id} className="collab-item-wrapper">
-                <div className="collab-item collab-item-clickable">
+                <div 
+                  className="collab-item collab-item-clickable"
+                  onClick={() => handleProfileClick(collaborator.id)}
+                >
                   <Avatar className="collab-avatar">
                     <AvatarImage src={collaborator.avatar} />
                     <AvatarFallback>{collaborator.name.substring(0, 2).toUpperCase()}</AvatarFallback>

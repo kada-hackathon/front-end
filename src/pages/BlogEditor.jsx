@@ -222,7 +222,7 @@ const BlogEditor = () => {
     );
   };
 
-  const handleInvite = () => {
+  const handleInvite = async () => {
     console.log("Inviting friends:", selectedFriends);
     
     // Get all selected friends (including already added collaborators)
@@ -232,16 +232,64 @@ const BlogEditor = () => {
     );
     setCollaborators(newCollaborators);
     
+    // Auto-save collaborators if in edit mode
+    if (isEditMode && postId) {
+      try {
+        const token = localStorage.getItem('token');
+        await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: blogTitle,
+            content: blogContent,
+            tag: blogTags,
+            collaborators: allSelectedIds,
+          })
+        });
+        console.log("Collaborators auto-saved");
+      } catch (err) {
+        console.error('Error auto-saving collaborators:', err);
+      }
+    }
+    
     setInviteOpen(false);
     setSelectedFriends([]);
     setSearchQuery("");
   };
 
-  const handleRemoveCollaborator = (collaboratorId) => {
+  const handleRemoveCollaborator = async (collaboratorId) => {
     // Remove from collaborators list
-    setCollaborators(prev => prev.filter(c => c.id !== collaboratorId));
+    const updatedCollaborators = collaborators.filter(c => c.id !== collaboratorId);
+    setCollaborators(updatedCollaborators);
     // Also remove from selectedFriends if present
     setSelectedFriends(prev => prev.filter(id => id !== collaboratorId));
+    
+    // Auto-save collaborator removal if in edit mode
+    if (isEditMode && postId) {
+      try {
+        const token = localStorage.getItem('token');
+        const updatedCollaboratorIds = updatedCollaborators.map(c => c.id);
+        await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: blogTitle,
+            content: blogContent,
+            tag: blogTags,
+            collaborators: updatedCollaboratorIds,
+          })
+        });
+        console.log("Collaborator removal auto-saved");
+      } catch (err) {
+        console.error('Error auto-saving collaborator removal:', err);
+      }
+    }
   };
 
   const handleNavigationAttempt = (path) => {
@@ -251,6 +299,8 @@ const BlogEditor = () => {
     } else {
       if (typeof path === 'function') {
         path();
+      } else if (typeof path === 'number') {
+        navigate(path);
       } else {
         navigate(path);
       }
@@ -260,9 +310,11 @@ const BlogEditor = () => {
   const handleContinueWithoutSaving = () => {
     setShowUnsavedDialog(false);
     setHasUnsavedChanges(false);
-    if (pendingNavigation) {
+    if (pendingNavigation !== null) {
       if (typeof pendingNavigation === 'function') {
         pendingNavigation();
+      } else if (typeof pendingNavigation === 'number') {
+        navigate(pendingNavigation);
       } else {
         navigate(pendingNavigation);
       }
@@ -294,7 +346,7 @@ const BlogEditor = () => {
             title: blogTitle || "Untitled Work Log",
             content: blogContent,
             tag: blogTags || [],
-            collaborators: selectedFriends,
+            collaborators: collaborators.map(c => c.id),
           })
         });
         createdOrUpdatedWorklog = await response.json();
@@ -311,7 +363,7 @@ const BlogEditor = () => {
             title: blogTitle || "Untitled Work Log",
             content: blogContent,
             tag: blogTags || [],
-            collaborators: selectedFriends,
+            collaborators: collaborators.map(c => c.id),
           })
         });
         createdOrUpdatedWorklog = await response.json();
@@ -338,9 +390,11 @@ const BlogEditor = () => {
       setHasUnsavedChanges(false);
       
       // Navigate after save if there's a pending navigation
-      if (pendingNavigation) {
+      if (pendingNavigation !== null) {
         if (typeof pendingNavigation === 'function') {
           pendingNavigation();
+        } else if (typeof pendingNavigation === 'number') {
+          navigate(pendingNavigation);
         } else {
           navigate(pendingNavigation);
         }
@@ -362,7 +416,7 @@ const BlogEditor = () => {
       />
 
       <main className="flex-1 flex flex-col">
-        <Navbar />
+        <Navbar onNavigate={handleNavigationAttempt} />
 
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col relative">
@@ -386,8 +440,8 @@ const BlogEditor = () => {
                   setHasUnsavedChanges(true);
                 }}
                 sidebarCollapsed={sidebarCollapsed}
-                onBack={() => navigate(-1)}
-                onVersion={() => navigate(`/worklogs/${postId}/versions`)}
+                onBack={() => handleNavigationAttempt(-1)}
+                onVersion={() => handleNavigationAttempt(`/worklogs/${postId}/versions`)}
               />
             </div>
 
