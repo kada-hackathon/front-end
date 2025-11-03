@@ -8,7 +8,7 @@ import logoWithText from "@/assets/Logo/Logo with Text_White.png";
 import logoOnly from "@/assets/Logo/Logo Only_White.png";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../../config/api";
 
-const Menubar = ({ collapsed, onToggleCollapse }) => {
+const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const activeMenu = location.pathname;
@@ -91,7 +91,19 @@ const Menubar = ({ collapsed, onToggleCollapse }) => {
   }, []);
 
   const handleRecentProjectClick = (projectId) => {
-    navigate(`/blog-post?id=${projectId}`);
+    const path = `/blog-post?id=${projectId}`;
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      navigate(path);
+    }
+  };
+
+  const handleMenuClick = (e, path) => {
+    if (onNavigate) {
+      e.preventDefault();
+      onNavigate(path);
+    }
   };
 
   return (
@@ -122,7 +134,7 @@ const Menubar = ({ collapsed, onToggleCollapse }) => {
         <div className="menubar-nav-section">
           {!collapsed && <p className="menubar-nav-label">Menus</p>}
           <div className="menubar-nav-items">
-            <Link to="/">
+            <Link to="/" onClick={(e) => handleMenuClick(e, "/")}>
               <Button
                 variant="ghost"
                 className={cn(
@@ -134,7 +146,7 @@ const Menubar = ({ collapsed, onToggleCollapse }) => {
                 {!collapsed && <span>Home</span>}
               </Button>
             </Link>
-            <Link to="/chatbot">
+            <Link to="/chatbot" onClick={(e) => handleMenuClick(e, "/chatbot")}>
               <Button
                 variant="ghost"
                 className={cn(
@@ -146,7 +158,7 @@ const Menubar = ({ collapsed, onToggleCollapse }) => {
                 {!collapsed && <span>Chat Bot</span>}
               </Button>
             </Link>
-            <Link to="/worklog">
+            <Link to="/worklog" onClick={(e) => handleMenuClick(e, "/worklog")}>
               <Button
                 variant="ghost"
                 className={cn(

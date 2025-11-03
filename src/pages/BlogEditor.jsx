@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
-import FriendsList from "@/components/FriendsList/FriendsList";
+import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 
@@ -36,11 +36,29 @@ const BlogEditor = () => {
   const [blogTags, setBlogTags] = useState([]);
   const [friends, setFriends] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [postOwnerId, setPostOwnerId] = useState(null);
-  const [postCollaborators, setPostCollaborators] = useState([]);
+  const [owner, setOwner] = useState(null);
+  const [collaborators, setCollaborators] = useState([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+  const [editorKey, setEditorKey] = useState(0); // Key to force re-mount editor
 
   const postId = searchParams.get("id");
   const isEditMode = !!postId; // Determine if we're editing or creating
+
+  // Prevent navigation when there are unsaved changes (browser back/refresh)
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Get current user ID
   useEffect(() => {
@@ -57,6 +75,14 @@ const BlogEditor = () => {
         const data = await response.json();
         const userData = data.user || data;
         setCurrentUserId(userData.id || userData._id);
+        
+        // Set owner as current user (for both create and edit mode)
+        setOwner({
+          id: userData.id || userData._id,
+          name: userData.name || "Unknown",
+          division: userData.division || "Unknown",
+          avatar: userData.profilePicture || userData.profile_photo || "/placeholder.svg"
+        });
       } catch (err) {
         console.error('Error fetching current user:', err);
       }
@@ -105,9 +131,30 @@ const BlogEditor = () => {
         setBlogTitle(data.title || "");
         setBlogTags(data.tag || []);
         setBlogContent(data.content || "");
-        setPostOwnerId(data.user?._id || data.user?.id);
-        setPostCollaborators(data.collaborators || []);
-        setSelectedFriends((data.collaborators || []).map(c => c._id || c.id));
+        
+        // Set owner for CollabList
+        if (data.user) {
+          setOwner({
+            id: data.user._id || data.user.id,
+            name: data.user.name || "Unknown",
+            division: data.user.division || "Unknown",
+            avatar: data.user.profilePicture || data.user.profile_photo || "/placeholder.svg"
+          });
+        }
+        
+        // Set collaborators for CollabList
+        if (data.collaborators && data.collaborators.length > 0) {
+          setCollaborators(data.collaborators.map(collab => ({
+            id: collab._id || collab.id,
+            name: collab.name || "Unknown",
+            division: collab.division || "Unknown",
+            avatar: collab.profilePicture || collab.profile_photo || "/placeholder.svg"
+          })));
+        }
+        
+        // Reset editor to clear undo history after loading content
+        setEditorKey(prev => prev + 1);
+        setHasUnsavedChanges(false);
       } catch (err) {
         console.error('Error fetching post:', err);
         navigate(-1);
@@ -138,17 +185,36 @@ const BlogEditor = () => {
     fetchFriends();
   }, []);
 
-  const filteredFriends = Array.isArray(friends) ? friends.filter((friend) =>
-    (friend?.name || friend?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-  ).map((friend) => ({
-    id: friend._id || friend.id,
-    name: friend.name || friend.full_name || "Unknown",
-    division: friend.division || "Unknown",
-    avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg",
-    email: friend.email
-  })): [];
+  // Get collaborator IDs for easier checking
+  const collaboratorIds = collaborators.map(c => c.id);
+
+  // Map friends and sort: collaborators first, then others
+  const allFriends = friends
+    .filter((friend) =>
+      (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .map((friend) => ({
+      id: friend._id || friend.id,
+      name: friend.name || friend.full_name || "Unknown",
+      division: friend.division || "Unknown",
+      avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg"
+    }));
+
+  // Sort: collaborators first, then others
+  const filteredFriends = allFriends.sort((a, b) => {
+    const aIsCollab = collaboratorIds.includes(a.id);
+    const bIsCollab = collaboratorIds.includes(b.id);
+    if (aIsCollab && !bIsCollab) return -1;
+    if (!aIsCollab && bIsCollab) return 1;
+    return 0;
+  });
 
   const toggleFriendSelection = (friendId) => {
+    // Don't allow unchecking if already a collaborator
+    if (collaboratorIds.includes(friendId)) {
+      return;
+    }
+    
     setSelectedFriends((prev) =>
       prev.includes(friendId)
         ? prev.filter((id) => id !== friendId)
@@ -157,39 +223,109 @@ const BlogEditor = () => {
   };
 
   const handleInvite = async () => {
-    try {
-      const token = localStorage.getItem('token');
-
-      if (!isEditMode) return; // invite hanya berlaku jika log sudah ada
-
-      // ambil selectedFriends → mapping jadi array email
-      const selectedFriendEmails = filteredFriends
-        .filter(f => selectedFriends.includes(f.id))
-        .map(f => f.email);
-
-      for (const email of selectedFriendEmails) {
-        await fetch(`${WORKLOG_ENDPOINTS.ONE(postId)}/collaborators`, {
-          method: "POST",
+    console.log("Inviting friends:", selectedFriends);
+    
+    // Get all selected friends (including already added collaborators)
+    const allSelectedIds = [...new Set([...collaboratorIds, ...selectedFriends])];
+    const newCollaborators = allFriends.filter(friend => 
+      allSelectedIds.includes(friend.id)
+    );
+    setCollaborators(newCollaborators);
+    
+    // Auto-save collaborators if in edit mode
+    if (isEditMode && postId) {
+      try {
+        const token = localStorage.getItem('token');
+        await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
+          method: 'PUT',
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({
+            title: blogTitle,
+            content: blogContent,
+            tag: blogTags,
+            collaborators: allSelectedIds,
+          })
         });
+        console.log("Collaborators auto-saved");
+      } catch (err) {
+        console.error('Error auto-saving collaborators:', err);
       }
+    }
+    
+    setInviteOpen(false);
+    setSelectedFriends([]);
+    setSearchQuery("");
+  };
 
-      setInviteOpen(false);
-      setSelectedFriends([]);
-      setSearchQuery("");
-
-      console.log("Collaborators invited:", selectedFriendEmails);
-
-    } catch (err) {
-      console.error("Error inviting collaborators:", err);
+  const handleRemoveCollaborator = async (collaboratorId) => {
+    // Remove from collaborators list
+    const updatedCollaborators = collaborators.filter(c => c.id !== collaboratorId);
+    setCollaborators(updatedCollaborators);
+    // Also remove from selectedFriends if present
+    setSelectedFriends(prev => prev.filter(id => id !== collaboratorId));
+    
+    // Auto-save collaborator removal if in edit mode
+    if (isEditMode && postId) {
+      try {
+        const token = localStorage.getItem('token');
+        const updatedCollaboratorIds = updatedCollaborators.map(c => c.id);
+        await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: blogTitle,
+            content: blogContent,
+            tag: blogTags,
+            collaborators: updatedCollaboratorIds,
+          })
+        });
+        console.log("Collaborator removal auto-saved");
+      } catch (err) {
+        console.error('Error auto-saving collaborator removal:', err);
+      }
     }
   };
 
+  const handleNavigationAttempt = (path) => {
+    if (hasUnsavedChanges) {
+      setPendingNavigation(path);
+      setShowUnsavedDialog(true);
+    } else {
+      if (typeof path === 'function') {
+        path();
+      } else if (typeof path === 'number') {
+        navigate(path);
+      } else {
+        navigate(path);
+      }
+    }
+  };
 
+  const handleContinueWithoutSaving = () => {
+    setShowUnsavedDialog(false);
+    setHasUnsavedChanges(false);
+    if (pendingNavigation !== null) {
+      if (typeof pendingNavigation === 'function') {
+        pendingNavigation();
+      } else if (typeof pendingNavigation === 'number') {
+        navigate(pendingNavigation);
+      } else {
+        navigate(pendingNavigation);
+      }
+      setPendingNavigation(null);
+    }
+  };
+
+  const handleSaveAndContinue = () => {
+    setSaveOpen(true);
+    setShowUnsavedDialog(false);
+  };
 
   const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
@@ -210,6 +346,7 @@ const BlogEditor = () => {
             title: blogTitle || "Untitled Work Log",
             content: blogContent,
             tag: blogTags || [],
+            collaborators: collaborators.map(c => c.id),
           })
         });
         createdOrUpdatedWorklog = await response.json();
@@ -226,7 +363,7 @@ const BlogEditor = () => {
             title: blogTitle || "Untitled Work Log",
             content: blogContent,
             tag: blogTags || [],
-            collaborators: selectedFriends,
+            collaborators: collaborators.map(c => c.id),
           })
         });
         createdOrUpdatedWorklog = await response.json();
@@ -250,7 +387,21 @@ const BlogEditor = () => {
 
       setSaveOpen(false);
       setCommitMessage("");
-      navigate("/worklog");
+      setHasUnsavedChanges(false);
+      
+      // Navigate after save if there's a pending navigation
+      if (pendingNavigation !== null) {
+        if (typeof pendingNavigation === 'function') {
+          pendingNavigation();
+        } else if (typeof pendingNavigation === 'number') {
+          navigate(pendingNavigation);
+        } else {
+          navigate(pendingNavigation);
+        }
+        setPendingNavigation(null);
+      } else {
+        navigate("/worklog");
+      }
     } catch (err) {
       console.error('Error saving blog:', err);
     }
@@ -261,25 +412,36 @@ const BlogEditor = () => {
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onNavigate={handleNavigationAttempt}
       />
 
       <main className="flex-1 flex flex-col">
-        <Navbar />
+        <Navbar onNavigate={handleNavigationAttempt} />
 
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col relative">
             {/* SimpleEditor with toolbar - toolbar will be sticky */}
             <div className="flex-1 overflow-y-auto">
               <SimpleEditor
+                key={editorKey}
                 initialContent={blogContent}
-                onContentChange={(content) => setBlogContent(content)}
+                onContentChange={(content) => {
+                  setBlogContent(content);
+                  setHasUnsavedChanges(true);
+                }}
                 initialTitle={blogTitle}
                 initialTags={blogTags}
-                onTitleChange={(title) => setBlogTitle(title)}
-                onTagsChange={(tags) => setBlogTags(tags)}
+                onTitleChange={(title) => {
+                  setBlogTitle(title);
+                  setHasUnsavedChanges(true);
+                }}
+                onTagsChange={(tags) => {
+                  setBlogTags(tags);
+                  setHasUnsavedChanges(true);
+                }}
                 sidebarCollapsed={sidebarCollapsed}
-                onBack={() => navigate(-1)}
-                onVersion={() => navigate(`/worklogs/${postId}/versions`)}
+                onBack={() => handleNavigationAttempt(-1)}
+                onVersion={() => handleNavigationAttempt(`/worklogs/${postId}/versions`)}
               />
             </div>
 
@@ -305,7 +467,7 @@ const BlogEditor = () => {
                     <AlertDialogHeader>
                       <div className="flex items-center justify-between">
                         <AlertDialogTitle className="text-xl font-bold flex-1 text-center">
-                          INVITE YOUR PARTNER TEAM
+                          Invite Your Collaborators
                         </AlertDialogTitle>
                         <Button
                           variant="ghost"
@@ -329,28 +491,53 @@ const BlogEditor = () => {
                         />
                       </div>
 
-                      <div className="flex gap-4 justify-center py-4">
-                        {filteredFriends.map((friend) => (
-                          <button
-                            key={friend.id}
-                            onClick={() => toggleFriendSelection(friend.id)}
-                            className={`relative transition-all ${
-                              selectedFriends.includes(friend.id)
-                                ? "ring-2 ring-primary ring-offset-2 rounded-full"
-                                : "opacity-70 hover:opacity-100"
-                            }`}
-                          >
-                            <img
-                              src={friend.avatar}
-                              alt={friend.name}
-                              className="w-20 h-20 rounded-full object-cover"
-                            />
-
-                            <span className="mt-2 text-sm font-medium text-center text-muted-foreground">
-                              {friend.name}
-                            </span>
-                          </button>
-                        ))}
+                      <div className="flex flex-col gap-3 py-4 h-96 overflow-y-auto">
+                        {filteredFriends.length === 0 ? (
+                          <div className="flex items-center justify-center h-full">
+                            <p className="text-muted-foreground">User not found!</p>
+                          </div>
+                        ) : (
+                          filteredFriends.map((friend) => {
+                            const isCollaborator = collaboratorIds.includes(friend.id);
+                            const isSelected = selectedFriends.includes(friend.id) || isCollaborator;
+                            
+                            return (
+                              <div
+                                key={friend.id}
+                                onClick={() => toggleFriendSelection(friend.id)}
+                                className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                                  isCollaborator 
+                                    ? "border-primary bg-accent/30 cursor-not-allowed opacity-75"
+                                    : `cursor-pointer hover:bg-accent/50 ${
+                                        isSelected
+                                          ? "border-primary bg-accent/30"
+                                          : "border-border"
+                                      }`
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  disabled={isCollaborator}
+                                  onChange={() => {}}
+                                  className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
+                                />
+                                <img
+                                  src={friend.avatar}
+                                  alt={friend.name}
+                                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-sm truncate">{friend.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{friend.division}</p>
+                                </div>
+                                {isCollaborator && (
+                                  <span className="text-xs text-primary font-medium">Added</span>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
 
                       <div className="flex justify-center pt-4">
@@ -427,9 +614,58 @@ const BlogEditor = () => {
             </div>
           </div>
 
-          <FriendsList friends={friends} />
+          <CollabList 
+            owner={owner} 
+            collaborators={collaborators} 
+            onRemoveCollaborator={handleRemoveCollaborator}
+            isOwner={currentUserId === owner?.id}
+            onNavigate={handleNavigationAttempt}
+          />
         </div>
       </main>
+
+      {/* Unsaved Changes Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Unsaved Changes
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-4">
+            <p className="text-center text-muted-foreground">
+              Changes have not been saved. Do you want to save the changes?
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={handleSaveAndContinue}
+              className="w-full"
+            >
+              Save Changes
+            </Button>
+            <Button
+              onClick={handleContinueWithoutSaving}
+              variant="outline"
+              className="w-full"
+            >
+              Continue without saving
+            </Button>
+            <Button
+              onClick={() => {
+                setShowUnsavedDialog(false);
+                setPendingNavigation(null);
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

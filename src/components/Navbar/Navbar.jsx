@@ -18,7 +18,7 @@ const formatHashtag = (tag) => {
   return `#${tag.replace(/^#+/, '')}`;
 };
 
-const Navbar = ({ children, onFilterChange }) => {
+const Navbar = ({ children, onFilterChange, onNavigate }) => {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState({
     name: "Loading...",
@@ -147,11 +147,19 @@ const Navbar = ({ children, onFilterChange }) => {
   }, [searchQuery, selectedTags, dateRange]);
 
   const handleProfileClick = () => {
-    navigate("/profile");
+    if (onNavigate) {
+      onNavigate("/profile");
+    } else {
+      navigate("/profile");
+    }
   };
 
   const handleLogout = () => {
-    logout(navigate);
+    if (onNavigate) {
+      onNavigate(() => logout(navigate));
+    } else {
+      logout(navigate);
+    }
   };
 
   const toggleTag = (tag) => {

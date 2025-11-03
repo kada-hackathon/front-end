@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, FileText, Pencil } from "lucide-react";
+import { ChevronLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
@@ -101,6 +101,34 @@ const BlogPost = () => {
     navigate(`/blog-editor?id=${postId}`);
   };
 
+  const handleDeleteClick = async () => {
+    if (!window.confirm('Are you sure you want to delete this work log? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        alert('Work log deleted successfully!');
+        navigate('/');
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to delete work log');
+      }
+    } catch (err) {
+      console.error('Error deleting work log:', err);
+      alert('Failed to delete work log. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen bg-background items-center justify-center">
@@ -140,10 +168,21 @@ const BlogPost = () => {
                 </Button>
                 
                 {canEdit && (
-                  <Button onClick={handleEditClick} className="gap-2 h-9">
-                    <Pencil className="h-4 w-4" />
-                    Edit Work Log
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={handleEditClick} className="gap-2 h-9">
+                      <Pencil className="h-4 w-4" />
+                      Edit Work Log
+                    </Button>
+                    {isOwner && (
+                      <Button 
+                        onClick={handleDeleteClick} 
+                        className="gap-2 h-9 bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete Work Log
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-8">
