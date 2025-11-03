@@ -107,6 +107,7 @@ const BlogEditor = () => {
         setBlogContent(data.content || "");
         setPostOwnerId(data.user?._id || data.user?.id);
         setPostCollaborators(data.collaborators || []);
+        setSelectedFriends((data.collaborators || []).map(c => c._id || c.id));
       } catch (err) {
         console.error('Error fetching post:', err);
         navigate(-1);
@@ -143,7 +144,8 @@ const BlogEditor = () => {
     id: friend._id || friend.id,
     name: friend.name || friend.full_name || "Unknown",
     division: friend.division || "Unknown",
-    avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg"
+    avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg",
+    email: friend.email
   }));
 
   const toggleFriendSelection = (friendId) => {
@@ -154,12 +156,40 @@ const BlogEditor = () => {
     );
   };
 
-  const handleInvite = () => {
-    console.log("Inviting friends:", selectedFriends);
-    setInviteOpen(false);
-    setSelectedFriends([]);
-    setSearchQuery("");
+  const handleInvite = async () => {
+    try {
+      const token = localStorage.getItem('token');
+
+      if (!isEditMode) return; // invite hanya berlaku jika log sudah ada
+
+      // ambil selectedFriends → mapping jadi array email
+      const selectedFriendEmails = filteredFriends
+        .filter(f => selectedFriends.includes(f.id))
+        .map(f => f.email);
+
+      for (const email of selectedFriendEmails) {
+        await fetch(`${WORKLOG_ENDPOINTS.ONE(postId)}/collaborators`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ email })
+        });
+      }
+
+      setInviteOpen(false);
+      setSelectedFriends([]);
+      setSearchQuery("");
+
+      console.log("Collaborators invited:", selectedFriendEmails);
+
+    } catch (err) {
+      console.error("Error inviting collaborators:", err);
+    }
   };
+
+
 
   const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
@@ -180,7 +210,6 @@ const BlogEditor = () => {
             title: blogTitle || "Untitled Work Log",
             content: blogContent,
             tag: blogTags || [],
-            collaborators: selectedFriends,
           })
         });
         createdOrUpdatedWorklog = await response.json();
@@ -316,6 +345,10 @@ const BlogEditor = () => {
                               alt={friend.name}
                               className="w-20 h-20 rounded-full object-cover"
                             />
+
+                            <span className="mt-2 text-sm font-medium text-center text-muted-foreground">
+                              {friend.name}
+                            </span>
                           </button>
                         ))}
                       </div>
