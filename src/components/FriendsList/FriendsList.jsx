@@ -1,12 +1,18 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./FriendsList.css";
 import { AUTH_ENDPOINTS, ADMIN_ENDPOINTS } from "../../config/api";
 
 const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
+  const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUserData, setCurrentUserData] = useState({ division: "", id: "" });
+
+  const handleFriendClick = (friendId) => {
+    navigate(`/profile?userId=${friendId}`);
+  };
 
   // Jika tidak ada props, auto fetch dari current user
   useEffect(() => {
@@ -116,7 +122,12 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
           <p className="text-sm text-muted-foreground">No friends in your division</p>
         ) : (
           friends.map((friend) => (
-            <div key={friend.id} className="friend-item">
+            <div 
+              key={friend.id} 
+              className="friend-item"
+              onClick={() => handleFriendClick(friend.id)}
+              style={{ cursor: 'pointer' }}
+            >
               <Avatar className="friend-avatar">
                 <AvatarImage src={friend.avatar} />
                 <AvatarFallback>{friend.name.substring(0, 2).toUpperCase()}</AvatarFallback>

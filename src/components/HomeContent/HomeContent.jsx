@@ -4,6 +4,21 @@ import { useState, useEffect } from "react";
 import "./HomeContent.css";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS} from "../../config/api";
 
+// Utility function to strip HTML tags
+const stripHtmlTags = (html) => {
+  if (!html) return "";
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
+
+// Utility function to ensure hashtag has only one #
+const formatHashtag = (tag) => {
+  if (!tag) return "";
+  // Remove all # from start, then add one #
+  return `#${tag.replace(/^#+/, '')}`;
+};
+
 const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
@@ -119,13 +134,16 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         }
         
         const convertedPosts = worklogsArray.map((worklog, index) => {
+          // Strip HTML tags from content for preview
+          const plainTextContent = stripHtmlTags(worklog.content);
+          
           console.log(`Converting worklog ${index}:`, {
             id: worklog._id || worklog.id,
             title: worklog.title,
             author: worklog.user?.name,
             division: worklog.user?.division,
             datetime: worklog.datetime,
-            content: worklog.content?.substring(0, 50)
+            content: plainTextContent?.substring(0, 50)
           });
           
           return {
@@ -142,7 +160,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
             }),
             title: worklog.title || "Work Log",
             hashtags: worklog.tag || [],
-            content: worklog.content || "",
+            content: plainTextContent || "",
             image: worklog.media?.[0] || null,
           };
         });
@@ -170,7 +188,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
       {selectedTag && (
         <div className="mb-4 p-3 bg-purple-100 rounded">
           <span>Filtering by tag: </span>
-          <strong>#{selectedTag} </strong>
+          <strong>{formatHashtag(selectedTag)} </strong>
           <button onClick={() => navigate('/')}> Clear Filter</button>
         </div>
       )}
@@ -211,11 +229,11 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
                       key={tag}
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/?tag=${tag}`);
+                        navigate(`/?tag=${tag.replace(/^#+/, '')}`);
                       }}
                       style={{ cursor: "pointer", color: "blue", marginRight: "8px" }}
                     >
-                      #{tag}
+                      {formatHashtag(tag)}
                     </span>
                   ))}
                 </p>

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import '../Login/login.css';
 import './NewPassword.css';
 import { AUTH_ENDPOINTS } from '../../config/api';
+import logoWithText from "../../assets/Logo/Logo with Text_White.png";
 
 const NewPassword = () => {
   const navigate = useNavigate();
@@ -123,9 +124,20 @@ const NewPassword = () => {
       <div className="login-container new-password-container">
         <div className="login-content new-password-content">
           <div className="welcome-section">
-            <h1>Reset Your Password</h1>
-            <p className="reset-subtitle">
-              Please enter your new password below.
+            <img 
+              src={logoWithText} 
+              alt="Logo" 
+              style={{ 
+                width: '200px', 
+                marginBottom: '60px',
+                display: 'block',
+                marginLeft: 'auto',
+                marginRight: 'auto'
+              }} 
+            />
+            <h1 style={{ fontWeight: '700', marginBottom: '4px', textAlign: 'center' }}>Reset Your Password</h1>
+            <p className="reset-subtitle" style={{ marginTop: '0', textAlign: 'center' }}>
+              Please enter your new password below
             </p>
           </div>
 

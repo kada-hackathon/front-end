@@ -174,17 +174,14 @@ const BlogPost = () => {
 
                 {post.tag && post.tag.length > 0 && (
                   <p className="text-sm text-muted-foreground mb-6">
-                    {post.tag.map((t) => `#${t}`).join(" ")}
+                    {post.tag.map((t) => t.startsWith('#') ? t : `#${t}`).join(" ")}
                   </p>
                 )}
 
-                <div className="prose prose-lg max-w-none text-foreground">
-                  {post.content && post.content.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
+                <div 
+                  className="prose prose-lg max-w-none text-foreground"
+                  dangerouslySetInnerHTML={{ __html: post.content || '' }}
+                />
 
                 {post.media && post.media.length > 0 && (
                   <div className="mt-6">
