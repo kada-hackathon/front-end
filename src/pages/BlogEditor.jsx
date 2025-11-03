@@ -163,11 +163,13 @@ const BlogEditor = () => {
 
   const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
+
     try {
       const token = localStorage.getItem('token');
-      
+      let createdOrUpdatedWorklog;
+
       if (isEditMode) {
-        // EDIT MODE: Update existing worklog
+        // update
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
           headers: {
@@ -179,13 +181,12 @@ const BlogEditor = () => {
             content: blogContent,
             tag: blogTags || [],
             collaborators: selectedFriends,
-            commitMessage: commitMessage
           })
         });
-        const data = await response.json();
-        console.log('Blog updated:', data);
+        createdOrUpdatedWorklog = await response.json();
+
       } else {
-        // CREATE MODE: Create new worklog
+        // create
         const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
           method: 'POST',
           headers: {
@@ -197,13 +198,27 @@ const BlogEditor = () => {
             content: blogContent,
             tag: blogTags || [],
             collaborators: selectedFriends,
-            commitMessage: commitMessage
           })
         });
-        const data = await response.json();
-        console.log('Blog created:', data);
+        createdOrUpdatedWorklog = await response.json();
       }
-      
+
+      // ADD VERSION (LOG HISTORY)
+      const worklogId = createdOrUpdatedWorklog?._id;
+      if (worklogId) {
+        await fetch(`http://localhost:5000/api/worklogs/${worklogId}/versions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            message: commitMessage
+          })
+        });
+      }
+
       setSaveOpen(false);
       setCommitMessage("");
       navigate("/worklog");
@@ -235,7 +250,7 @@ const BlogEditor = () => {
                 onTagsChange={(tags) => setBlogTags(tags)}
                 sidebarCollapsed={sidebarCollapsed}
                 onBack={() => navigate(-1)}
-                onVersion={() => navigate("/worklog/version")}
+                onVersion={() => navigate(`/worklogs/${postId}/versions`)}
               />
             </div>
 
