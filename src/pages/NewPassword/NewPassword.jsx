@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import '../Login/login.css';
 import './NewPassword.css';
+import { AUTH_ENDPOINTS } from '../../config/api';
 import logoWithText from "../../assets/Logo/Logo with Text_White.png";
 
 const NewPassword = () => {
@@ -59,7 +60,7 @@ const NewPassword = () => {
     setSubmitError('');
 
     // Call backend API to reset password
-    fetch('http://localhost:5000/api/auth/reset-password', {
+    fetch(AUTH_ENDPOINTS.RESET_PASSWORD, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 

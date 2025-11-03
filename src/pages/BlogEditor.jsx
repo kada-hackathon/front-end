@@ -20,6 +20,7 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 
 const BlogEditor = () => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const BlogEditor = () => {
     const fetchCurrentUser = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -102,7 +103,7 @@ const BlogEditor = () => {
     const fetchPost = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -167,7 +168,7 @@ const BlogEditor = () => {
     const fetchFriends = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/admin/employees', {
+        const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -276,12 +277,14 @@ const BlogEditor = () => {
 
   const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
+
     try {
       const token = localStorage.getItem('token');
-      
+      let createdOrUpdatedWorklog;
+
       if (isEditMode) {
-        // EDIT MODE: Update existing worklog
-        const response = await fetch(`http://localhost:5000/api/worklogs/${postId}`, {
+        // update
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -292,14 +295,13 @@ const BlogEditor = () => {
             content: blogContent,
             tag: blogTags || [],
             collaborators: selectedFriends,
-            commitMessage: commitMessage
           })
         });
-        const data = await response.json();
-        console.log('Blog updated:', data);
+        createdOrUpdatedWorklog = await response.json();
+
       } else {
-        // CREATE MODE: Create new worklog
-        const response = await fetch('http://localhost:5000/api/worklogs', {
+        // create
+        const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -310,13 +312,27 @@ const BlogEditor = () => {
             content: blogContent,
             tag: blogTags || [],
             collaborators: selectedFriends,
-            commitMessage: commitMessage
           })
         });
-        const data = await response.json();
-        console.log('Blog created:', data);
+        createdOrUpdatedWorklog = await response.json();
       }
-      
+
+      // ADD VERSION (LOG HISTORY)
+      const worklogId = createdOrUpdatedWorklog?._id;
+      if (worklogId) {
+        await fetch(`http://localhost:5000/api/worklogs/${worklogId}/versions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            message: commitMessage
+          })
+        });
+      }
+
       setSaveOpen(false);
       setCommitMessage("");
       setHasUnsavedChanges(false);
@@ -370,8 +386,8 @@ const BlogEditor = () => {
                   setHasUnsavedChanges(true);
                 }}
                 sidebarCollapsed={sidebarCollapsed}
-                onBack={() => handleNavigationAttempt(-1)}
-                onVersion={() => handleNavigationAttempt("/worklog/version")}
+                onBack={() => navigate(-1)}
+                onVersion={() => navigate(`/worklogs/${postId}/versions`)}
               />
             </div>
 

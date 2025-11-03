@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Login/login.css";
 import "./ResetPassword.css";
+import { AUTH_ENDPOINTS } from "../../config/api";
 import logoWithText from "../../assets/Logo/Logo with Text_White.png";
 
 const ResetPassword = () => {
@@ -24,7 +25,7 @@ const ResetPassword = () => {
     setError("");
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const res = await fetch(AUTH_ENDPOINTS.FORGOT_PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -58,7 +59,7 @@ const ResetPassword = () => {
     setError("");
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const res = await fetch(AUTH_ENDPOINTS.FORGOT_PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

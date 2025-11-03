@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./WorkLogList.css";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../../config/api";
 
 // Utility function to strip HTML tags
 const stripHtmlTags = (html) => {
@@ -20,11 +21,17 @@ const formatHashtag = (tag) => {
 
 const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
-  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filteredPosts, setFilteredPosts] = useState([]);
   const [searchParams] = useSearchParams();
-
+   const [pagination, setPagination] = useState({
+      currentPage: 1,
+      totalPages: 1,
+      totalDocs: 0,
+      hasNextPage: false,
+      hasPrevPage: false,
+      limit: 10
+    });
   const handleWorkLogClick = (logId) => {
     navigate(`/blog-post?id=${logId}`);
   };
@@ -33,141 +40,93 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
     navigate('/blog-editor'); // Navigate to BlogEditor without ID for create mode
   };
 
-  useEffect(() => {
-    const fetchUserWorklogs = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        
-        // Fetch current user ID
-        const userResponse = await fetch('http://localhost:5000/api/auth/profile', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const userData = await userResponse.json();
-        const currentUserId = userData.user?.id || userData.user?._id || userData.id || userData._id;
-        
-        // Build query params for filter
-        const params = new URLSearchParams();
-        if (filters?.searchQuery) params.append('search', filters.searchQuery);
-        if (filters?.selectedTags?.length > 0) params.append('tag', filters.selectedTags.join(','));
-        if (filters?.dateRange?.start) params.append('from', filters.dateRange.start);
-        if (filters?.dateRange?.end) params.append('to', filters.dateRange.end);
-        
-        const queryString = params.toString();
-        const url = `http://localhost:5000/api/worklogs/filter${queryString ? '?' + queryString : ''}`;
-        
-        // Fetch all worklogs dengan filters
-        const worklogsResponse = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!worklogsResponse.ok) {
-          console.error('Filter response error:', worklogsResponse.status);
-          setFilteredPosts([]);
-          setLoading(false);
-          return;
+ useEffect(() => {
+  const fetchUserWorklogs = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Fetch current user ID
+      const userResponse = await fetch(AUTH_ENDPOINTS.PROFILE, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
-
-        const worklogsData = await worklogsResponse.json();
-        let allWorklogs = Array.isArray(worklogsData) ? worklogsData : (worklogsData?.worklogs || []);
-        
-        // Validate it's an array
-        if (!Array.isArray(allWorklogs)) {
-          console.error('Response worklogs is not an array:', allWorklogs);
-          setFilteredPosts([]);
-          setLoading(false);
-          return;
-        }
-        
-        // Filter: hanya yang user adalah owner atau collaborator
-        const userWorklogs = allWorklogs.filter(worklog => {
-          const isOwner = worklog.user?._id === currentUserId || worklog.user?.id === currentUserId;
-          const isCollaborator = worklog.collaborators?.some(collab => 
-            collab._id === currentUserId || collab.id === currentUserId
-          );
-          return isOwner || isCollaborator;
-        });
-        
-        // Convert ke format untuk display
-        const convertedPosts = userWorklogs.map((worklog) => {
-          // Strip HTML tags from content
-          const plainTextContent = stripHtmlTags(worklog.content);
-          
-          return {
-            id: worklog._id || worklog.id,
-            title: worklog.title || "Untitled",
-            hashtags: worklog.tag || [],
-            description: plainTextContent?.substring(0, 100) || "No description",
-            date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID'),
-            time: new Date(worklog.datetime || worklog.createdAt).toLocaleTimeString('id-ID', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })
-          };
-        });
-        
-        // Sort by date terbaru
-        convertedPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        setFilteredPosts(convertedPosts);
-      } catch (error) {
-        console.error('Error fetching worklogs:', error);
-        setFilteredPosts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserWorklogs();
-  }, [filters]);
-
-  // Apply filters setiap kali filters berubah
-  useEffect(() => {
-    let filtered = [...posts];
-
-    // Filter by search query (title, content, or user name)
-    if (filters.searchQuery) {
-      const query = filters.searchQuery.toLowerCase();
-      filtered = filtered.filter(post =>
-        post.title?.toLowerCase().includes(query) ||
-        post.description?.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by selected tags (OR logic)
-    if (filters.selectedTags.length > 0) {
-      filtered = filtered.filter(post =>
-        post.hashtags && filters.selectedTags.some(selectedTag => post.hashtags.includes(selectedTag))
-      );
-    }
-
-    // Filter by date range
-    if (filters.dateRange.start || filters.dateRange.end) {
-      filtered = filtered.filter(post => {
-        const postDate = new Date(post.date);
-        if (filters.dateRange.start) {
-          const startDate = new Date(filters.dateRange.start);
-          if (postDate < startDate) return false;
-        }
-        if (filters.dateRange.end) {
-          const endDate = new Date(filters.dateRange.end);
-          endDate.setHours(23, 59, 59, 999);
-          if (postDate > endDate) return false;
-        }
-        return true;
       });
-    }
+      const userData = await userResponse.json();
+      const currentUserId = userData.user?.id || userData.user?._id || userData.id || userData._id;
+      
+      // Build query params for filter + pagination
+      const params = new URLSearchParams();
+      if (filters?.searchQuery) params.append('search', filters.searchQuery);
+      if (filters?.selectedTags?.length > 0) params.append('tag', filters.selectedTags.join(','));
+      if (filters?.dateRange?.start) params.append('from', filters.dateRange.start);
+      if (filters?.dateRange?.end) params.append('to', filters.dateRange.end);
+      params.append('page', pagination.currentPage);
+      params.append('limit', pagination.limit);
 
-    setFilteredPosts(filtered);
-  }, [posts, filters]);
+      const queryString = params.toString();
+      const url = `${WORKLOG_ENDPOINTS.FILTER}${queryString ? '?' + queryString : ''}`;
+      
+      const worklogsResponse = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!worklogsResponse.ok) {
+        console.error('Filter response error:', worklogsResponse.status);
+        setFilteredPosts([]);
+        setLoading(false);
+        return;
+      }
+
+      const worklogsData = await worklogsResponse.json();
+      const allWorklogs = Array.isArray(worklogsData) ? worklogsData : (worklogsData?.worklogs || []);
+
+      // ✅ Simpan pagination info dari backend
+      if (worklogsData?.pagination) {
+        setPagination(prev => ({ ...prev, ...worklogsData.pagination }));
+      }
+
+      const userWorklogs = allWorklogs.filter(worklog => {
+        const isOwner = worklog.user?._id === currentUserId || worklog.user?.id === currentUserId;
+        const isCollaborator = worklog.collaborators?.some(collab => 
+          collab._id === currentUserId || collab.id === currentUserId
+        );
+        return isOwner || isCollaborator;
+      });
+      
+      const convertedPosts = userWorklogs.map((worklog) => {
+        const plainTextContent = stripHtmlTags(worklog.content);
+        return {
+          id: worklog._id || worklog.id,
+          title: worklog.title || "Untitled",
+          hashtags: worklog.tag || [],
+          description: plainTextContent?.substring(0, 100) || "No description",
+          date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID'),
+          time: new Date(worklog.datetime || worklog.createdAt).toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })
+        };
+      });
+
+      setFilteredPosts(convertedPosts);
+    } catch (error) {
+      console.error('Error fetching worklogs:', error);
+      setFilteredPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchUserWorklogs();
+}, [filters, pagination.currentPage]); // ✅ Tambahkan dependency ini
+
 
   return (
     <div className="worklog-list">
@@ -207,8 +166,63 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
             </article>
           ))
         )}
+        </div>
+        {/* Pagination Controls */}
+        {!loading && filteredPosts.length > 0 && (
+          <div className="flex justify-center items-center gap-2 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+              disabled={!pagination.hasPrevPage || pagination.currentPage <= 1}
+            >
+              Previous
+            </Button>
+            
+            <div className="flex gap-1">
+              {/* Hanya generate pagination jika ada data */}
+              {filteredPosts.length > 0 && [...Array(Math.min(Math.ceil(filteredPosts.length / pagination.limit), pagination.totalPages))].map((_, index) => {
+                const pageNumber = index + 1;
+                const isCurrentPage = pageNumber === pagination.currentPage;
+                // Show first page, last page, current page, and pages around current page
+                const shouldShow = pageNumber === 1 || 
+                                 pageNumber === Math.ceil(filteredPosts.length / pagination.limit) ||
+                                 Math.abs(pageNumber - pagination.currentPage) <= 1;
+
+                if (!shouldShow) {
+                  // Show dots only for first gap
+                  if (pageNumber === 2 || pageNumber === Math.ceil(filteredPosts.length / pagination.limit) - 1) {
+                    return <span key={`dot-${pageNumber}`} className="px-2">...</span>;
+                  }
+                  return null;
+                }
+
+                return (
+                  <Button
+                    key={pageNumber}
+                    variant={isCurrentPage ? "default" : "outline"}
+                    size="sm"
+                    className={`w-8 h-8 p-0 ${isCurrentPage ? 'bg-primary text-primary-foreground' : ''}`}
+                    onClick={() => setPagination(prev => ({ ...prev, currentPage: pageNumber }))}
+                  >
+                    {pageNumber}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+              disabled={!pagination.hasNextPage || pagination.currentPage >= Math.ceil(filteredPosts.length / pagination.limit)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
-    </div>
+
   );
 };
 

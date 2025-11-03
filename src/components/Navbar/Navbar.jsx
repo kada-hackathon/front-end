@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { logout } from "@/utils/authUtils";
 import "./Navbar.css";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../../config/api";
 
 // Utility function to ensure hashtag has only one #
 const formatHashtag = (tag) => {
@@ -31,6 +32,27 @@ const Navbar = ({ children, onFilterChange }) => {
   const [selectedTags, setSelectedTags] = useState([]);
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [userDivision, setUserDivision] = useState("");
+  const [tagSearch, setTagSearch] = useState("");
+  
+  // Filter and limit tags
+  const filteredTags = React.useMemo(() => {
+    let filtered = [...availableTags];
+    
+    // Apply search filter if there's a search query
+    if (tagSearch) {
+      const searchLower = tagSearch.toLowerCase();
+      filtered = filtered.filter(tag => 
+        tag.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // If no search, limit to 15 most recent tags
+    if (!tagSearch && filtered.length > 15) {
+      filtered = filtered.slice(0, 15);
+    }
+    
+    return filtered;
+  }, [availableTags, tagSearch]);
 
   // Fetch user profile
   useEffect(() => {
@@ -46,7 +68,7 @@ const Navbar = ({ children, onFilterChange }) => {
       return;
     }
 
-    fetch('http://localhost:5000/api/auth/profile', {
+    fetch(AUTH_ENDPOINTS.PROFILE, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -77,15 +99,22 @@ const Navbar = ({ children, onFilterChange }) => {
     if (!userDivision) return;
 
     const token = localStorage.getItem('token');
-    fetch('http://localhost:5000/api/worklogs/filter', {
+    fetch(WORKLOG_ENDPOINTS.FILTER, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       }
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          console.error('Navbar fetch tags - error status:', res.status);
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log('Navbar - Tags fetch response:', data);
         const worklogs = data.worklogs || data || [];
         const divisionWorklogs = worklogs.filter(w => w.user?.division === userDivision);
         // Extract unique tags
@@ -98,7 +127,10 @@ const Navbar = ({ children, onFilterChange }) => {
         
         setAvailableTags(Array.from(tags).sort());
       })
-      .catch(err => console.error('Error fetching tags:', err));
+      .catch(err => {
+        console.error('Error fetching tags:', err);
+        setAvailableTags([]);
+      });
   }, [userDivision]);
 
   // Handle filter changes - notify parent
@@ -108,7 +140,7 @@ const Navbar = ({ children, onFilterChange }) => {
       selectedTags,
       dateRange
     };
-    console.log('Filter changed:', filterData); // DEBUG
+    
     if (onFilterChange) {
       onFilterChange(filterData);
     }
@@ -177,8 +209,14 @@ const Navbar = ({ children, onFilterChange }) => {
             {availableTags.length > 0 && (
               <div>
                 <label className="text-sm font-medium block mb-2">Tags</label>
-                <div className="flex flex-wrap gap-2">
-                  {availableTags.map(tag => (
+                <Input
+                  placeholder="Search tags..."
+                  className="mb-2"
+                  value={tagSearch}
+                  onChange={(e) => setTagSearch(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                  {filteredTags.map(tag => (
                     <button
                       key={tag}
                       onClick={() => toggleTag(tag)}
@@ -192,6 +230,9 @@ const Navbar = ({ children, onFilterChange }) => {
                     </button>
                   ))}
                 </div>
+                {availableTags.length > 15 && filteredTags.length === 15 && !tagSearch && (
+                  <p className="text-xs text-muted-foreground mt-2">Showing 15 most recent tags. Use search to find more.</p>
+                )}
               </div>
             )}
 
