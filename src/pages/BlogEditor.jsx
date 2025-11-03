@@ -137,14 +137,14 @@ const BlogEditor = () => {
     fetchFriends();
   }, []);
 
-  const filteredFriends = friends.filter((friend) =>
-    (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFriends = Array.isArray(friends) ? friends.filter((friend) =>
+    (friend?.name || friend?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
   ).map((friend) => ({
     id: friend._id || friend.id,
     name: friend.name || friend.full_name || "Unknown",
     division: friend.division || "Unknown",
     avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg"
-  }));
+  })) : [];
 
   const toggleFriendSelection = (friendId) => {
     setSelectedFriends((prev) =>

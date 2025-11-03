@@ -199,7 +199,7 @@ const BlogPost = () => {
             </div>
           </div>
 
-          <FriendsList friends={friends} />
+          <FriendsList/>
         </div>
       </main>
     </div>
