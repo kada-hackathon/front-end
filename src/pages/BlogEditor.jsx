@@ -20,7 +20,7 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../config/api";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 
 const BlogEditor = () => {
   const navigate = useNavigate();
@@ -77,7 +77,7 @@ const BlogEditor = () => {
     const fetchPost = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(WORKLOG_ENDPOINTS.ONE, {
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ const BlogEditor = () => {
       
       if (isEditMode) {
         // EDIT MODE: Update existing worklog
-        const response = await fetch(WORKLOG_ENDPOINTS.ONE, {
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

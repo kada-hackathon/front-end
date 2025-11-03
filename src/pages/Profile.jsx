@@ -17,7 +17,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
-import { AUTH_ENDPOINTS } from "../config/api";
+import { AUTH_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -207,7 +207,7 @@ const Profile = () => {
 
     // If viewing another user's profile, fetch from admin/employees endpoint
     if (viewUserId && currentUserId && viewUserId !== currentUserId) {
-      fetch('http://localhost:5000/api/admin/employees', {
+      fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -236,7 +236,7 @@ const Profile = () => {
         });
     } else {
       // Viewing own profile
-      fetch('http://localhost:5000/api/auth/profile', {
+      fetch(AUTH_ENDPOINTS.PROFILE, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
