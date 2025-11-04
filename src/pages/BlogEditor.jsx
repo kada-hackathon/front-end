@@ -22,7 +22,7 @@ import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 
-const BlogEditor = () => {
+  const BlogEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -372,13 +372,12 @@ const BlogEditor = () => {
       // ADD VERSION (LOG HISTORY)
       const worklogId = createdOrUpdatedWorklog?._id;
       if (worklogId) {
-        await fetch(`http://localhost:5000/api/worklogs/${worklogId}/versions`, {
+        await fetch(WORKLOG_ENDPOINTS.VERSIONS(worklogId), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          credentials: "include",
           body: JSON.stringify({
             message: commitMessage
           })

@@ -102,18 +102,32 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
       
       const convertedPosts = userWorklogs.map((worklog) => {
         const plainTextContent = stripHtmlTags(worklog.content);
+        const isOwner = worklog.user?._id === currentUserId || worklog.user?.id === currentUserId;
         return {
           id: worklog._id || worklog.id,
           title: worklog.title || "Untitled",
           hashtags: worklog.tag || [],
-          description: plainTextContent?.substring(0, 100) || "No description",
+          description: plainTextContent 
+            ? (plainTextContent.length > 100 
+                ? `${plainTextContent.substring(0, 100)}...` 
+                : plainTextContent)
+            : "No description",
           date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID'),
           time: new Date(worklog.datetime || worklog.createdAt).toLocaleTimeString('id-ID', { 
             hour: '2-digit', 
             minute: '2-digit' 
-          })
+          }),
+          author: {
+            name: worklog.user?.name || "Unknown",
+            division: worklog.user?.division || "Unknown Division",
+            avatar: worklog.user?.profilePicture || worklog.user?.profile_photo || "/placeholder.svg",
+          },
+          isOwner,
+          isCollaborator: !isOwner && worklog.collaborators?.some(collab => 
+            collab._id === currentUserId || collab.id === currentUserId
+          )
         };
-      });
+    });
 
       setFilteredPosts(convertedPosts);
     } catch (error) {
@@ -150,11 +164,37 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
               onClick={() => handleWorkLogClick(log.id)} 
               style={{ cursor: "pointer" }}
             >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={log.author.avatar}
+                    alt={log.author.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="font-medium text-sm">{log.author.name}</p>
+                    <p className="text-xs text-muted-foreground">{log.author.division}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {log.isOwner ? (
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">Owner</span>
+                  ) : log.isCollaborator ? (
+                    <span className="px-2 py-1 bg-purple-500/10 text-purple-500 text-xs rounded-full">Collaborator</span>
+                  ) : null}
+                </div>
+              </div>
+
               <h3 className="worklog-item-title">{log.title}</h3>
 
               <p className="worklog-item-hashtags">{log.hashtags.map(tag => formatHashtag(tag)).join(" ")}</p>
 
-              <p className="worklog-item-description">{log.description}</p>
+              <p className="worklog-item-description">
+                {log.description}
+                {log.description.endsWith('...') && (
+                  <span className="text-primary text-sm ml-1 font-medium">See more</span>
+                )}
+              </p>
 
               <div className="worklog-item-footer">
                 <span className="worklog-item-date">

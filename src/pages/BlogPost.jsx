@@ -205,7 +205,10 @@ const BlogPost = () => {
                       month: 'short',
                       year: 'numeric'
                     })}</p>
-                    <p>19.00 WIB</p>
+                    <div>{new Date(post.datetime || post.createdAt).toLocaleTimeString('id-ID', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</div>
                   </div>
                 </div>
 

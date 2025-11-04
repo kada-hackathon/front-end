@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
+import { WORKLOG_ENDPOINTS } from "../config/api";
 
 const WorkLogVersion = () => {
   const navigate = useNavigate();
@@ -15,25 +16,17 @@ const WorkLogVersion = () => {
 
   console.log("ID DARI ROUTER:", id);
 
-  // const workLogVersions = [
-  //   { id: "1", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-  //   { id: "2", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-  //   { id: "3", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-  //   { id: "4", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-  // ];
-
   useEffect(() => {
     const fetchVersions = async () => {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await fetch(`http://localhost:5000/api/worklogs/${id}/versions`, {
+        const res = await fetch(WORKLOG_ENDPOINTS.VERSIONS(id), {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
-          },
-          credentials: "include" // jika backend pakai cookie juga, recommended biarkan di sini
+          }
         });
 
         const data = await res.json();
@@ -104,29 +97,6 @@ const WorkLogVersion = () => {
               ))}
             </div>
           </div>
-
-            {/* <div className="space-y-4 max-w-4xl">
-              {workLogVersions.map((version) => (
-                <div key={version.id} className="bg-card border border-border p-6 rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={version.avatar}
-                        alt={version.author}
-                        className="w-14 h-14 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="font-semibold text-lg">{version.author}</p>
-                        <p className="text-sm text-muted-foreground">{version.division}</p>
-                      </div>
-                    </div>
-                    <span className="text-sm text-muted-foreground">{version.updatedAt}</span>
-                  </div>
-                  <p className="font-semibold text-base">{version.message}</p>
-                </div>
-              ))}
-            </div>
-          </div> */}
 
           <FriendsList/>
         </div>
