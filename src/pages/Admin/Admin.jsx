@@ -1,0 +1,141 @@
+import './Admin.css'
+import logoOnly from '../../assets/Logo/Logo Only_White.png'
+import textOnly from '../../assets/Logo/Text Only_White.png'
+import { useNavigate } from 'react-router-dom';
+import {useState, useEffect} from 'react';
+
+function Admin() {
+  
+
+  return (
+    <div className="app">
+      
+       
+        
+        {/* Decorative Icons */}
+        <div className="docs-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.17" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+        </div>
+        
+        <div className="pencil-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+          </svg>
+        </div>
+        
+        <div className="people-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.22" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </div>
+        
+        <div className="folder-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.38" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+        </div>
+        
+        <div className="magnifier-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.4" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+        </div>
+        <div className="login-content">
+          <div className="welcome-section">
+            
+            <h1>Hello Admin !</h1>
+            <img src={textOnly} alt="Nebwork" className="text-only" />
+          </div>
+          
+          <form className="login-form" onSubmit={handleRegistration}>
+            <div className="input-group">
+              <label>Full Name:</label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder=" "
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
+              <div className="underline"></div>
+            </div>
+
+            <div className="input-group">
+              <label>Division:</label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder=" "
+                value={division}
+                onChange={(e) => setDivision(e.target.value)}
+                required
+              />
+              <div className="underline"></div>
+            </div>
+
+            <div className="input-group">
+              <label>Email:</label>
+              <input
+                type="email"
+                className="input-field"
+                placeholder=" "
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <div className="underline"></div>
+            </div>
+
+            <div className="input-group">
+              <label>Password:</label>
+              <input
+                type="password"
+                className="input-field"
+                placeholder=" "
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <div className="underline"></div>
+            </div>
+
+            <div className="input-group">
+              <label>Date of Join:</label>
+              <input
+                type="date"
+                className="input-field"
+                placeholder=" "
+                value={dateOfJoin}
+                onChange={(e) => setDateOfJoin(e.target.value)}
+                required
+              />
+              <div className="underline"></div>
+            </div>
+            
+            {errorMessage && (
+              <p style={{ color: "red", fontSize: "0.9em" }}>{errorMessage}</p>
+            )}
+            <button type="submit" className="login-button">
+              Registrasi
+            </button>
+          </form>
+          
+          
+        </div>
+      </div>
+
+  );
+}
+
+export default Admin;
