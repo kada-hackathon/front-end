@@ -1,8 +1,8 @@
 // Centralized API Configuration
 // Update BASE_URL here to change all API endpoints globally
 
-// const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
+// const BASE_URL = 'http://localhost:5000';
 
 // AUTH ENDPOINTS
 export const AUTH_ENDPOINTS = {
@@ -18,6 +18,7 @@ export const WORKLOG_ENDPOINTS = {
   LIST: `${BASE_URL}/api/worklogs`,                    // GET all, POST create
   ONE: (id) => `${BASE_URL}/api/worklogs/${id}`,       // GET, PUT, DELETE single
   FILTER : `${BASE_URL}/api/worklogs/filter`,  // GET user logs
+  VERSIONS: (id) => `${BASE_URL}/api/worklogs/${id}/versions`, // GET versions
 };
 
 // ADMIN ENDPOINTS
@@ -30,6 +31,14 @@ export const ADMIN_ENDPOINTS = {
 export const CHATBOT_ENDPOINTS = {
   SEND_MESSAGE: `${BASE_URL}/api/chatbot`,
   GET_HISTORY: (sessionId) => `${BASE_URL}/api/chatbot/session/${sessionId}`,
+};
+
+// UPLOAD ENDPOINTS
+export const UPLOAD_ENDPOINTS = {
+  SINGLE: `${BASE_URL}/api/upload`,
+  MULTIPLE: `${BASE_URL}/api/upload/multiple`,
+  DELETE: `${BASE_URL}/api/upload`,
+  DELETE_MULTIPLE: `${BASE_URL}/api/upload/multiple`,
 };
 
 // Export base URL for direct use

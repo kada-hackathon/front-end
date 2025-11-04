@@ -1,12 +1,12 @@
 import { mergeAttributes, Node } from "@tiptap/react"
 import { ReactNodeViewRenderer } from "@tiptap/react"
-import { AudioNode as AudioNodeComponent } from "@/components/tiptap-node/audio-node/audio-node"
+import { ImageNode as ImageNodeComponent } from "@/components/tiptap-node/image-node/image-node"
 
 /**
- * A Tiptap node extension for displaying audio content.
+ * A Tiptap node extension for displaying image content with delete button.
  */
-export const AudioNode = Node.create({
-  name: "audio",
+export const CustomImageNode = Node.create({
+  name: "image",
 
   group: "block",
 
@@ -18,6 +18,8 @@ export const AudioNode = Node.create({
 
   addOptions() {
     return {
+      inline: false,
+      allowBase64: false,
       HTMLAttributes: {},
     }
   },
@@ -34,6 +36,16 @@ export const AudioNode = Node.create({
           return { src: attributes.src }
         },
       },
+      alt: {
+        default: null,
+        parseHTML: element => element.getAttribute('alt'),
+        renderHTML: attributes => {
+          if (!attributes.alt) {
+            return {}
+          }
+          return { alt: attributes.alt }
+        },
+      },
       title: {
         default: null,
         parseHTML: element => element.getAttribute('title'),
@@ -44,41 +56,31 @@ export const AudioNode = Node.create({
           return { title: attributes.title }
         },
       },
-      controls: {
-        default: true,
-        parseHTML: element => element.hasAttribute('controls'),
-        renderHTML: attributes => {
-          if (!attributes.controls) {
-            return {}
-          }
-          return { controls: true }
-        },
-      },
     }
   },
 
   parseHTML() {
     return [
       {
-        tag: 'audio[src]',
+        tag: 'img[src]',
       },
     ]
   },
 
   renderHTML({ HTMLAttributes }) {
     return [
-      "audio",
+      "img",
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
     ]
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(AudioNodeComponent)
+    return ReactNodeViewRenderer(ImageNodeComponent)
   },
 
   addCommands() {
     return {
-      setAudio:
+      setImage:
         (options) =>
         ({ commands }) => {
           return commands.insertContent({
@@ -96,7 +98,7 @@ export const AudioNode = Node.create({
         const { selection } = state
         const { $from, node } = selection
 
-        // If the selection is a node selection and it's this node type, prevent deletion
+        // If the selection is a node selection and it's an image, prevent deletion
         if (node && node.type.name === this.name) {
           return true
         }
@@ -113,7 +115,7 @@ export const AudioNode = Node.create({
         const { selection } = state
         const { $from, node } = selection
 
-        // If the selection is a node selection and it's this node type, prevent deletion
+        // If the selection is a node selection and it's an image, prevent deletion
         if (node && node.type.name === this.name) {
           return true
         }
@@ -129,4 +131,4 @@ export const AudioNode = Node.create({
   },
 })
 
-export default AudioNode
+export default CustomImageNode

@@ -236,6 +236,7 @@ const BlogEditor = () => {
     if (isEditMode && postId) {
       try {
         const token = localStorage.getItem('token');
+        const mediaFiles = extractMediaFromContent(blogContent);
         await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
           headers: {
@@ -247,6 +248,7 @@ const BlogEditor = () => {
             content: blogContent,
             tag: blogTags,
             collaborators: allSelectedIds,
+            media: mediaFiles,
           })
         });
         console.log("Collaborators auto-saved");
@@ -272,6 +274,7 @@ const BlogEditor = () => {
       try {
         const token = localStorage.getItem('token');
         const updatedCollaboratorIds = updatedCollaborators.map(c => c.id);
+        const mediaFiles = extractMediaFromContent(blogContent);
         await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
           headers: {
@@ -283,6 +286,7 @@ const BlogEditor = () => {
             content: blogContent,
             tag: blogTags,
             collaborators: updatedCollaboratorIds,
+            media: mediaFiles,
           })
         });
         console.log("Collaborator removal auto-saved");
@@ -327,12 +331,84 @@ const BlogEditor = () => {
     setShowUnsavedDialog(false);
   };
 
+  // Extract media URLs from HTML content
+  const extractMediaFromContent = (htmlContent) => {
+    const media = [];
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+
+    // Extract images
+    const images = doc.querySelectorAll('img[src]');
+    images.forEach(img => {
+      const src = img.getAttribute('src');
+      if (src && src.includes('nebwork-storage')) {
+        media.push({
+          url: src,
+          type: 'image',
+          name: src.split('/').pop() || 'image',
+          size: 0 // Size not available from HTML
+        });
+      }
+    });
+
+    // Extract videos
+    const videos = doc.querySelectorAll('video source[src], video[src]');
+    videos.forEach(video => {
+      const src = video.getAttribute('src');
+      if (src && src.includes('nebwork-storage')) {
+        media.push({
+          url: src,
+          type: 'video',
+          name: src.split('/').pop() || 'video',
+          size: 0
+        });
+      }
+    });
+
+    // Extract audio
+    const audios = doc.querySelectorAll('audio source[src], audio[src]');
+    audios.forEach(audio => {
+      const src = audio.getAttribute('src');
+      if (src && src.includes('nebwork-storage')) {
+        media.push({
+          url: src,
+          type: 'audio',
+          name: src.split('/').pop() || 'audio',
+          size: 0
+        });
+      }
+    });
+
+    // Extract documents (links with specific attributes or iframes)
+    const documents = doc.querySelectorAll('a[href*=".pdf"], a[href*=".doc"], a[href*=".docx"], iframe[src]');
+    documents.forEach(doc => {
+      const src = doc.getAttribute('href') || doc.getAttribute('src');
+      if (src && src.includes('nebwork-storage')) {
+        const extension = src.split('.').pop().toLowerCase();
+        const isDoc = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension);
+        if (isDoc) {
+          media.push({
+            url: src,
+            type: 'document',
+            name: src.split('/').pop() || 'document',
+            size: 0
+          });
+        }
+      }
+    });
+
+    return media;
+  };
+
   const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
 
     try {
       const token = localStorage.getItem('token');
       let createdOrUpdatedWorklog;
+
+      // Extract media from content
+      const mediaFiles = extractMediaFromContent(blogContent);
 
       if (isEditMode) {
         // update
@@ -347,6 +423,7 @@ const BlogEditor = () => {
             content: blogContent,
             tag: blogTags || [],
             collaborators: collaborators.map(c => c.id),
+            media: mediaFiles,
           })
         });
         createdOrUpdatedWorklog = await response.json();
@@ -364,6 +441,7 @@ const BlogEditor = () => {
             content: blogContent,
             tag: blogTags || [],
             collaborators: collaborators.map(c => c.id),
+            media: mediaFiles,
           })
         });
         createdOrUpdatedWorklog = await response.json();
@@ -372,7 +450,7 @@ const BlogEditor = () => {
       // ADD VERSION (LOG HISTORY)
       const worklogId = createdOrUpdatedWorklog?._id;
       if (worklogId) {
-        await fetch(`http://localhost:5000/api/worklogs/${worklogId}/versions`, {
+        await fetch(WORKLOG_ENDPOINTS.VERSIONS(worklogId), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

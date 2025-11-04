@@ -11,10 +11,22 @@ import {
   FileCornerIcon,
   UploadPreview,
   UploadDragArea,
+  CloseIcon,
 } from "@/components/tiptap-node/shared/upload-utils"
 
-const DropZoneContent = ({ maxSize, limit }) => (
+const DropZoneContent = ({ maxSize, limit, onDelete }) => (
   <>
+    <button
+      type="button"
+      className="tiptap-video-upload-delete-zone"
+      onClick={(e) => {
+        e.stopPropagation()
+        onDelete()
+      }}
+      title="Remove upload area"
+    >
+      <CloseIcon />
+    </button>
     <div className="tiptap-video-upload-dropzone">
       <FileDocIcon className="tiptap-video-upload-dropzone-rect-primary" />
       <FileCornerIcon className="tiptap-video-upload-dropzone-rect-secondary" />
@@ -101,11 +113,15 @@ export const VideoUploadNode = (props) => {
 
   const hasFiles = fileItems.length > 0
 
+  const handleDeleteNode = () => {
+    props.deleteNode()
+  }
+
   return (
     <NodeViewWrapper className="tiptap-video-upload" tabIndex={0} onClick={handleClick}>
       {!hasFiles && (
         <UploadDragArea onFile={handleUpload} className="tiptap-video-upload-drag-area">
-          <DropZoneContent maxSize={maxSize} limit={limit} />
+          <DropZoneContent maxSize={maxSize} limit={limit} onDelete={handleDeleteNode} />
         </UploadDragArea>
       )}
       {hasFiles && (
