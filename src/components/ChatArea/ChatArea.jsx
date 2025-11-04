@@ -1,4 +1,4 @@
-import { Send, Plus } from "lucide-react";
+import { Send, Plus, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import "./ChatArea.css";
 
-const ChatArea = ({ messages, inputValue, onInputChange, onSendMessage, onKeyPress }) => {
+const ChatArea = ({ messages, inputValue, onInputChange, onSendMessage, onKeyPress, userProfile }) => {
   return (
     <div className="chat-area">
       <ScrollArea className="chat-area-scroll">
@@ -45,8 +45,8 @@ const ChatArea = ({ messages, inputValue, onInputChange, onSendMessage, onKeyPre
                 </div>
                 {message.sender === "user" && (
                   <Avatar className="chat-message-avatar">
-                    <AvatarImage src="/placeholder.svg" />
-                    <AvatarFallback>GA</AvatarFallback>
+                    <AvatarImage src={userProfile?.profilePicture || "/placeholder.svg"} />
+                    <AvatarFallback>{userProfile?.name?.substring(0, 2).toUpperCase() || "GA"}</AvatarFallback>
                   </Avatar>
                 )}
               </div>
@@ -58,7 +58,7 @@ const ChatArea = ({ messages, inputValue, onInputChange, onSendMessage, onKeyPre
       <div className="chat-area-input-wrapper">
         <div className="chat-area-input-container">
           <div className="chat-area-input">
-            <Plus className="chat-area-input-icon" />
+            
             <Input
               value={inputValue}
               onChange={(e) => onInputChange(e.target.value)}
@@ -74,6 +74,7 @@ const ChatArea = ({ messages, inputValue, onInputChange, onSendMessage, onKeyPre
             >
               <Send className="chat-area-send-icon" />
             </Button>
+            
           </div>
         </div>
       </div>
