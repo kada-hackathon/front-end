@@ -21,6 +21,8 @@ import Navbar from "@/components/Navbar/Navbar";
 import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
+import { apiHandler } from "../utils/apiHandler";
+import { toast } from "sonner";
 
   const BlogEditor = () => {
   const navigate = useNavigate();
@@ -333,47 +335,29 @@ import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/ap
     console.log("Saving blog with message:", commitMessage);
 
     try {
-      const token = localStorage.getItem('token');
       let createdOrUpdatedWorklog;
 
+      // Prepare data
+      const worklogData = {
+        title: blogTitle,
+        content: blogContent,
+        tag: blogTags || [],
+        collaborators: collaborators.map(c => c.id),
+      };
+
       if (isEditMode) {
-        // update
-        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: blogTitle || "Untitled Work Log",
-            content: blogContent,
-            tag: blogTags || [],
-            collaborators: collaborators.map(c => c.id),
-          })
-        });
-        createdOrUpdatedWorklog = await response.json();
+        // Update existing worklog
+        createdOrUpdatedWorklog = await apiHandler.worklog.updateWorklog(postId, worklogData);
 
       } else {
-        // create
-        const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: blogTitle || "Untitled Work Log",
-            content: blogContent,
-            tag: blogTags || [],
-            collaborators: collaborators.map(c => c.id),
-          })
-        });
-        createdOrUpdatedWorklog = await response.json();
+        // Create new worklog
+        createdOrUpdatedWorklog = await apiHandler.worklog.saveWorklog(worklogData);
       }
 
       // ADD VERSION (LOG HISTORY)
       const worklogId = createdOrUpdatedWorklog?._id;
       if (worklogId) {
+        const token = localStorage.getItem('token');
         await fetch(WORKLOG_ENDPOINTS.VERSIONS(worklogId), {
           method: "POST",
           headers: {
@@ -405,6 +389,26 @@ import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/ap
       }
     } catch (err) {
       console.error('Error saving blog:', err);
+      
+      // Handle validation errors
+      if (err.validationErrors) {
+        // Display each validation error
+        const fieldNames = {
+          title: 'Title',
+          content: 'Content',
+          tag: 'Tags'
+        };
+        
+        Object.entries(err.validationErrors).forEach(([field, message]) => {
+          const fieldName = fieldNames[field] || field;
+          toast.error(`${fieldName}: ${message}`);
+        });
+      } else if (err.message === 'No authentication token found') {
+        toast.error('Session expired. Please login again.');
+        navigate('/login');
+      } else {
+        toast.error('Failed to save worklog. Please try again.');
+      }
     }
   };
 
