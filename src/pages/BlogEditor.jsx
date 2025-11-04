@@ -190,9 +190,11 @@ import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/ap
 
   // Map friends and sort: collaborators first, then others
   const allFriends = friends
-    .filter((friend) =>
-      (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    .filter((friend) => {
+      const nameMatch = (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const sameDivision = friend.division === owner?.division;
+      return nameMatch && sameDivision;
+    })
     .map((friend) => ({
       id: friend._id || friend.id,
       name: friend.name || friend.full_name || "Unknown",
