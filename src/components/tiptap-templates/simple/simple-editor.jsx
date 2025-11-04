@@ -5,7 +5,6 @@ import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
-import { Image } from "@tiptap/extension-image"
 import { TaskItem, TaskList } from "@tiptap/extension-list"
 import { TextAlign } from "@tiptap/extension-text-align"
 import { Typography } from "@tiptap/extension-typography"
@@ -32,6 +31,7 @@ import { DocumentUploadNode } from "@/components/tiptap-node/document-upload-nod
 import { VideoNode } from "@/components/tiptap-node/video-node/video-node-extension"
 import { AudioNode } from "@/components/tiptap-node/audio-node/audio-node-extension"
 import { DocumentNode } from "@/components/tiptap-node/document-node/document-node-extension"
+import { CustomImageNode } from "@/components/tiptap-node/image-node/image-node-extension"
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"
 import "@/components/tiptap-node/code-block-node/code-block-node.scss"
@@ -182,7 +182,7 @@ const MobileToolbarContent = ({
   </>
 )
 
-export function SimpleEditor({ onBack, onVersion, sidebarCollapsed }) {
+export function SimpleEditor({ onBack, onVersion, sidebarCollapsed, initialContent = "", onContentChange, initialTitle = "", initialTags = [], onTitleChange, onTagsChange }) {
   const isMobile = useIsMobile()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = React.useState("main")
@@ -226,7 +226,7 @@ export function SimpleEditor({ onBack, onVersion, sidebarCollapsed }) {
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
-      Image,
+      CustomImageNode,
       Typography,
       Superscript,
       Subscript,
@@ -263,13 +263,27 @@ export function SimpleEditor({ onBack, onVersion, sidebarCollapsed }) {
         onError: (error) => console.error("Document upload failed:", error),
       }),
     ],
-    content: "",
+    content: initialContent || "",
+    onUpdate: ({ editor }) => {
+      // Call onContentChange callback when content changes
+      if (onContentChange) {
+        const html = editor.getHTML();
+        onContentChange(html);
+      }
+    },
   })
 
   const rect = useCursorVisibility({
     editor,
     overlayHeight: toolbarRef.current?.getBoundingClientRect().height ?? 0,
   })
+
+  // Load initial content when it changes
+  React.useEffect(() => {
+    if (editor && initialContent && editor.getHTML() !== initialContent) {
+      editor.commands.setContent(initialContent);
+    }
+  }, [initialContent, editor]);
 
   React.useEffect(() => {
     if (!isMobile && mobileView !== "main") {
@@ -317,7 +331,14 @@ export function SimpleEditor({ onBack, onVersion, sidebarCollapsed }) {
           className={`simple-editor-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} 
           onClick={handleContentClick}
         >
-          <EnhancedEditor onFocusChange={setIsToolbarDisabled} editor={editor} />
+          <EnhancedEditor 
+            onFocusChange={setIsToolbarDisabled} 
+            editor={editor}
+            initialTitle={initialTitle}
+            initialTags={initialTags}
+            onTitleChange={onTitleChange}
+            onTagsChange={onTagsChange}
+          />
           <EditorContent editor={editor} role="presentation" />
         </div>
       </EditorContext.Provider>

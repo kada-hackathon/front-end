@@ -1,7 +1,24 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./HomeContent.css";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS} from "../../config/api";
+
+// Utility function to strip HTML tags
+const stripHtmlTags = (html) => {
+  if (!html) return "";
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
+
+// Utility function to ensure hashtag has only one #
+const formatHashtag = (tag) => {
+  if (!tag) return "";
+  // Remove all # from start, then add one #
+  return `#${tag.replace(/^#+/, '')}`;
+};
 
 const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange: { start: "", end: "" } } }) => {
   const navigate = useNavigate();
@@ -10,6 +27,14 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
   const [userName, setUserName] = useState("User");
   const [userDivision, setUserDivision] = useState("");
   const [searchParams] = useSearchParams();
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalDocs: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+    limit: 10
+  });
   const selectedTag = searchParams.get('tag');  // ← Extract ?tag=AI
 
   // Fetch user profile untuk greeting + divisi
@@ -17,7 +42,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -35,6 +60,14 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
     fetchUserProfile();
   }, []);
 
+  // Reset pagination when selectedTag changes
+  useEffect(() => {
+    setPagination(prev => ({
+      ...prev,
+      currentPage: 1
+    }));
+  }, [selectedTag]);
+
   // Fetch worklogs dari backend dengan filters applied
   useEffect(() => {
     const fetchWorklogs = async () => {
@@ -50,8 +83,12 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         if (filters?.dateRange?.end) params.append('to', filters.dateRange.end);
         if (selectedTag) params.append('tag', selectedTag); // URL query param priority
         
+        // Add pagination params
+        params.append('page', pagination.currentPage);
+        params.append('limit', pagination.limit);
+        
         const queryString = params.toString();
-        const url = `http://localhost:5000/api/worklogs/filter${queryString ? '?' + queryString : ''}`;
+        const url = `${WORKLOG_ENDPOINTS.FILTER}${queryString ? '?' + queryString : ''}`;
         
         console.log('Fetching from:', url); // DEBUG
         
@@ -64,36 +101,32 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
           console.error('Filter response error:', response.status);
+          console.error('Error response:', errorText);
           setPosts([]);
           setLoading(false);
           return;
         }
 
         const data = await response.json();
-        console.log('Filter response:', data);
-        console.log('Filter response type:', typeof data);
-        console.log('Filter response keys:', Object.keys(data || {}));
+        console.log('Response data:', data); // Debug response
+
+        // Update pagination state
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
         
-        // Convert worklogs ke format posts - handle berbagai format response
+        // Extract worklogs array from response
         let worklogsArray = [];
         
-        if (Array.isArray(data)) {
-          worklogsArray = data;
-        } else if (data?.worklogs && Array.isArray(data.worklogs)) {
-          worklogsArray = data.worklogs;
-        } else if (data?.data && Array.isArray(data.data)) {
-          worklogsArray = data.data;
-        } else {
-          console.warn('Unexpected response format:', data);
-          // Try to get any array from the response
-          for (const key in data) {
-            if (Array.isArray(data[key])) {
-              worklogsArray = data[key];
-              break;
-            }
-          }
+        if (data?.worklogs && Array.isArray(data.worklogs)) {
+          worklogsArray = data.worklogs.filter(worklog => worklog.user); // Filter out entries without user
+        } else if (Array.isArray(data)) {
+          worklogsArray = data.filter(worklog => worklog.user); // Filter out entries without user
         }
+        
+        console.log('Filtered worklogs:', worklogsArray); // Debug extracted worklogs
         
         console.log('Extracted worklogsArray:', worklogsArray);
         
@@ -107,7 +140,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         
         console.log('Processing', worklogsArray.length, 'worklogs');
         
-        // ✅ NO NEED TO FILTER BY DIVISION - Backend already filtered!
+    
         // Backend filterWorkLogs() now handles division filtering with JWT token
         
         // Log first worklog structure for debugging
@@ -115,18 +148,18 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
           console.log('First worklog structure:', worklogsArray[0]);
         }
         
+        console.log('Starting post conversion with worklogsArray:', worklogsArray);
+
         const convertedPosts = worklogsArray.map((worklog, index) => {
-          console.log(`Converting worklog ${index}:`, {
-            id: worklog._id || worklog.id,
-            title: worklog.title,
-            author: worklog.user?.name,
-            division: worklog.user?.division,
-            datetime: worklog.datetime,
-            content: worklog.content?.substring(0, 50)
-          });
+          console.log(`Processing worklog ${index}:`, worklog);
           
-          return {
+          // Strip HTML tags from content for preview
+          const plainTextContent = stripHtmlTags(worklog.content);
+          
+          // Create post object with detailed logging
+          const post = {
             id: worklog._id || worklog.id,
+            title: worklog.title || "Work Log",
             author: {
               name: worklog.user?.name || "User",
               division: worklog.user?.division || "Unknown Division",
@@ -137,14 +170,21 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
               month: 'short',
               year: 'numeric'
             }),
-            title: worklog.title || "Work Log",
             hashtags: worklog.tag || [],
-            content: worklog.content || "",
+            content: plainTextContent || "",
             image: worklog.media?.[0] || null,
           };
+
+          console.log(`Converted post ${index}:`, post);
+          
+          return post;
         });
         
+        console.log('Final converted posts:', convertedPosts);
         setPosts(convertedPosts);
+        
+        // Log state update
+        console.log('Updated posts state with', convertedPosts.length, 'items');
       } catch (err) {
         console.error('Error fetching worklogs:', err);
         setPosts([]);
@@ -153,7 +193,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
       }
     };
     fetchWorklogs();
-  }, [selectedTag, filters]);
+  }, [selectedTag, filters, pagination.currentPage]); // Add pagination.currentPage as dependency
 
   // detail post => navigate ke halaman blog-post
   const handlePostClick = (postId) => {
@@ -167,7 +207,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
       {selectedTag && (
         <div className="mb-4 p-3 bg-purple-100 rounded">
           <span>Filtering by tag: </span>
-          <strong>#{selectedTag} </strong>
+          <strong>{formatHashtag(selectedTag)} </strong>
           <button onClick={() => navigate('/')}> Clear Filter</button>
         </div>
       )}
@@ -208,11 +248,18 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
                       key={tag}
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/?tag=${tag}`);
+                        // Reset pagination and navigate
+                        setPagination(prev => ({
+                          ...prev,
+                          currentPage: 1
+                        }));
+                        // Clean tag: remove # and trim
+                        const cleanTag = tag.replace(/^#+/, '').trim();
+                        navigate(`/?tag=${cleanTag}`);
                       }}
                       style={{ cursor: "pointer", color: "blue", marginRight: "8px" }}
                     >
-                      #{tag}
+                      {formatHashtag(tag)}
                     </span>
                   ))}
                 </p>
@@ -227,6 +274,60 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
               )}
             </article>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && posts.length > 0 && (
+        <div className="flex justify-center items-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+            disabled={!pagination.hasPrevPage}
+          >
+            Previous
+          </Button>
+          
+          <div className="flex gap-1">
+            {[...Array(pagination.totalPages)].map((_, index) => {
+              const pageNumber = index + 1;
+              const isCurrentPage = pageNumber === pagination.currentPage;
+              // Show first page, last page, current page, and pages around current page
+              const shouldShow = pageNumber === 1 || 
+                               pageNumber === pagination.totalPages ||
+                               Math.abs(pageNumber - pagination.currentPage) <= 1;
+
+              if (!shouldShow) {
+                // Show dots only for first gap
+                if (pageNumber === 2 || pageNumber === pagination.totalPages - 1) {
+                  return <span key={`dot-${pageNumber}`} className="px-2">...</span>;
+                }
+                return null;
+              }
+
+              return (
+                <Button
+                  key={pageNumber}
+                  variant={isCurrentPage ? "default" : "outline"}
+                  size="sm"
+                  className={`w-8 h-8 p-0 ${isCurrentPage ? 'bg-primary text-primary-foreground' : ''}`}
+                  onClick={() => setPagination(prev => ({ ...prev, currentPage: pageNumber }))}
+                >
+                  {pageNumber}
+                </Button>
+              );
+            })}
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+            disabled={!pagination.hasNextPage}
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>

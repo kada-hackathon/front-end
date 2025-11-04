@@ -10,6 +10,15 @@ export function useFileUpload(options) {
   const [fileItems, setFileItems] = React.useState([])
 
   const uploadFile = async file => {
+    // Check authentication first
+    const token = localStorage.getItem('token')
+    if (!token) {
+      const error = new Error("Authentication required - Please log in to upload files")
+      options.onError?.(error)
+      alert("You must be logged in to upload files. Please refresh the page and log in again.")
+      return null
+    }
+
     if (file.size > options.maxSize) {
       const error = new Error(`File size exceeds maximum allowed (${options.maxSize / 1024 / 1024}MB)`)
       options.onError?.(error)
@@ -283,3 +292,6 @@ export const UploadDragArea = ({
     </div>
   );
 }
+
+// Export CloseIcon for use in upload components
+export { CloseIcon } from "@/components/tiptap-icons/close-icon"

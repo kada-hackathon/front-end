@@ -40,7 +40,7 @@ const App = () => {
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/chatbot" element={<ProtectedRoute><ChatBotPage /></ProtectedRoute>} />
             <Route path="/worklog" element={<ProtectedRoute><WorkLog /></ProtectedRoute>} />
-            <Route path="/worklog/version" element={<ProtectedRoute><WorkLogVersion /></ProtectedRoute>} />
+            <Route path="/worklogs/:id/versions" element={<ProtectedRoute><WorkLogVersion /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/blog-editor" element={<ProtectedRoute><BlogEditor /></ProtectedRoute>} />
             <Route path="/blog-post" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />

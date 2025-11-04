@@ -2,17 +2,108 @@ import { Home, MessageCircle, ClipboardList, ChevronLeft, FileText } from "lucid
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 import "./Menubar.css";
 import logoWithText from "@/assets/Logo/Logo with Text_White.png";
 import logoOnly from "@/assets/Logo/Logo Only_White.png";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../../config/api";
 
-const Menubar = ({ collapsed, onToggleCollapse, recentProjects }) => {
+const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const activeMenu = location.pathname;
+  const [recentProjects, setRecentProjects] = useState([]);
 
-  const handleRecentProjectClick = (project) => {
-    navigate(`/blog-editor?project=${encodeURIComponent(project)}`);
+  // Fetch 3 newest work logs from current user
+  useEffect(() => {
+    const fetchRecentProjects = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.warn('No token available');
+          return;
+        }
+        
+        // Get current user ID
+        const userResponse = await fetch(AUTH_ENDPOINTS.PROFILE, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const userData = await userResponse.json();
+        const currentUserId = userData.user?.id || userData.user?._id || userData.id || userData._id;
+        console.log('Current user ID:', currentUserId);
+        
+        // Fetch all worklogs
+        const worklogsResponse = await fetch(WORKLOG_ENDPOINTS.FILTER, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!worklogsResponse.ok) {
+          console.error('Worklog filter error:', worklogsResponse.status);
+          const errorText = await worklogsResponse.text();
+          console.error('Error response:', errorText);
+          setRecentProjects([]);
+          return;
+        }
+        
+        const worklogsData = await worklogsResponse.json();
+        console.log('Worklogs response:', worklogsData);
+        
+        let allWorklogs = Array.isArray(worklogsData) ? worklogsData : (worklogsData?.worklogs || []);
+        console.log('All worklogs count:', allWorklogs.length);
+        
+        // Filter: only works created by current user (owner)
+        const userWorklogs = allWorklogs.filter(worklog => {
+          const isOwner = worklog.user?._id === currentUserId || worklog.user?.id === currentUserId;
+          return isOwner;
+        });
+        
+        console.log('User worklogs count:', userWorklogs.length);
+        
+        // Sort by date (newest first) and take top 3
+        const sortedWorklogs = userWorklogs.sort((a, b) => {
+          const dateA = new Date(a.datetime || a.createdAt);
+          const dateB = new Date(b.datetime || b.createdAt);
+          return dateB - dateA; // Descending order
+        });
+        
+        const recent3 = sortedWorklogs.slice(0, 3).map(worklog => ({
+          id: worklog._id || worklog.id,
+          title: worklog.title || "Untitled"
+        }));
+        
+        console.log('Recent 3 projects:', recent3);
+        setRecentProjects(recent3);
+      } catch (err) {
+        console.error('Error fetching recent projects:', err);
+        setRecentProjects([]);
+      }
+    };
+    
+    fetchRecentProjects();
+  }, []);
+
+  const handleRecentProjectClick = (projectId) => {
+    const path = `/blog-post?id=${projectId}`;
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      navigate(path);
+    }
+  };
+
+  const handleMenuClick = (e, path) => {
+    if (onNavigate) {
+      e.preventDefault();
+      onNavigate(path);
+    }
   };
 
   return (
@@ -43,7 +134,7 @@ const Menubar = ({ collapsed, onToggleCollapse, recentProjects }) => {
         <div className="menubar-nav-section">
           {!collapsed && <p className="menubar-nav-label">Menus</p>}
           <div className="menubar-nav-items">
-            <Link to="/">
+            <Link to="/" onClick={(e) => handleMenuClick(e, "/")}>
               <Button
                 variant="ghost"
                 className={cn(
@@ -55,7 +146,7 @@ const Menubar = ({ collapsed, onToggleCollapse, recentProjects }) => {
                 {!collapsed && <span>Home</span>}
               </Button>
             </Link>
-            <Link to="/chatbot">
+            <Link to="/chatbot" onClick={(e) => handleMenuClick(e, "/chatbot")}>
               <Button
                 variant="ghost"
                 className={cn(
@@ -67,7 +158,7 @@ const Menubar = ({ collapsed, onToggleCollapse, recentProjects }) => {
                 {!collapsed && <span>Chat Bot</span>}
               </Button>
             </Link>
-            <Link to="/worklog">
+            <Link to="/worklog" onClick={(e) => handleMenuClick(e, "/worklog")}>
               <Button
                 variant="ghost"
                 className={cn(
@@ -84,17 +175,22 @@ const Menubar = ({ collapsed, onToggleCollapse, recentProjects }) => {
 
         {!collapsed && (
           <div className="menubar-recent-section">
-            <p className="menubar-nav-label">Recent Project</p>
+            <p className="menubar-nav-label">Recent Work</p>
             <div className="menubar-recent-items">
-              {recentProjects.map((project, index) => (
-                <button
-                  key={index}
-                  className="menubar-recent-button"
-                  onClick={() => handleRecentProjectClick(project)}
-                >
-                  {project}
-                </button>
-              ))}
+              {recentProjects.length > 0 ? (
+                recentProjects.map((project) => (
+                  <button
+                    key={project.id}
+                    className="menubar-recent-button"
+                    onClick={() => handleRecentProjectClick(project.id)}
+                    title={project.title}
+                  >
+                    {project.title}
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-white px-3 py-2">No recent work</p>
+              )}
             </div>
           </div>
         )}

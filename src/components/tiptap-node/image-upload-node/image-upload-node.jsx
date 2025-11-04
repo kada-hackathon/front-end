@@ -286,8 +286,20 @@ const ImageUploadPreview = ({
 const DropZoneContent = ({
   maxSize,
   limit,
+  onDelete,
 }) => (
   <>
+    <button
+      type="button"
+      className="tiptap-image-upload-delete-zone"
+      onClick={(e) => {
+        e.stopPropagation()
+        onDelete()
+      }}
+      title="Remove upload area"
+    >
+      <CloseIcon />
+    </button>
     <div className="tiptap-image-upload-dropzone">
       <FileIcon />
       <FileCornerIcon />
@@ -376,11 +388,15 @@ export const ImageUploadNode = (props) => {
 
   const hasFiles = fileItems.length > 0
 
+  const handleDeleteNode = () => {
+    props.deleteNode()
+  }
+
   return (
     <NodeViewWrapper className="tiptap-image-upload" tabIndex={0} onClick={handleClick}>
       {!hasFiles && (
         <ImageUploadDragArea onFile={handleUpload}>
-          <DropZoneContent maxSize={maxSize} limit={limit} />
+          <DropZoneContent maxSize={maxSize} limit={limit} onDelete={handleDeleteNode} />
         </ImageUploadDragArea>
       )}
       {hasFiles && (

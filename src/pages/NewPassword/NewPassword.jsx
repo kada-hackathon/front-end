@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import '../Login/login.css';
 import './NewPassword.css';
+import { AUTH_ENDPOINTS } from '../../config/api';
+import logoWithText from "../../assets/Logo/Logo with Text_White.png";
 
 const NewPassword = () => {
   const navigate = useNavigate();
@@ -58,7 +60,7 @@ const NewPassword = () => {
     setSubmitError('');
 
     // Call backend API to reset password
-    fetch('http://localhost:5000/api/auth/reset-password', {
+    fetch(AUTH_ENDPOINTS.RESET_PASSWORD, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -122,9 +124,20 @@ const NewPassword = () => {
       <div className="login-container new-password-container">
         <div className="login-content new-password-content">
           <div className="welcome-section">
-            <h1>Reset Your Password</h1>
-            <p className="reset-subtitle">
-              Please enter your new password below.
+            <img 
+              src={logoWithText} 
+              alt="Logo" 
+              style={{ 
+                width: '200px', 
+                marginBottom: '60px',
+                display: 'block',
+                marginLeft: 'auto',
+                marginRight: 'auto'
+              }} 
+            />
+            <h1 style={{ fontWeight: '700', marginBottom: '4px', textAlign: 'center' }}>Reset Your Password</h1>
+            <p className="reset-subtitle" style={{ marginTop: '0', textAlign: 'center' }}>
+              Please enter your new password below
             </p>
           </div>
 

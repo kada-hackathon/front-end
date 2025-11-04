@@ -2,28 +2,28 @@
  * Media upload constants and configuration
  */
 
-export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+export const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
 
 export const UPLOAD_LIMITS = {
   IMAGE: {
-    maxFiles: 3,
+    maxFiles: 5,
     maxSize: MAX_FILE_SIZE,
     accept: "image/*",
   },
   VIDEO: {
-    maxFiles: 1,
-    maxSize: MAX_FILE_SIZE * 2, // 10MB
+    maxFiles: 5,
+    maxSize: MAX_FILE_SIZE,
     accept: "video/*",
   },
   AUDIO: {
-    maxFiles: 1,
+    maxFiles: 5,
     maxSize: MAX_FILE_SIZE,
     accept: "audio/*",
   },
   DOCUMENT: {
-    maxFiles: 1,
+    maxFiles: 5,
     maxSize: MAX_FILE_SIZE,
-    accept: ".pdf,.doc,.docx,.txt",
+    accept: ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt",
   },
 }
 
