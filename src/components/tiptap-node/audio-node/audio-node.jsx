@@ -2,7 +2,6 @@
 import * as React from "react"
 import { NodeViewWrapper } from "@tiptap/react"
 import { X } from "lucide-react"
-import { deleteMediaFile } from "@/lib/tiptap-utils"
 import "@/components/tiptap-node/audio-node/audio-node.scss"
 
 export const AudioNode = (props) => {
@@ -11,10 +10,12 @@ export const AudioNode = (props) => {
 
   const handleDelete = async (e) => {
     e.stopPropagation()
+    console.log("[AudioNode] Delete button clicked for:", src)
+    
     if (confirm('Are you sure you want to delete this audio?')) {
-      // Delete from DigitalOcean first
-      await deleteMediaFile(src)
-      // Then remove from editor
+      const { mediaManager } = await import("@/lib/media-manager")
+      mediaManager.addPendingDeletion(src)
+      console.log("[AudioNode] Added to pending deletions:", mediaManager.getPendingDeletions())
       deleteNode()
     }
   }
@@ -43,3 +44,4 @@ export const AudioNode = (props) => {
     </NodeViewWrapper>
   )
 }
+

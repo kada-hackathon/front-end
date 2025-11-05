@@ -66,3 +66,4 @@ export const TitleEditor = ({ onChange, initialValue = "" }) => {
     </div>
   )
 }
+

@@ -133,3 +133,4 @@ export function useBodyRect(options = {}) {
 export function useRefRect(ref, options = {}) {
   return useElementRect({ ...options, element: ref });
 }
+

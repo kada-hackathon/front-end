@@ -64,57 +64,41 @@ export const AudioUploadNode = (props) => {
     useFileUpload(uploadOptions)
 
   const handleUpload = async (files) => {
-    console.log("Audio upload started, files:", files)
+    console.log("Audio preview started, files:", files)
     
-    // Check authentication before upload
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.error("No authentication token found")
-      alert("You must be logged in to upload files. Please log in and try again.")
-      return
-    }
+    // Import media manager
+    const { mediaManager } = await import("@/lib/media-manager")
     
-    try {
-      const urls = await uploadFiles(files)
-      console.log("Audio upload completed, URLs:", urls)
+    const pos = props.getPos()
 
-      if (urls.length > 0) {
-        const pos = props.getPos()
-
-        if (isValidPosition(pos)) {
-          const audioNodes = urls.map((url, index) => {
-            const filename =
-              files[index]?.name.replace(/\.[^/.]+$/, "") || "unknown"
-            console.log("Creating audio node:", { url, filename })
-            return {
-              type: "audio",
-              attrs: {
-                src: url,
-                title: filename,
-                controls: true,
-              },
-            }
-          })
-
-          console.log("Inserting audio nodes:", audioNodes)
-          props.editor
-            .chain()
-            .focus()
-            .deleteRange({ from: pos, to: pos + props.node.nodeSize })
-            .insertContentAt(pos, audioNodes)
-            .run()
-
-          focusNextNode(props.editor)
-        } else {
-          console.error("Invalid position for audio insertion")
+    if (isValidPosition(pos)) {
+      // Create blob URLs for immediate preview (no upload yet)
+      const audioNodes = files.map((file, index) => {
+        const blobUrl = mediaManager.addPendingUpload(file)
+        const filename = file.name.replace(/\.[^/.]+$/, "") || "unknown"
+        
+        console.log("Creating audio preview node:", { blobUrl, filename })
+        return {
+          type: "audio",
+          attrs: {
+            src: blobUrl, // Use blob URL for preview
+            title: filename,
+            controls: true,
+          },
         }
-      } else {
-        console.error("No URLs returned from upload")
-        alert("Upload failed. Please check your connection and try again.")
-      }
-    } catch (error) {
-      console.error("Audio upload error:", error)
-      alert(`Upload failed: ${error.message}`)
+      })
+
+      console.log("Inserting audio preview nodes:", audioNodes)
+      props.editor
+        .chain()
+        .focus()
+        .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+        .insertContentAt(pos, audioNodes)
+        .run()
+
+      focusNextNode(props.editor)
+    } else {
+      console.error("Invalid position for audio insertion")
     }
   }
 
@@ -188,3 +172,4 @@ export const AudioUploadNode = (props) => {
     </NodeViewWrapper>
   );
 }
+

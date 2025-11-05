@@ -106,3 +106,4 @@ const CollabList = ({ owner, collaborators = [], onRemoveCollaborator, isOwner =
 };
 
 export default CollabList;
+

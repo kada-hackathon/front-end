@@ -21,3 +21,4 @@ export const CloseIcon = React.memo(({
 })
 
 CloseIcon.displayName = "CloseIcon"
+

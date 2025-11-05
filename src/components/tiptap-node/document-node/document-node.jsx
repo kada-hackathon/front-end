@@ -9,7 +9,6 @@ import {
   isGoogleDocsSupported,
   openDocumentViewer
 } from "@/lib/document-utils"
-import { deleteMediaFile } from "@/lib/tiptap-utils"
 import "@/components/tiptap-node/document-node/document-node.scss"
 
 // Get color based on file extension
@@ -45,6 +44,7 @@ export const DocumentNode = (props) => {
     setIsLoading(true)
     
     try {
+      // For blob URLs (not uploaded yet), use openDocumentViewer which has proper blob handling
       await openDocumentViewer(src, filename)
     } catch (error) {
       console.error('Error opening document:', error)
@@ -56,10 +56,12 @@ export const DocumentNode = (props) => {
 
   const handleDelete = async (e) => {
     e.stopPropagation()
+    console.log("[DocumentNode] Delete button clicked for:", src)
+    
     if (confirm('Are you sure you want to delete this document?')) {
-      // Delete from DigitalOcean first
-      await deleteMediaFile(src)
-      // Then remove from editor
+      const { mediaManager } = await import("@/lib/media-manager")
+      mediaManager.addPendingDeletion(src)
+      console.log("[DocumentNode] Added to pending deletions:", mediaManager.getPendingDeletions())
       deleteNode()
     }
   }
@@ -104,3 +106,4 @@ export const DocumentNode = (props) => {
     </NodeViewWrapper>
   )
 }
+

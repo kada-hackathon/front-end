@@ -179,3 +179,4 @@ export function useTextAlign(config) {
     Icon: textAlignIcons[align],
   }
 }
+

@@ -63,3 +63,4 @@ export const VIEWER_CONFIG = {
   OFFICE_ONLINE_VIEWER_URL: 'https://view.officeapps.live.com/op/embed.aspx',
   POPUP_OPTIONS: 'width=1200,height=800,resizable=yes,scrollbars=yes,status=yes'
 }
+

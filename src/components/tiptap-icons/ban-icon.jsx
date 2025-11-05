@@ -23,3 +23,4 @@ export const BanIcon = React.memo(({
 })
 
 BanIcon.displayName = "BanIcon"
+

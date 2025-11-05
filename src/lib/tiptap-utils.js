@@ -260,7 +260,7 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
     console.log("FormData created with file")
 
     // Get authentication token
-    const token = localStorage.getItem('token')
+    const token = sessionStorage.getItem('token')
     if (!token) {
       console.error("No authentication token found")
       throw new Error("Authentication required")
@@ -347,21 +347,23 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
  */
 export const deleteMediaFile = async (url) => {
   if (!url) {
-    console.error("No URL provided for deletion")
+    console.error("[deleteMediaFile] No URL provided for deletion")
     return false
   }
 
-  console.log("Deleting file from DigitalOcean:", url)
+  console.log("[deleteMediaFile] Deleting file from DigitalOcean:", url)
 
   try {
     // Get authentication token
-    const token = localStorage.getItem('token')
+    const token = sessionStorage.getItem('token')
     if (!token) {
-      console.error("No authentication token found")
+      console.error("[deleteMediaFile] No authentication token found")
       throw new Error("Authentication required")
     }
 
     const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app'
+    
+    console.log("[deleteMediaFile] Sending DELETE request with body:", { url })
     
     const response = await fetch(`${BASE_URL}/api/upload`, {
       method: 'DELETE',
@@ -373,16 +375,17 @@ export const deleteMediaFile = async (url) => {
     })
 
     const result = await response.json()
+    console.log("[deleteMediaFile] Response:", { status: response.status, result })
 
     if (response.ok && result.success) {
-      console.log("File deleted successfully from DigitalOcean:", url)
+      console.log("[deleteMediaFile] ✅ File deleted successfully from DigitalOcean:", url)
       return true
     } else {
-      console.error("Failed to delete file:", result.message)
+      console.error("[deleteMediaFile] ❌ Failed to delete file:", result.message, result)
       return false
     }
   } catch (error) {
-    console.error("Error deleting file:", error)
+    console.error("[deleteMediaFile] ❌ Error deleting file:", error)
     return false
   }
 }

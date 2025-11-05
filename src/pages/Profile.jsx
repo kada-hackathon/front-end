@@ -106,7 +106,7 @@ const Profile = () => {
   };
 
   const confirmSave = async () => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     
     if (!token) {
       alert('Please login first');
@@ -156,7 +156,7 @@ const Profile = () => {
 
   // Fetch current user ID first
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     
     if (!token) {
       return;
@@ -185,7 +185,7 @@ const Profile = () => {
 
   // Fetch user profile dari backend
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     
     if (!token) {
       return;
@@ -470,3 +470,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

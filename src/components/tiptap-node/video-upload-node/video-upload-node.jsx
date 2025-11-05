@@ -64,34 +64,41 @@ export const VideoUploadNode = (props) => {
     useFileUpload(uploadOptions)
 
   const handleUpload = async (files) => {
-    const urls = await uploadFiles(files)
+    console.log("Video preview started, files:", files)
+    
+    // Import media manager
+    const { mediaManager } = await import("@/lib/media-manager")
+    
+    const pos = props.getPos()
 
-    if (urls.length > 0) {
-      const pos = props.getPos()
+    if (isValidPosition(pos)) {
+      // Create blob URLs for immediate preview (no upload yet)
+      const videoNodes = files.map((file, index) => {
+        const blobUrl = mediaManager.addPendingUpload(file)
+        const filename = file.name.replace(/\.[^/.]+$/, "") || "unknown"
+        
+        console.log("Creating video preview node:", { blobUrl, filename })
+        return {
+          type: "video",
+          attrs: {
+            src: blobUrl, // Use blob URL for preview
+            title: filename,
+            controls: true,
+          },
+        }
+      })
 
-      if (isValidPosition(pos)) {
-        const videoNodes = urls.map((url, index) => {
-          const filename =
-            files[index]?.name.replace(/\.[^/.]+$/, "") || "unknown"
-          return {
-            type: "video",
-            attrs: {
-              src: url,
-              title: filename,
-              controls: true,
-            },
-          }
-        })
+      console.log("Inserting video preview nodes:", videoNodes)
+      props.editor
+        .chain()
+        .focus()
+        .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+        .insertContentAt(pos, videoNodes)
+        .run()
 
-        props.editor
-          .chain()
-          .focus()
-          .deleteRange({ from: pos, to: pos + props.node.nodeSize })
-          .insertContentAt(pos, videoNodes)
-          .run()
-
-        focusNextNode(props.editor)
-      }
+      focusNextNode(props.editor)
+    } else {
+      console.error("Invalid position for video insertion")
     }
   }
 
@@ -165,3 +172,4 @@ export const VideoUploadNode = (props) => {
     </NodeViewWrapper>
   );
 }
+

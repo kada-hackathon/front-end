@@ -24,3 +24,4 @@ export const HeadingTwoIcon = React.memo(({
 })
 
 HeadingTwoIcon.displayName = "HeadingTwoIcon"
+

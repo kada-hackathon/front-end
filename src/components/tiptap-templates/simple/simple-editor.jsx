@@ -13,6 +13,7 @@ import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
 import { Placeholder } from "@tiptap/extension-placeholder"
+import { Collaboration } from "@tiptap/extension-collaboration"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -182,7 +183,20 @@ const MobileToolbarContent = ({
   </>
 )
 
-export function SimpleEditor({ onBack, onVersion, sidebarCollapsed, initialContent = "", onContentChange, initialTitle = "", initialTags = [], onTitleChange, onTagsChange }) {
+export function SimpleEditor({ 
+  onBack, 
+  onVersion, 
+  sidebarCollapsed, 
+  initialContent = "", 
+  onContentChange, 
+  initialTitle = "", 
+  initialTags = [], 
+  onTitleChange, 
+  onTagsChange,
+  enableCollaboration = false,
+  collaborationProvider = null,
+  currentUser = null
+}) {
   const isMobile = useIsMobile()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = React.useState("main")
@@ -204,11 +218,21 @@ export function SimpleEditor({ onBack, onVersion, sidebarCollapsed, initialConte
     extensions: [
       StarterKit.configure({
         horizontalRule: false,
+        // Disable history when collaboration is enabled (Yjs handles it)
+        history: enableCollaboration ? false : undefined,
         link: {
           openOnClick: false,
           enableClickSelection: true,
         },
       }),
+      // Add collaboration extension conditionally
+      ...(enableCollaboration && collaborationProvider
+        ? [
+            Collaboration.configure({
+              document: collaborationProvider.ydoc,
+            }),
+          ]
+        : []),
       Placeholder.configure({
         placeholder: ({ node }) => {
           // Only show placeholder on the first paragraph if editor is truly empty
@@ -279,11 +303,46 @@ export function SimpleEditor({ onBack, onVersion, sidebarCollapsed, initialConte
   })
 
   // Load initial content when it changes
+  // Using emitUpdate: false to preserve undo/redo history when content is updated after save
   React.useEffect(() => {
-    if (editor && initialContent && editor.getHTML() !== initialContent) {
-      editor.commands.setContent(initialContent);
+    // Skip setting content if collaboration is enabled (Yjs handles it)
+    if (enableCollaboration && collaborationProvider) {
+      console.log('[Collaboration] Skipping setContent - using Yjs sync');
+      
+      // Initialize Y.js document with content if it's empty
+      const provider = collaborationProvider.provider;
+      if (provider && editor && initialContent) {
+        const syncHandler = () => {
+          // Check if the Y.js document is empty
+          const yXmlFragment = collaborationProvider.ydoc.getXmlFragment('default');
+          
+          if (yXmlFragment.length === 0 && initialContent) {
+            console.log('[Collaboration] Y.js document is empty, initializing with content');
+            // Set the initial content in the editor, which will sync to Y.js
+            editor.commands.setContent(initialContent, false);
+          } else {
+            console.log('[Collaboration] Y.js document has content, using synced data');
+          }
+        };
+        
+        // Wait for sync to complete
+        if (provider.isSynced) {
+          syncHandler();
+        } else {
+          provider.on('synced', syncHandler);
+        }
+        
+        return () => {
+          provider.off('synced', syncHandler);
+        };
+      }
+      return;
     }
-  }, [initialContent, editor]);
+    
+    if (editor && initialContent && editor.getHTML() !== initialContent) {
+      editor.commands.setContent(initialContent, false);
+    }
+  }, [initialContent, editor, enableCollaboration, collaborationProvider]);
 
   React.useEffect(() => {
     if (!isMobile && mobileView !== "main") {

@@ -20,7 +20,7 @@ const WorkLogVersion = () => {
   useEffect(() => {
     const fetchVersions = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
 
         const res = await fetch(WORKLOG_ENDPOINTS.VERSIONS(id), {
           method: "GET",
@@ -137,3 +137,4 @@ const WorkLogVersion = () => {
 };
 
 export default WorkLogVersion;
+

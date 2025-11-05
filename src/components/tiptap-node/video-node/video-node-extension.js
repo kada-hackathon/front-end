@@ -130,3 +130,4 @@ export const VideoNode = Node.create({
 })
 
 export default VideoNode
+
