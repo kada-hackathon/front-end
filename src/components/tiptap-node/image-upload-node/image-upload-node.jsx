@@ -338,35 +338,42 @@ export const ImageUploadNode = (props) => {
     useFileUpload(uploadOptions)
 
   const handleUpload = async (files) => {
-    const urls = await uploadFiles(files)
+    console.log("Image preview started, files:", files)
+    
+    // Import media manager
+    const { mediaManager } = await import("@/lib/media-manager")
+    
+    const pos = props.getPos()
 
-    if (urls.length > 0) {
-      const pos = props.getPos()
+    if (isValidPosition(pos)) {
+      // Create blob URLs for immediate preview (no upload yet)
+      const imageNodes = files.map((file, index) => {
+        const blobUrl = mediaManager.addPendingUpload(file)
+        const filename = file.name.replace(/\.[^/.]+$/, "") || "unknown"
+        
+        console.log("Creating image preview node:", { blobUrl, filename })
+        return {
+          type: extension.options.type,
+          attrs: {
+            ...extension.options,
+            src: blobUrl, // Use blob URL for preview
+            alt: filename,
+            title: filename,
+          },
+        }
+      })
 
-      if (isValidPosition(pos)) {
-        const imageNodes = urls.map((url, index) => {
-          const filename =
-            files[index]?.name.replace(/\.[^/.]+$/, "") || "unknown"
-          return {
-            type: extension.options.type,
-            attrs: {
-              ...extension.options,
-              src: url,
-              alt: filename,
-              title: filename,
-            },
-          }
-        })
+      console.log("Inserting image preview nodes:", imageNodes)
+      props.editor
+        .chain()
+        .focus()
+        .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+        .insertContentAt(pos, imageNodes)
+        .run()
 
-        props.editor
-          .chain()
-          .focus()
-          .deleteRange({ from: pos, to: pos + props.node.nodeSize })
-          .insertContentAt(pos, imageNodes)
-          .run()
-
-        focusNextNode(props.editor)
-      }
+      focusNextNode(props.editor)
+    } else {
+      console.error("Invalid position for image insertion")
     }
   }
 
