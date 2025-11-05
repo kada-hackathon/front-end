@@ -24,18 +24,21 @@ export const validateAndCleanupToken = async () => {
     if (res.ok) {
       console.log('✅ Token valid');
       return true;
-    } else {
-      // Token invalid atau expired
-      console.log('❌ Token invalid or expired - clearing storage');
+    } else if (res.status === 401) {
+      // Token invalid atau expired (401 Unauthorized)
+      console.log('❌ Token invalid or expired (401) - clearing storage');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       return false;
+    } else {
+      // Other errors (500, 503, dll) - KEEP TOKEN
+      console.warn(`⚠️ Server error (${res.status}) - keeping token`);
+      return true; // Assume token still valid
     }
   } catch (err) {
-    console.error('Token verification error:', err);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    return false;
+    // Network error, backend down, etc - KEEP TOKEN
+    console.warn('⚠️ Token verification failed (network error) - keeping token:', err.message);
+    return true; // Assume token still valid
   }
 };
 
