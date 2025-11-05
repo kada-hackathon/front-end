@@ -458,7 +458,14 @@ const BlogEditor = () => {
           },
           credentials: "include",
           body: JSON.stringify({
-            message: commitMessage
+            message: commitMessage,
+            snapshot: {
+              title: blogTitle || "Untitled Work Log",
+              content: blogContent,
+              tag: blogTags || [],
+              collaborators: collaborators.map(c => c.id),
+              media: mediaFiles,
+            }
           })
         });
       }
