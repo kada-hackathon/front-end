@@ -43,6 +43,10 @@ const BlogEditor = () => {
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const [editorKey, setEditorKey] = useState(0); // Key to force re-mount editor
 
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [collaboratorToRemove, setCollaboratorToRemove] = useState(null);
+  const [showInviteConfirmDialog, setShowInviteConfirmDialog] = useState(false);
+  const [selectedFriendsToInvite, setSelectedFriendsToInvite] = useState([]);
   const postId = searchParams.get("id");
   const isEditMode = !!postId; // Determine if we're editing or creating
 
@@ -190,9 +194,13 @@ const BlogEditor = () => {
 
   // Map friends and sort: collaborators first, then others
   const allFriends = friends
-    .filter((friend) =>
-      (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    .filter((friend) => {
+  const friendId = friend._id || friend.id;
+  // Filter out current user (owner)
+  if (friendId === currentUserId) return false;  // ← PENAMBAHAN INI
+  // Filter by search query
+  return (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
+})
     .map((friend) => ({
       id: friend._id || friend.id,
       name: friend.name || friend.full_name || "Unknown",
@@ -222,7 +230,21 @@ const BlogEditor = () => {
     );
   };
 
-  const handleInvite = async () => {
+ const handleInvite = () => {
+    if (selectedFriends.length === 0) return;
+    
+    // Prepare data for confirmation
+    const friendsToInvite = allFriends.filter(friend => 
+      selectedFriends.includes(friend.id)
+    );
+    setSelectedFriendsToInvite(friendsToInvite);
+    
+    // Close invite dialog and show confirmation
+    setInviteOpen(false);
+    setShowInviteConfirmDialog(true);
+  };
+
+  const confirmInvite = async () => {
     console.log("Inviting friends:", selectedFriends);
     
     // Get all selected friends (including already added collaborators)
@@ -257,12 +279,25 @@ const BlogEditor = () => {
       }
     }
     
-    setInviteOpen(false);
+    // Close confirmation dialog and reset
+    setShowInviteConfirmDialog(false);
+    setSelectedFriendsToInvite([]);
     setSelectedFriends([]);
     setSearchQuery("");
   };
 
-  const handleRemoveCollaborator = async (collaboratorId) => {
+  const handleRemoveCollaborator = (collaboratorId) => {
+    // Remove from collaborators list
+    const collaborator = collaborators.find(c => c.id === collaboratorId);
+    setCollaboratorToRemove(collaborator);
+    setShowRemoveDialog(true);
+  };
+    
+     const confirmRemoveCollaborator = async () => {
+    if (!collaboratorToRemove) return;
+    
+    const collaboratorId = collaboratorToRemove.id;
+    
     // Remove from collaborators list
     const updatedCollaborators = collaborators.filter(c => c.id !== collaboratorId);
     setCollaborators(updatedCollaborators);
@@ -294,6 +329,10 @@ const BlogEditor = () => {
         console.error('Error auto-saving collaborator removal:', err);
       }
     }
+    
+    // Close dialog and reset
+    setShowRemoveDialog(false);
+    setCollaboratorToRemove(null);
   };
 
   const handleNavigationAttempt = (path) => {
@@ -525,7 +564,8 @@ const BlogEditor = () => {
 
             {/* Sticky Action Buttons - stick to bottom right of editor area */}
             <div className="sticky bottom-6 self-end mr-6 mb-6 flex flex-col gap-3 z-50" style={{ marginTop: '-120px' }}>
-              {/* INVITE DIALOG */}
+              {/* INVITE DIALOG - Only visible to owner */}
+              {currentUserId === owner?.id && (
               <AlertDialog open={inviteOpen} onOpenChange={setInviteOpen}>
                 <Tooltip delay={200}>
                   <TooltipTrigger asChild>
@@ -629,7 +669,7 @@ const BlogEditor = () => {
                       </div>
                     </div>
                   </AlertDialogContent>
-              </AlertDialog>
+              </AlertDialog>)}
 
               {/* SAVE WORKLOG DIALOG */}
               <AlertDialog open={saveOpen} onOpenChange={setSaveOpen}>
@@ -695,7 +735,7 @@ const BlogEditor = () => {
           <CollabList 
             owner={owner} 
             collaborators={collaborators} 
-            onRemoveCollaborator={handleRemoveCollaborator}
+            onRemoveCollaborator={currentUserId === owner?.id ? handleRemoveCollaborator : undefined}
             isOwner={currentUserId === owner?.id}
             onNavigate={handleNavigationAttempt}
           />
@@ -744,6 +784,110 @@ const BlogEditor = () => {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+         {/* Remove Collaborator Confirmation Dialog */}
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Remove Collaborator
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-4">
+            <p className="text-center text-muted-foreground">
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-foreground">
+                {collaboratorToRemove?.name}
+              </span>{" "}
+              from this work log?
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={confirmRemoveCollaborator}
+              variant="destructive"
+              className="w-full"
+            >
+              Yes, Remove
+            </Button>
+            <Button
+              onClick={() => {
+                setShowRemoveDialog(false);
+                setCollaboratorToRemove(null);
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Remove Collaborator Confirmation Dialog */}
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        {/* ... kode remove dialog ... */}
+      </AlertDialog>
+
+      {/* TAMBAHKAN DIALOG INI: */}
+      {/* Invite Collaborator Confirmation Dialog */}
+      <AlertDialog open={showInviteConfirmDialog} onOpenChange={setShowInviteConfirmDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Invite Collaborators
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-4 space-y-3">
+            <p className="text-center text-muted-foreground">
+              Are you sure you want to invite the following collaborator{selectedFriendsToInvite.length > 1 ? 's' : ''}?
+            </p>
+            
+            {/* List of collaborators to invite */}
+            <div className="max-h-48 overflow-y-auto space-y-2 px-2">
+              {selectedFriendsToInvite.map((friend) => (
+                <div 
+                  key={friend.id}
+                  className="flex items-center gap-3 p-2 rounded-lg bg-accent/30 border border-border"
+                >
+                  <img
+                    src={friend.avatar}
+                    alt={friend.name}
+                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{friend.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{friend.division}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={confirmInvite}
+              className="w-full"
+            >
+              Yes, Invite
+            </Button>
+            <Button
+              onClick={() => {
+                setShowInviteConfirmDialog(false);
+                setSelectedFriendsToInvite([]);
+                setInviteOpen(true); // Reopen invite dialog
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+  
     </div>
   );
 };
