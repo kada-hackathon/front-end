@@ -31,7 +31,9 @@ export const ADMIN_ENDPOINTS = {
 // CHATBOT ENDPOINTS
 export const CHATBOT_ENDPOINTS = {
   SEND_MESSAGE: `${BASE_URL}/api/chatbot`,
-  GET_HISTORY: (sessionId) => `${BASE_URL}/api/chatbot/session/${sessionId}`,
+  GET_MESSAGES: (sessionId) => `${BASE_URL}/api/chatbot/session/${sessionId}`,
+  DELETE_SESSION: (sessionId) => `${BASE_URL}/api/chatbot/session/${sessionId}`,
+  GET_HISTORY: `${BASE_URL}/api/chatbot/history`,
 };
 
 // Export base URL for direct use
