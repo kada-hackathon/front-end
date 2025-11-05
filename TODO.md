@@ -1,3 +1,0 @@
-- [x] Update import in src/components/Navbar/Navbar.jsx: change Settings to Filter
-- [x] Update JSX in src/components/Navbar/Navbar.jsx: replace <Settings with <Filter
-- [x] Update className from navbar-settings-icon to navbar-filter-icon for consistency
