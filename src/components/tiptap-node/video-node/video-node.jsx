@@ -2,7 +2,6 @@
 import * as React from "react"
 import { NodeViewWrapper } from "@tiptap/react"
 import { X } from "lucide-react"
-import { deleteMediaFile } from "@/lib/tiptap-utils"
 import "@/components/tiptap-node/video-node/video-node.scss"
 
 export const VideoNode = (props) => {
@@ -11,10 +10,12 @@ export const VideoNode = (props) => {
 
   const handleDelete = async (e) => {
     e.stopPropagation()
+    console.log("[VideoNode] Delete button clicked for:", src)
+    
     if (confirm('Are you sure you want to delete this video?')) {
-      // Delete from DigitalOcean first
-      await deleteMediaFile(src)
-      // Then remove from editor
+      const { mediaManager } = await import("@/lib/media-manager")
+      mediaManager.addPendingDeletion(src)
+      console.log("[VideoNode] Added to pending deletions:", mediaManager.getPendingDeletions())
       deleteNode()
     }
   }

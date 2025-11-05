@@ -36,9 +36,14 @@ export const isBlobUrl = (url) => {
  * Check if document can be previewed with Google Docs Viewer
  */
 export const isGoogleDocsSupported = (filename) => {
-  if (!filename) return false
+  if (!filename) {
+    console.log('[isGoogleDocsSupported] No filename provided')
+    return false
+  }
   const ext = filename.split('.').pop()?.toLowerCase()
-  return ext && GOOGLE_DOCS_SUPPORTED.includes(ext)
+  const isSupported = ext && GOOGLE_DOCS_SUPPORTED.includes(ext)
+  console.log('[isGoogleDocsSupported]', { filename, ext, isSupported, supportedFormats: GOOGLE_DOCS_SUPPORTED })
+  return isSupported
 }
 
 /**
@@ -52,7 +57,15 @@ export const getDocumentViewerUrl = (fileUrl, filename) => {
   
   if (!isGoogleDocsSupported(filename)) return fileUrl
   
-  // Google Docs Viewer URL
+  const ext = filename.split('.').pop()?.toLowerCase()
+  
+  // Use Microsoft Office Online Viewer for Office documents (better compatibility)
+  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
+    const encodedUrl = encodeURIComponent(fileUrl)
+    return `${VIEWER_CONFIG.OFFICE_ONLINE_VIEWER_URL}?src=${encodedUrl}`
+  }
+  
+  // Use Google Docs Viewer for other supported formats (PDF, TXT)
   const encodedUrl = encodeURIComponent(fileUrl)
   return `${VIEWER_CONFIG.GOOGLE_DOCS_VIEWER_URL}?url=${encodedUrl}&embedded=true`
 }
@@ -64,23 +77,39 @@ export const getDocumentViewerUrl = (fileUrl, filename) => {
  * @returns Promise that resolves when viewer is opened
  */
 export const openDocumentViewer = async (fileUrl, filename) => {
+  console.log('[openDocumentViewer] Called with:', { fileUrl, filename })
+  
   if (!fileUrl) {
     throw new Error('No file URL provided')
   }
 
   // Development mode: blob URLs need special handling
   if (isBlobUrl(fileUrl)) {
+    console.log('[openDocumentViewer] Opening blob document')
     return openBlobDocument(fileUrl, filename)
   }
 
-  // Production mode: Use Google Docs Viewer for supported formats
-  if (isGoogleDocsSupported(filename)) {
+  // Production mode: Use Office/Google Docs Viewer for supported formats
+  const isSupported = isGoogleDocsSupported(filename)
+  console.log('[openDocumentViewer] Is Google Docs supported?', isSupported)
+  
+  if (isSupported) {
     const viewerUrl = getDocumentViewerUrl(fileUrl, filename)
-    window.open(viewerUrl, '_blank', VIEWER_CONFIG.POPUP_OPTIONS)
+    console.log('[openDocumentViewer] Opening viewer:', viewerUrl)
+    
+    // Open in new window
+    const viewerWindow = window.open(viewerUrl, '_blank', VIEWER_CONFIG.POPUP_OPTIONS)
+    
+    // If popup was blocked or viewer fails, offer download as fallback
+    if (!viewerWindow) {
+      console.warn('[openDocumentViewer] Popup blocked, opening direct link')
+      window.open(fileUrl, '_blank', 'noopener,noreferrer')
+    }
     return
   }
 
   // Fallback: Open directly
+  console.log('[openDocumentViewer] Opening direct link (unsupported format)')
   window.open(fileUrl, '_blank', 'noopener,noreferrer')
 }
 
@@ -112,7 +141,13 @@ const openBlobDocument = async (blobUrl, filename) => {
       const url = URL.createObjectURL(blob)
       htmlContent = createPdfViewerHTML(filename, url)
     }
-    // Other documents (Word, Excel, etc.) - show download prompt
+    // Handle Office documents (Word, Excel, PowerPoint) - use Office Web Viewer
+    else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(fileExt)) {
+      // For blob URLs, we need to upload temporarily or show a viewer
+      // We'll use Office Online Viewer which requires a public URL
+      htmlContent = await createOfficePreviewHTML(filename, blob, fileExt)
+    }
+    // Other documents - show download prompt
     else {
       htmlContent = createDownloadViewerHTML(filename, blobUrl)
     }
@@ -137,6 +172,189 @@ export const downloadFile = (url, filename) => {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+/**
+ * Create HTML viewer for Office documents (Word, Excel, PowerPoint)
+ * Shows a simple file info card since browsers can't directly preview Office docs without external services
+ */
+const createOfficePreviewHTML = async (filename, blob, fileExt) => {
+  const extension = fileExt.toUpperCase()
+  const fileIcon = {
+    'DOCX': '📝', 'DOC': '📝',
+    'XLSX': '📊', 'XLS': '📊',
+    'PPTX': '📽️', 'PPT': '📽️',
+  }[extension] || '📄'
+
+  const fileSize = blob.size
+  const formattedSize = formatFileSize(fileSize)
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>${filename || 'Document Preview'}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: system-ui, -apple-system, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          padding: 20px;
+        }
+        .container {
+          background: white;
+          border-radius: 20px;
+          padding: 50px 40px;
+          max-width: 600px;
+          width: 100%;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          text-align: center;
+        }
+        .icon {
+          font-size: 80px;
+          margin-bottom: 20px;
+          animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        .badge {
+          display: inline-block;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 6px 16px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 20px;
+        }
+        h1 {
+          color: #111827;
+          font-size: 24px;
+          margin-bottom: 12px;
+          word-break: break-word;
+        }
+        .file-info {
+          background: #f9fafb;
+          padding: 20px;
+          border-radius: 12px;
+          margin: 24px 0;
+          display: inline-block;
+          min-width: 200px;
+        }
+        .file-info-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 20px;
+          margin: 8px 0;
+          color: #6b7280;
+          font-size: 14px;
+        }
+        .file-info-label {
+          font-weight: 600;
+          color: #374151;
+        }
+        .message {
+          background: #fef3c7;
+          border-left: 4px solid #f59e0b;
+          padding: 16px;
+          border-radius: 8px;
+          margin: 24px 0;
+          text-align: left;
+          font-size: 14px;
+          line-height: 1.6;
+          color: #92400e;
+        }
+        .message strong {
+          color: #78350f;
+        }
+        .actions {
+          margin-top: 30px;
+        }
+        .btn {
+          display: inline-block;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 600;
+          text-decoration: none;
+          transition: transform 0.2s, box-shadow 0.2s;
+          cursor: pointer;
+          border: none;
+          font-size: 15px;
+          margin: 0 8px;
+        }
+        .btn-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        .note {
+          margin-top: 20px;
+          font-size: 13px;
+          color: #6b7280;
+          line-height: 1.6;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="icon">${fileIcon}</div>
+        <span class="badge">${extension} DOCUMENT</span>
+        <h1>${filename || 'Untitled Document'}</h1>
+        
+        <div class="file-info">
+          <div class="file-info-row">
+            <span class="file-info-label">Type:</span>
+            <span>${extension}</span>
+          </div>
+          <div class="file-info-row">
+            <span class="file-info-label">Size:</span>
+            <span>${formattedSize}</span>
+          </div>
+          <div class="file-info-row">
+            <span class="file-info-label">Status:</span>
+            <span>📍 Not Uploaded</span>
+          </div>
+        </div>
+
+        <div class="message">
+          <strong>⏳ Preview Not Available Yet</strong><br><br>
+          Office documents (Word, Excel, PowerPoint) require a <strong>public URL</strong> to preview using Google Docs Viewer.<br><br>
+          <strong>✅ After you save your work</strong>, this document will be uploaded to the cloud and you'll be able to preview it with full formatting!
+        </div>
+
+        <div class="note">
+          💡 Once saved, clicking this document will open it in Google Docs Viewer with full preview capabilities - no downloads needed!
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+}
+
+/**
+ * Convert blob to base64
+ */
+const blobToBase64 = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64 = reader.result.split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
 }
 
 /**
@@ -303,11 +521,13 @@ export const createPdfViewerHTML = (filename, pdfUrl) => {
     </head>
     <body>
       <div class="header">
-        <span>�</span>
+        <span>📄</span>
         <span class="filename">${filename || 'PDF Document'}</span>
       </div>
       <div class="content">
-        <embed src="${pdfUrl}" type="application/pdf" />
+        <object data="${pdfUrl}#view=FitH" type="application/pdf" width="100%" height="100%">
+          <iframe src="${pdfUrl}" width="100%" height="100%"></iframe>
+        </object>
       </div>
     </body>
     </html>
@@ -354,6 +574,11 @@ export const createDownloadViewerHTML = (filename, downloadUrl) => {
         .icon {
           font-size: 80px;
           margin-bottom: 20px;
+          animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
         }
         h1 {
           font-size: 24px;
@@ -374,6 +599,12 @@ export const createDownloadViewerHTML = (filename, downloadUrl) => {
           font-size: 14px;
           line-height: 1.6;
         }
+        .highlight {
+          background: rgba(255,255,255,0.2);
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-weight: 600;
+        }
         .download-btn {
           display: inline-block;
           background: white;
@@ -385,6 +616,7 @@ export const createDownloadViewerHTML = (filename, downloadUrl) => {
           font-size: 16px;
           transition: transform 0.2s, box-shadow 0.2s;
           box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+          margin-bottom: 15px;
         }
         .download-btn:hover {
           transform: translateY(-2px);
@@ -394,23 +626,27 @@ export const createDownloadViewerHTML = (filename, downloadUrl) => {
           margin-top: 20px;
           font-size: 13px;
           opacity: 0.8;
+          background: rgba(255,255,255,0.1);
+          padding: 12px;
+          border-radius: 8px;
         }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="icon">${fileIcon}</div>
-        <h1>Document Preview</h1>
+        <h1>Preview Not Available Yet</h1>
         <div class="filename">${filename || 'Untitled Document'}</div>
         <div class="info">
-          📌 This file type (${extension}) requires download to view.<br>
-          Once uploaded to a server, it will preview automatically using Google Docs Viewer.
+          <strong>⏳ Document is not uploaded yet</strong><br><br>
+          Google Docs Viewer requires a public URL to preview ${extension} files.<br>
+          <span class="highlight">Save your work</span> to upload this document, then it will be previewable!
         </div>
         <a href="${downloadUrl}" download="${filename}" class="download-btn">
-          ⬇️ Download File
+          📥 Download to View Now
         </a>
         <div class="note">
-          💡 In production, this will open in Google Docs Viewer
+          💡 After saving, clicking this document will open it in Google Docs Viewer
         </div>
       </div>
     </body>
