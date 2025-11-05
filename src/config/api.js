@@ -2,8 +2,11 @@
 // Update BASE_URL here to change all API endpoints globally
 
 // const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
-const BASE_URL = 'https://test-dev-lw9pz.ondigitalocean.app';
-// const BASE_URL = 'http://localhost:5000';
+// const BASE_URL = 'https://test-dev-lw9pz.ondigitalocean.app';
+const BASE_URL = 'http://localhost:5000';
+
+// WebSocket URL (ws:// for development, wss:// for production)
+const WS_BASE_URL = BASE_URL.replace(/^http/, 'ws');
 
 // AUTH ENDPOINTS
 export const AUTH_ENDPOINTS = {
@@ -45,6 +48,10 @@ export const UPLOAD_ENDPOINTS = {
   DELETE_MULTIPLE: `${BASE_URL}/api/upload/multiple`,
 };
 
+// COLLABORATION ENDPOINTS (WebSocket)
+export const COLLABORATION_ENDPOINTS = {
+  WEBSOCKET: `${WS_BASE_URL}/collaboration`,
+};
 
 // Export base URL for direct use
 export default BASE_URL;

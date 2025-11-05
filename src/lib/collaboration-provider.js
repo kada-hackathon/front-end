@@ -1,5 +1,6 @@
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import * as Y from 'yjs';
+import { COLLABORATION_ENDPOINTS } from '../config/api';
 
 // User colors for collaboration cursors
 const CURSOR_COLORS = [
@@ -21,13 +22,17 @@ export const getRandomColor = () => {
 export const createCollaborationProvider = ({
   documentId,
   user,
-  websocketUrl = 'wss://test-dev-lw9pz.ondigitalocean.app',
+  websocketUrl = COLLABORATION_ENDPOINTS.WEBSOCKET,
   token = null,
 }) => {
+  const authToken = token || sessionStorage.getItem('token');
+  
   console.log('[Collaboration] Creating provider:', {
     documentId,
     websocketUrl,
-    user: user?.name
+    user: user?.name,
+    hasToken: !!authToken,
+    tokenPreview: authToken ? `${authToken.substring(0, 20)}...` : 'none'
   });
 
   // Create a new Y.js document
@@ -38,7 +43,7 @@ export const createCollaborationProvider = ({
     url: websocketUrl,
     name: documentId,
     document: ydoc,
-    token: token || sessionStorage.getItem('token'), // Use provided token or get from sessionStorage
+    token: authToken,
     
     // Configure awareness for cursor tracking
     onAwarenessUpdate: ({ states }) => {

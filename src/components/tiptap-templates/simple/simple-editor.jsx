@@ -14,6 +14,7 @@ import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
 import { Placeholder } from "@tiptap/extension-placeholder"
 import { Collaboration } from "@tiptap/extension-collaboration"
+import { CollaborationCaret } from "@tiptap/extension-collaboration-caret"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -230,6 +231,13 @@ export function SimpleEditor({
         ? [
             Collaboration.configure({
               document: collaborationProvider.ydoc,
+            }),
+            CollaborationCaret.configure({
+              provider: collaborationProvider.provider,
+              user: currentUser || {
+                name: 'Anonymous',
+                color: '#958DF1',
+              },
             }),
           ]
         : []),

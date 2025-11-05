@@ -20,7 +20,7 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS, COLLABORATION_ENDPOINTS } from "../config/api";
 import { apiHandler } from "../utils/apiHandler";
 import { toast } from "sonner";
 import BASE_URL from "../config/api";
@@ -250,13 +250,10 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
     if (isEditMode && postId && currentUser) {
       console.log('[Collaboration] Initializing collaboration for document:', postId);
       
-      // Convert https to wss for WebSocket
-      const websocketUrl = BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-      
       const { provider, ydoc } = createCollaborationProvider({
         documentId: postId,
         user: currentUser,
-        websocketUrl: websocketUrl,
+        // websocketUrl is already set to COLLABORATION_ENDPOINTS.WEBSOCKET by default
       });
 
       setCollaborationProvider({ provider, ydoc });
