@@ -21,11 +21,13 @@ import Navbar from "@/components/Navbar/Navbar";
 import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
+import { apiHandler } from "../utils/apiHandler";
+import { toast } from "sonner";
 import BASE_URL from "../config/api";
 import { useToast } from "@/hooks/use-toast";
 import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib/collaboration-provider";
 
-const BlogEditor = () => {
+  const BlogEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -598,13 +600,13 @@ const BlogEditor = () => {
       // ADD VERSION (LOG HISTORY)
       const worklogId = createdOrUpdatedWorklog?._id;
       if (worklogId) {
+        const token = localStorage.getItem('token');
         await fetch(WORKLOG_ENDPOINTS.VERSIONS(worklogId), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          credentials: "include",
           body: JSON.stringify({
             message: commitMessage
           })
@@ -653,15 +655,27 @@ const BlogEditor = () => {
       }
       // Otherwise stay on the page - don't navigate to /worklog
     } catch (err) {
-      console.error('[BlogEditor] Error saving blog:', err);
+      console.error('Error saving blog:', err);
       
-      // Show error toast
-      toast({
-        title: "❌ Failed to save",
-        description: err.message || "An error occurred while saving your work log.",
-        variant: "destructive",
-        duration: 5000,
-      });
+      // Handle validation errors
+      if (err.validationErrors) {
+        // Display each validation error
+        const fieldNames = {
+          title: 'Title',
+          content: 'Content',
+          tag: 'Tags'
+        };
+        
+        Object.entries(err.validationErrors).forEach(([field, message]) => {
+          const fieldName = fieldNames[field] || field;
+          toast.error(`${fieldName}: ${message}`);
+        });
+      } else if (err.message === 'No authentication token found') {
+        toast.error('Session expired. Please login again.');
+        navigate('/login');
+      } else {
+        toast.error('Failed to save worklog. Please try again.');
+      }
     }
   };
 

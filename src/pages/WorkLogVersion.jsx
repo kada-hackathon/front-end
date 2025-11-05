@@ -26,8 +26,7 @@ const WorkLogVersion = () => {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
-          },
-          credentials: "include" // jika backend pakai cookie juga, recommended biarkan di sini
+          }
         });
 
         const data = await res.json();

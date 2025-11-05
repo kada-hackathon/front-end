@@ -18,20 +18,23 @@ export const AUTH_ENDPOINTS = {
 export const WORKLOG_ENDPOINTS = {
   LIST: `${BASE_URL}/api/worklogs`,                    // GET all, POST create
   ONE: (id) => `${BASE_URL}/api/worklogs/${id}`,       // GET, PUT, DELETE single
-  FILTER : `${BASE_URL}/api/worklogs/filter`,  // GET user logs
-  VERSIONS: (id) => `${BASE_URL}/api/worklogs/${id}/versions`, // GET versions
+  FILTER: `${BASE_URL}/api/worklogs/filter`,          // GET user logs
+  VERSIONS: (id) => `${BASE_URL}/api/worklogs/${id}/versions`, // GET, POST versions
 };
 
 // ADMIN ENDPOINTS
 export const ADMIN_ENDPOINTS = {
   EMPLOYEES: `${BASE_URL}/api/admin/employees`,                // GET all, DELETE user
   EMPLOYEE: (id) => `${BASE_URL}/api/admin/employees/${id}`,   // GET single user
+  VERSION: (id) => `${BASE_URL}/api/admin/employees/${id}/versions`,  // GET single user
 };
 
 // CHATBOT ENDPOINTS
 export const CHATBOT_ENDPOINTS = {
   SEND_MESSAGE: `${BASE_URL}/api/chatbot`,
-  GET_HISTORY: (sessionId) => `${BASE_URL}/api/chatbot/session/${sessionId}`,
+  GET_MESSAGES: (sessionId) => `${BASE_URL}/api/chatbot/session/${sessionId}`,
+  DELETE_SESSION: (sessionId) => `${BASE_URL}/api/chatbot/session/${sessionId}`,
+  GET_HISTORY: `${BASE_URL}/api/chatbot/history`,
 };
 
 // UPLOAD ENDPOINTS
@@ -41,6 +44,7 @@ export const UPLOAD_ENDPOINTS = {
   DELETE: `${BASE_URL}/api/upload`,
   DELETE_MULTIPLE: `${BASE_URL}/api/upload/multiple`,
 };
+
 
 // Export base URL for direct use
 export default BASE_URL;

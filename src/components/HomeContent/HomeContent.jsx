@@ -171,7 +171,11 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
               year: 'numeric'
             }),
             hashtags: worklog.tag || [],
-            content: plainTextContent || "",
+            content: plainTextContent 
+              ? (plainTextContent.length > 100 
+                  ? `${plainTextContent.substring(0, 100)}...` 
+                  : plainTextContent)
+              : "",
             image: worklog.media?.[0] || null,
           };
 
@@ -212,8 +216,6 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         </div>
       )}
       
-      {/* DEBUG LOG */}
-      {!loading && posts.length > 0 && console.log('DEBUG: posts ready to render:', posts.length)}
       
       {loading ? (
         <div className="text-center py-8">Loading posts...</div>
@@ -265,7 +267,14 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
                 </p>
               )}
 
-              {post.content && <p className="post-content">{post.content}</p>}
+              {post.content && (
+                <p className="post-content">
+                  {post.content}
+                  {post.content.endsWith('...') && (
+                    <span className="text-primary text-sm ml-1 font-medium">See more</span>
+                  )}
+                </p>
+              )}
 
               {post.image && (
                 <div className="post-image-container">
