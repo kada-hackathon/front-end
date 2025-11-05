@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 
 function ProtectedRoute({ children }) {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     
     // Check if token exists and is not empty
     if (!token || token.trim() === '') {

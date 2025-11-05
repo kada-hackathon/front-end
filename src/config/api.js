@@ -44,3 +44,4 @@ export const UPLOAD_ENDPOINTS = {
 
 // Export base URL for direct use
 export default BASE_URL;
+

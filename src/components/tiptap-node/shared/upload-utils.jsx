@@ -11,7 +11,7 @@ export function useFileUpload(options) {
 
   const uploadFile = async file => {
     // Check authentication first
-    const token = localStorage.getItem('token')
+    const token = sessionStorage.getItem('token')
     if (!token) {
       const error = new Error("Authentication required - Please log in to upload files")
       options.onError?.(error)
@@ -295,3 +295,4 @@ export const UploadDragArea = ({
 
 // Export CloseIcon for use in upload components
 export { CloseIcon } from "@/components/tiptap-icons/close-icon"
+

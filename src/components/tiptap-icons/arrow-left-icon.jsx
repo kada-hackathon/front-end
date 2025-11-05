@@ -21,3 +21,4 @@ export const ArrowLeftIcon = React.memo(({
 })
 
 ArrowLeftIcon.displayName = "ArrowLeftIcon"
+

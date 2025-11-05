@@ -132,3 +132,4 @@ export const DocumentPreviewModal = ({ fileUrl, filename, onClose }) => {
     </div>
   );
 };
+

@@ -260,7 +260,7 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
     console.log("FormData created with file")
 
     // Get authentication token
-    const token = localStorage.getItem('token')
+    const token = sessionStorage.getItem('token')
     if (!token) {
       console.error("No authentication token found")
       throw new Error("Authentication required")
@@ -355,7 +355,7 @@ export const deleteMediaFile = async (url) => {
 
   try {
     // Get authentication token
-    const token = localStorage.getItem('token')
+    const token = sessionStorage.getItem('token')
     if (!token) {
       console.error("[deleteMediaFile] No authentication token found")
       throw new Error("Authentication required")

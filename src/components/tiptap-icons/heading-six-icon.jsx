@@ -26,3 +26,4 @@ export const HeadingSixIcon = React.memo(({
 })
 
 HeadingSixIcon.displayName = "HeadingSixIcon"
+

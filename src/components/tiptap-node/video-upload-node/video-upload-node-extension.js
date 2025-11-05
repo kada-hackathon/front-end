@@ -98,3 +98,4 @@ export const VideoUploadNode = Node.create({
 })
 
 export default VideoUploadNode
+

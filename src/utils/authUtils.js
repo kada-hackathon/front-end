@@ -4,7 +4,7 @@
  */
 
 export const validateAndCleanupToken = async () => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   
   // Jika tidak ada token, return
   if (!token || token.trim() === '') {
@@ -27,14 +27,14 @@ export const validateAndCleanupToken = async () => {
     } else {
       // Token invalid atau expired
       console.log('❌ Token invalid or expired - clearing storage');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       return false;
     }
   } catch (err) {
     console.error('Token verification error:', err);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     return false;
   }
 };
@@ -42,7 +42,8 @@ export const validateAndCleanupToken = async () => {
 // Logout function
 export const logout = (navigate) => {
   console.log('🚪 Logging out...');
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('user');
   navigate('/login');
 };
+

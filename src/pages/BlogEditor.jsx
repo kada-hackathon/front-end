@@ -89,7 +89,7 @@ const BlogEditor = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
@@ -146,7 +146,7 @@ const BlogEditor = () => {
 
     const fetchPost = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'GET',
           headers: {
@@ -224,7 +224,7 @@ const BlogEditor = () => {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
           method: 'GET',
           headers: {
@@ -243,6 +243,7 @@ const BlogEditor = () => {
   }, []);
 
   // Initialize collaboration automatically in edit mode
+  // Wait for content to be loaded first before setting up collaboration
   useEffect(() => {
     if (isEditMode && postId && currentUser) {
       console.log('[Collaboration] Initializing collaboration for document:', postId);
@@ -335,7 +336,7 @@ const BlogEditor = () => {
     // Auto-save collaborators if in edit mode
     if (isEditMode && postId) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const mediaFiles = extractMediaFromContent(blogContent);
         await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
@@ -385,7 +386,7 @@ const BlogEditor = () => {
     // Auto-save collaborator removal if in edit mode
     if (isEditMode && postId) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const updatedCollaboratorIds = updatedCollaborators.map(c => c.id);
         const mediaFiles = extractMediaFromContent(blogContent);
         await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
@@ -515,7 +516,7 @@ const BlogEditor = () => {
     console.log("Saving blog with message:", commitMessage);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       let createdOrUpdatedWorklog;
 
       // Import media manager and upload functions

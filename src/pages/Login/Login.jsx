@@ -13,8 +13,8 @@ function Login() {
 
   // Auto clear expired token on component mount
   useEffect(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     console.log('✅ Cleared expired/old tokens on login page load');
   }, []);
 
@@ -34,9 +34,9 @@ function Login() {
 
       const data = await res.json();
       if(res.ok){
-        // Save token and user (if returned) to localStorage
-        localStorage.setItem('token', data.token || '');
-        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+        // Save token and user (if returned) to sessionStorage
+        sessionStorage.setItem('token', data.token || '');
+        if (data.user) sessionStorage.setItem('user', JSON.stringify(data.user));
 
         // Navigate to the root/home route defined in App.jsx
         // Note: in this project the Home page is mounted at '/'

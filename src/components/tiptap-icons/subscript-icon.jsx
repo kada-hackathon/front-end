@@ -33,3 +33,4 @@ export const SubscriptIcon = React.memo(({
 })
 
 SubscriptIcon.displayName = "SubscriptIcon"
+

@@ -130,3 +130,4 @@ export const DocumentNode = Node.create({
 })
 
 export default DocumentNode
+

@@ -441,3 +441,4 @@ export const ImageUploadNode = (props) => {
     </NodeViewWrapper>
   );
 }
+

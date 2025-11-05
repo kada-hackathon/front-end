@@ -19,7 +19,7 @@ const ChatBot = () => {
 
   // Fetch user profile for avatar and load chat history
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) return;
 
     // Fetch user profile
@@ -46,7 +46,7 @@ const ChatBot = () => {
 
   const loadChatHistory = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch('http://localhost:5000/api/chats/history', {
         method: 'GET',
         headers: {
@@ -71,7 +71,7 @@ const ChatBot = () => {
 
   const saveChatToBackend = async (sessionId, title, messages) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await fetch('http://localhost:5000/api/chats/save', {
         method: 'POST',
         headers: {
@@ -138,7 +138,7 @@ const ChatBot = () => {
 
   const handleSelectChat = async (sessionId) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/chats/${sessionId}`, {
         method: 'GET',
         headers: {
@@ -158,7 +158,7 @@ const ChatBot = () => {
 
   const handleDeleteChat = async (sessionId) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await fetch(`http://localhost:5000/api/chats/${sessionId}`, {
         method: 'DELETE',
         headers: {
@@ -183,7 +183,7 @@ const ChatBot = () => {
 
     // Create new chat session in backend immediately
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await fetch('http://localhost:5000/api/chats/save', {
         method: 'POST',
         headers: {

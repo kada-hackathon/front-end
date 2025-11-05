@@ -31,3 +31,4 @@ export const HeadingThreeIcon = React.memo(({
 })
 
 HeadingThreeIcon.displayName = "HeadingThreeIcon"
+

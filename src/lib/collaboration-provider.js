@@ -24,6 +24,12 @@ export const createCollaborationProvider = ({
   websocketUrl = 'wss://test-dev-lw9pz.ondigitalocean.app',
   token = null,
 }) => {
+  console.log('[Collaboration] Creating provider:', {
+    documentId,
+    websocketUrl,
+    user: user?.name
+  });
+
   // Create a new Y.js document
   const ydoc = new Y.Doc();
 
@@ -32,29 +38,36 @@ export const createCollaborationProvider = ({
     url: websocketUrl,
     name: documentId,
     document: ydoc,
-    token: token || localStorage.getItem('token'), // Use provided token or get from localStorage
+    token: token || sessionStorage.getItem('token'), // Use provided token or get from sessionStorage
     
     // Configure awareness for cursor tracking
     onAwarenessUpdate: ({ states }) => {
-      // You can add custom logic here to handle awareness updates
-      console.log('Awareness updated:', states);
+      // Log awareness updates
+      const activeUsers = Array.from(states.values())
+        .filter(state => state.user)
+        .map(state => state.user.name);
+      console.log('[Collaboration] Active users:', activeUsers);
     },
     
     // Connection lifecycle hooks
     onConnect: () => {
-      console.log('Connected to collaboration server');
+      console.log('[Collaboration] ✅ Connected to collaboration server');
     },
     
-    onDisconnect: () => {
-      console.log('Disconnected from collaboration server');
+    onDisconnect: ({ event }) => {
+      console.log('[Collaboration] ❌ Disconnected from collaboration server', event);
     },
     
     onStatus: ({ status }) => {
-      console.log('Connection status:', status);
+      console.log('[Collaboration] Connection status:', status);
     },
     
-    onSynced: () => {
-      console.log('Document synced');
+    onSynced: ({ state }) => {
+      console.log('[Collaboration] ✅ Document synced, state:', state);
+    },
+    
+    onAuthenticationFailed: ({ reason }) => {
+      console.error('[Collaboration] ❌ Authentication failed:', reason);
     },
   });
 
@@ -64,6 +77,7 @@ export const createCollaborationProvider = ({
       name: user.name || user.username || 'Anonymous',
       color: user.color || getRandomColor(),
     });
+    console.log('[Collaboration] Set user awareness:', user.name);
   }
 
   return { provider, ydoc };
@@ -96,3 +110,4 @@ export const getActiveCollaborators = (provider) => {
 
   return collaborators;
 };
+

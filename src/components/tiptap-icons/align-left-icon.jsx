@@ -33,3 +33,4 @@ export const AlignLeftIcon = React.memo(({
 })
 
 AlignLeftIcon.displayName = "AlignLeftIcon"
+

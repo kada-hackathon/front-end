@@ -269,3 +269,4 @@ export function useHeading(config) {
     Icon: headingIcons[level],
   }
 }
+

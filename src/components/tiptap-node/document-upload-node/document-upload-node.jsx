@@ -172,3 +172,4 @@ export const DocumentUploadNode = (props) => {
     </NodeViewWrapper>
   );
 }
+

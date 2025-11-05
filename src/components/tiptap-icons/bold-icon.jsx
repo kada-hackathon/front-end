@@ -23,3 +23,4 @@ export const BoldIcon = React.memo(({
 })
 
 BoldIcon.displayName = "BoldIcon"
+

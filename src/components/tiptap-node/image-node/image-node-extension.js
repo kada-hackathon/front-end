@@ -132,3 +132,4 @@ export const CustomImageNode = Node.create({
 })
 
 export default CustomImageNode
+

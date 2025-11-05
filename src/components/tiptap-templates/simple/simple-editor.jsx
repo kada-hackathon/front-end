@@ -305,10 +305,44 @@ export function SimpleEditor({
   // Load initial content when it changes
   // Using emitUpdate: false to preserve undo/redo history when content is updated after save
   React.useEffect(() => {
+    // Skip setting content if collaboration is enabled (Yjs handles it)
+    if (enableCollaboration && collaborationProvider) {
+      console.log('[Collaboration] Skipping setContent - using Yjs sync');
+      
+      // Initialize Y.js document with content if it's empty
+      const provider = collaborationProvider.provider;
+      if (provider && editor && initialContent) {
+        const syncHandler = () => {
+          // Check if the Y.js document is empty
+          const yXmlFragment = collaborationProvider.ydoc.getXmlFragment('default');
+          
+          if (yXmlFragment.length === 0 && initialContent) {
+            console.log('[Collaboration] Y.js document is empty, initializing with content');
+            // Set the initial content in the editor, which will sync to Y.js
+            editor.commands.setContent(initialContent, false);
+          } else {
+            console.log('[Collaboration] Y.js document has content, using synced data');
+          }
+        };
+        
+        // Wait for sync to complete
+        if (provider.isSynced) {
+          syncHandler();
+        } else {
+          provider.on('synced', syncHandler);
+        }
+        
+        return () => {
+          provider.off('synced', syncHandler);
+        };
+      }
+      return;
+    }
+    
     if (editor && initialContent && editor.getHTML() !== initialContent) {
       editor.commands.setContent(initialContent, false);
     }
-  }, [initialContent, editor]);
+  }, [initialContent, editor, enableCollaboration, collaborationProvider]);
 
   React.useEffect(() => {
     if (!isMobile && mobileView !== "main") {

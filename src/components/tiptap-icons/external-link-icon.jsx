@@ -24,3 +24,4 @@ export const ExternalLinkIcon = React.memo(({
 })
 
 ExternalLinkIcon.displayName = "ExternalLinkIcon"
+
