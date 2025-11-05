@@ -14,12 +14,15 @@ function Login() {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Auto clear expired token on component mount
+  // Check if user is already logged in
+  // If yes, redirect to home page
   useEffect(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    console.log('✅ Cleared expired/old tokens on login page load');
-  }, []);
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('✅ User already logged in, redirecting to home');
+      navigate('/');
+    }
+  }, [navigate]);
 
   // Handle login form submit
   const handleLogin = async (e) =>{

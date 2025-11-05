@@ -1,8 +1,8 @@
 // Centralized API Configuration
 // Update BASE_URL here to change all API endpoints globally
 
-const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
-// const BASE_URL = 'http://localhost:5000';
+// const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
+const BASE_URL = 'http://localhost:5000';
 
 // AUTH ENDPOINTS
 export const AUTH_ENDPOINTS = {
