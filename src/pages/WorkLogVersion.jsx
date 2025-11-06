@@ -1,36 +1,56 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
-import { useState } from "react";
+import { WORKLOG_ENDPOINTS } from "../config/api";
 
 const WorkLogVersion = () => {
   const navigate = useNavigate();
+  const { id } = useParams(); // id WorkLog nya
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [versions, setVersions] = useState([]);
+  const [title, setTitle] = useState("");
 
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
+  console.log("ID DARI ROUTER:", id);
 
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
+  useEffect(() => {
+    const fetchVersions = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
 
-  const workLogVersions = [
-    { id: "1", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-    { id: "2", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-    { id: "3", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-    { id: "4", author: "Arrizal anru M", division: "Nama_Divisi", message: "MESSAGE......", updatedAt: "Updated 2 days ago", avatar: "/placeholder.svg" },
-  ];
+        const res = await fetch(WORKLOG_ENDPOINTS.VERSIONS(id), {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+
+        console.log("VERSIONS DATA", data);
+
+        setVersions(data?.versions ?? []);  // fallback aman
+        setTitle(data?.title ?? "");
+      } catch (err) {
+        console.error("fetchVersions error:", err);
+      }
+    };
+
+    if (!id) return;
+
+    fetchVersions();
+  }, [id]);
+
 
   return (
     <div className="flex h-screen bg-background">
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
       />
 
       <main className="flex-1 flex flex-col">
@@ -42,38 +62,43 @@ const WorkLogVersion = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate("/blog-editor")}
+                onClick={() => navigate(-1)}
                 className="text-foreground"
               >
                 <ChevronLeft className="h-6 w-6" />
               </Button>
-              <h1 className="text-3xl font-bold">Name of Project</h1>
+              <h1 className="text-3xl font-bold">{title}</h1>
             </div>
 
             <div className="space-y-4 max-w-4xl">
-              {workLogVersions.map((version) => (
-                <div key={version.id} className="bg-card border border-border p-6 rounded-lg">
+              {Array.isArray(versions) && versions.map(v => (
+                <div key={v._id} className="bg-card border border-border p-6 rounded-lg">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
                       <img
-                        src={version.avatar}
-                        alt={version.author}
+                        src={v.user?.profile_photo ?? "/placeholder.svg"}
+                        alt={v.user?.name}
                         className="w-14 h-14 rounded-full object-cover"
                       />
                       <div>
-                        <p className="font-semibold text-lg">{version.author}</p>
-                        <p className="text-sm text-muted-foreground">{version.division}</p>
+                        <p className="font-semibold text-lg">{v.user?.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {v.user?.division}
+                        </p>
                       </div>
                     </div>
-                    <span className="text-sm text-muted-foreground">{version.updatedAt}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {/* kalau backend udah kirim datetime → format */}
+                      {new Date(v.datetime).toLocaleDateString()}
+                    </span>
                   </div>
-                  <p className="font-semibold text-base">{version.message}</p>
+                  <p className="font-semibold text-base">{v.message}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <FriendsList friends={friends} />
+          <FriendsList/>
         </div>
       </main>
     </div>
@@ -81,3 +106,4 @@ const WorkLogVersion = () => {
 };
 
 export default WorkLogVersion;
+

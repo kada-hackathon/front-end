@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, FileText } from "lucide-react";
+import { ChevronLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
+import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../config/api";
 
 const BlogPost = () => {
   const navigate = useNavigate();
@@ -13,84 +14,142 @@ const BlogPost = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const postId = searchParams.get("id");
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [friends, setFriends] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
-  // Mock data for posts (same as in HomeContent)
-  const posts = [
-    {
-      id: "1",
-      author: {
-        name: "Moriee al haji",
-        division: "Nama_Divisi",
-        avatar: "/placeholder.svg",
-      },
-      date: "23 Nov 2025",
-      title: "Cara Membuat Telur Gulung",
-      hashtags: ["#Telur Gulu", "#makanan"],
-      content:
-        "Misi kami di Cookpad adalah untuk membuat masak sehari-hari menyenangkan, karena kami percaya bahwa memasak adalah kunci menuju kehidupan yang lebih bahagia dan lebih sehat bagi manusia, komunitas, dan bumi .......",
-    },
-    {
-      id: "2",
-      author: {
-        name: "Netta muji maju",
-        division: "Nama_Divisi",
-        avatar: "/placeholder.svg",
-      },
-      date: "23 Nov 2025",
-      title: "PEMBUATAN IOT BERBASIS AI",
-      hashtags: ["#AI", "#IOT", "#Tanaman"],
-      content: "",
-      image: "/placeholder.svg",
-    },
-    {
-      id: "3",
-      author: {
-        name: "Regina alhajiz",
-        division: "Nama_Divisi",
-        avatar: "/placeholder.svg",
-      },
-      date: "23 Nov 2025",
-      title: "Menghapus Postingan dari akun",
-      hashtags: [],
-      content: "",
-    },
-  ];
+  // Get current user ID
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        const userData = data.user || data;
+        setCurrentUserId(userData.id || userData._id);
+      } catch (err) {
+        console.error('Error fetching current user:', err);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
 
-  const currentPost = posts.find(post => post.id === postId);
+  // Fetch detail worklog dari backend
+  useEffect(() => {
+    if (!postId) return;
+    
+    const fetchPost = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        console.log('Post response:', data);
+        setPost(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching post:', err);
+        setLoading(false);
+      }
+    };
+    fetchPost();
+  }, [postId]);
 
-  const friends = [
-    { id: "1", name: "Arrizal anru M", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "2", name: "Regina alhajiz", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jovan munthe", division: "Nama_Divisi", avatar: "/placeholder.svg" },
-  ];
+  // Fetch friends dari backend
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        const friendsList = data.data || data.employees || data || [];
+        setFriends(friendsList);
+      } catch (err) {
+        console.error('Error fetching friends:', err);
+      }
+    };
+    fetchFriends();
+  }, []);
 
-  const recentProjects = ["NEW-Project", "Project-KADA", "Pembuatan-chatbot"];
+  // Check apakah user adalah owner atau collaborator
+  const isOwner = post && currentUserId && (post.user?._id === currentUserId || post.user?.id === currentUserId);
+  const isCollaborator = post && currentUserId && 
+    post.collaborators?.some(collab => 
+      collab._id === currentUserId || collab.id === currentUserId
+    );
+  const canEdit = isOwner || isCollaborator;
 
-  const post = currentPost || {
-    author: {
-      name: "Moriee al haji",
-      division: "Nama_Divisi",
-      avatar: "/placeholder.svg",
-    },
-    date: "28 November 2025",
-    time: "19.00 WIB",
-    title: "CARA MEMBUAT TELUR GULUNG",
-    hashtags: ["#Telur Gulu", "#makanan"],
-    content: `1. Siap kan wadah, pecahkan telur ke dalam wadah lalu campur dengan garam dan penyedap. Kocok telur hingga rata.
-2. Dalam gelas berisi air, masukan tepung tapioka/sagu lalu aduk.
-3. Tuang air yang sudah dicampur tepung tapioka/sagu kedalam kocokan telur. Aduk lagi hingga semua bahan tercampur.
-4. Panas kan wajan dengan minyak banyak (minyak harus banyak ya, supaya telur bisa kering dan tidak menjadi telur dadar hehehe). Tunggu sampai minyak benar2 panas.
-5. Masukkan 1 centong sayur adonan telur kedalam wajan, usahan jarak penungan telur agak tinggi dari minyak, sekitar 15-20cm diatas minyak (ini sangat disarankan untuk pemula, supaya anti gagal). Tunggu 5 detik, setelah itu gulung telur menggunakan tusuk sate (cukup ditarik dari pinggir wajan). Jika metodenya sudah benar saat menggulung tidak akan susah, Karena nanti telur akan tertarik sendiri mengikuti arah gulungan.
-6. Setelah telur sudah menempel sempurna ditusuk sate, padatkan lagi dengan cara ditekan2 ke pinggir wajan. Gunanya supaya mengurangi minyak dan membuat gulungan telur menjadi padat.
-7. Selamat mencoba ❤️`,
+  const handleEditClick = () => {
+    navigate(`/blog-editor?id=${postId}`);
   };
+
+  const handleDeleteClick = async () => {
+    if (!window.confirm('Are you sure you want to delete this work log? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem('token');
+      const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        alert('Work log deleted successfully!');
+        navigate('/');
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to delete work log');
+      }
+    } catch (err) {
+      console.error('Error deleting work log:', err);
+      alert('Failed to delete work log. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-background items-center justify-center">
+        <p>Loading post...</p>
+      </div>
+    );
+  }
+
+  if (!post) {
+    return (
+      <div className="flex h-screen bg-background items-center justify-center">
+        <p>Post not found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-background">
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        recentProjects={recentProjects}
       />
 
       <main className="flex-1 flex flex-col">
@@ -98,63 +157,91 @@ const BlogPost = () => {
 
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 p-8 overflow-y-auto bg-background">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate(-1)}
-              className="mb-6"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-
             <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(-1)}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                
+                {canEdit && (
+                  <div className="flex gap-2">
+                    <Button onClick={handleEditClick} className="gap-2 h-9">
+                      <Pencil className="h-4 w-4" />
+                      Edit Work Log
+                    </Button>
+                    {isOwner && (
+                      <Button 
+                        onClick={handleDeleteClick} 
+                        className="gap-2 h-9 bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete Work Log
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-8">
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <Avatar className="w-16 h-16">
-                      <AvatarImage src={post.author.avatar} />
+                      <AvatarImage src={post.user?.profilePicture || post.user?.profile_photo || "/placeholder.svg"} />
                       <AvatarFallback>
-                        {post.author.name.substring(0, 2).toUpperCase()}
+                        {(post.user?.name || "Unknown").substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-bold text-lg text-foreground">{post.author.name}</p>
-                      <p className="text-sm text-muted-foreground">{post.author.division}</p>
+                      <p className="font-bold text-lg text-foreground">{post.user?.name || "Unknown"}</p>
+                      <p className="text-sm text-muted-foreground">{post.user?.division || "N/A"}</p>
                     </div>
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
-                    <p>{post.date}</p>
-                    <p>19.00 WIB</p>
+                    <p>{new Date(post.datetime || post.createdAt).toLocaleDateString('id-ID', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}</p>
+                    <div>{new Date(post.datetime || post.createdAt).toLocaleTimeString('id-ID', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</div>
                   </div>
                 </div>
 
                 <h1 className="text-3xl font-bold mb-4 text-foreground">{post.title}</h1>
 
-                {post.hashtags && post.hashtags.length > 0 && (
+                {post.tag && post.tag.length > 0 && (
                   <p className="text-sm text-muted-foreground mb-6">
-                    {post.hashtags.join(" ")}
+                    {post.tag.map((t) => t.startsWith('#') ? t : `#${t}`).join(" ")}
                   </p>
                 )}
 
-                <div className="prose prose-lg max-w-none text-foreground">
-                  {post.content.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
+                <div 
+                  className="prose prose-lg max-w-none text-foreground"
+                  dangerouslySetInnerHTML={{ __html: post.content || '' }}
+                />
 
-                {post.document && (
-                  <div className="mt-6 p-4 bg-background/50 rounded-lg flex items-center gap-3">
-                    <FileText className="h-6 w-6 text-destructive" />
-                    <span className="text-sm text-foreground">{post.document}</span>
+                {post.media && post.media.length > 0 && (
+                  <div className="mt-6">
+                    {post.media.map((mediaUrl, index) => (
+                      <img 
+                        key={index}
+                        src={mediaUrl} 
+                        alt={`Media ${index + 1}`}
+                        className="max-w-full rounded-lg"
+                      />
+                    ))}
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          <FriendsList friends={friends} />
+          <FriendsList/>
         </div>
       </main>
     </div>
@@ -162,3 +249,4 @@ const BlogPost = () => {
 };
 
 export default BlogPost;
+

@@ -1,3 +1,8 @@
+/* Import external stylesheets first (CSS rule: @import must come before all other statements) */
+@import './styles/_variables.scss';
+@import './styles/_keyframe-animations.scss';
+
+/* Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -111,5 +116,124 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Tiptap Editor Integration Layer */
+@layer components {
+  /* Map Tiptap toolbar variables to Tailwind design tokens */
+  :root {
+    /* Tiptap toolbar colors - mapped to your design system */
+    --tt-toolbar-bg-color: hsl(var(--card));
+    --tt-toolbar-border-color: hsl(var(--border));
+    --tt-toolbar-height: 2.75rem;
+    --tt-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    
+    /* Tiptap color palette (grayscale) */
+    --white: hsl(0 0% 100%);
+    --black: hsl(240 45% 8%);
+    --tt-gray-light-a-100: hsl(var(--border));
+    --tt-gray-light-a-400: hsl(var(--muted-foreground));
+    --tt-gray-dark-a-50: hsl(240 30% 20%);
+    
+    /* Tiptap spacing & radius */
+    --tt-radius-lg: var(--radius);
+    --tt-shadow-elevated-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark {
+    --tt-toolbar-bg-color: hsl(var(--card));
+    --tt-toolbar-border-color: hsl(var(--border));
+    --tt-shadow-elevated-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Tiptap Editor base styles */
+  .tiptap-editor,
+  .editor-wrapper {
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    min-height: 300px;
+  }
+
+  /* ProseMirror content area */
+  .ProseMirror {
+    padding: 1rem;
+    outline: none;
+    min-height: 250px;
+  }
+
+  /* Tiptap toolbar buttons integration */
+  .tiptap-toolbar button {
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: hsl(var(--foreground));
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .tiptap-toolbar button:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+
+  .tiptap-toolbar button:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  .tiptap-toolbar button[data-state="active"] {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+  }
+
+  .tiptap-toolbar button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Collaboration cursor styles */
+  .collaboration-cursor__caret {
+    border-left: 2px solid;
+    border-color: currentColor;
+    margin-left: -1px;
+    margin-right: -1px;
+    pointer-events: none;
+    position: relative;
+    word-break: normal;
+  }
+
+  .collaboration-cursor__label {
+    border-radius: 3px 3px 3px 0;
+    color: #fff;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+    left: -1px;
+    line-height: normal;
+    padding: 2px 6px;
+    position: absolute;
+    top: -1.4em;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  /* Y.js collaboration selection styles */
+  .ProseMirror-yjs-cursor {
+    position: relative;
+    margin-left: -1px;
+    margin-right: -1px;
+    border-left: 2px solid;
+    border-color: currentColor;
+    word-break: normal;
+    pointer-events: none;
+  }
+
+  .ProseMirror-yjs-selection {
+    background-color: currentColor;
+    opacity: 0.3;
   }
 }
