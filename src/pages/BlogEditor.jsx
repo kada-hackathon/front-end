@@ -20,12 +20,11 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS, COLLABORATION_ENDPOINTS } from "../config/api";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 import { apiHandler } from "../utils/apiHandler";
 import { toast } from "sonner";
 import BASE_URL from "../config/api";
 import { useToast } from "@/hooks/use-toast";
-import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib/collaboration-provider";
 
   const BlogEditor = () => {
   const navigate = useNavigate();
@@ -49,12 +48,11 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const [editorKey, setEditorKey] = useState(0); // Key to force re-mount editor
   
-  // Collaboration state (always enabled in edit mode)
-  const [collaborationProvider, setCollaborationProvider] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
-  
   // Ref to track if we're programmatically updating content (to avoid triggering unsaved changes)
   const isProgrammaticUpdate = useRef(false);
+  
+  // Ref to store the content to use for editor re-mount (with DigitalOcean URLs)
+  const contentForReMount = useRef(null);
 
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [collaboratorToRemove, setCollaboratorToRemove] = useState(null);
@@ -102,12 +100,6 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
         const data = await response.json();
         const userData = data.user || data;
         setCurrentUserId(userData.id || userData._id);
-        
-        // Set current user for collaboration
-        setCurrentUser({
-          name: userData.name || userData.username || "Anonymous",
-          color: '#958DF1', // You can generate random color per user
-        });
         
         // Set owner as current user (for both create and edit mode)
         setOwner({
@@ -243,29 +235,6 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
     };
     fetchFriends();
   }, []);
-
-  // Initialize collaboration automatically in edit mode
-  // Wait for content to be loaded first before setting up collaboration
-  useEffect(() => {
-    if (isEditMode && postId && currentUser) {
-      console.log('[Collaboration] Initializing collaboration for document:', postId);
-      
-      const { provider, ydoc } = createCollaborationProvider({
-        documentId: postId,
-        user: currentUser,
-        // websocketUrl is already set to COLLABORATION_ENDPOINTS.WEBSOCKET by default
-      });
-
-      setCollaborationProvider({ provider, ydoc });
-
-      // Cleanup on unmount
-      return () => {
-        console.log('[Collaboration] Cleaning up collaboration provider');
-        destroyCollaborationProvider(provider);
-        setCollaborationProvider(null);
-      };
-    }
-  }, [isEditMode, postId, currentUser]);
 
   // Get collaborator IDs for easier checking
   const collaboratorIds = collaborators.map(c => c.id);
@@ -527,12 +496,22 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
       console.log("[BlogEditor] Current content length:", blogContent.length);
       console.log("[BlogEditor] Pending uploads count:", mediaManager.getPendingUploads().length);
       
+      // Log pending uploads details
+      const pendingUploads = mediaManager.getPendingUploads();
+      if (pendingUploads.length > 0) {
+        console.log("[BlogEditor] Pending uploads:");
+        pendingUploads.forEach((upload, index) => {
+          console.log(`[BlogEditor]   ${index + 1}. ${upload.file.name} (${upload.blobUrl.substring(0, 60)}...)`);
+        });
+      }
+      
       const urlMap = await mediaManager.uploadAllPending(handleImageUpload);
       console.log("[BlogEditor] Upload complete, mapped URLs:", urlMap.size);
       
       // Step 2: Replace blob URLs with DigitalOcean URLs in content
+      console.log("[BlogEditor] ========== REPLACING BLOB URLs ==========");
       let finalContent = mediaManager.replaceBlobUrlsInContent(blogContent, urlMap);
-      console.log("[BlogEditor] Final content length after URL replacement:", finalContent.length);
+      console.log("[BlogEditor] ========== REPLACEMENT COMPLETE ==========");
       
       // Step 3: Delete removed media from DigitalOcean
       const pendingDeletions = mediaManager.getPendingDeletions();
@@ -608,7 +587,7 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
             message: commitMessage,
             snapshot: {
               title: blogTitle || "Untitled Work Log",
-              content: blogContent,
+              content: finalContent, // FIXED: Use finalContent with DigitalOcean URLs, not blogContent with blob URLs
               tag: blogTags || [],
               collaborators: collaborators.map(c => c.id),
               media: mediaFiles,
@@ -623,17 +602,35 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
       // CRITICAL: Update the editor content with final content (blob URLs replaced with DigitalOcean URLs)
       // Set flag to prevent triggering unsaved changes
       isProgrammaticUpdate.current = true;
-      setBlogContent(finalContent);
-      console.log("[BlogEditor] Editor content updated with DigitalOcean URLs (undo history preserved)");
       
-      // Reset the flag after a brief delay to allow content update to propagate
+      console.log("[BlogEditor] 🔄 Updating editor with DigitalOcean URLs...");
+      console.log("[BlogEditor] URL replacements made:", urlMap.size);
+      console.log("[BlogEditor] Final content preview:", finalContent.substring(0, 200));
+      
+      // Reset media manager BEFORE updating state (clear blob URLs)
+      mediaManager.reset();
+      console.log("[BlogEditor] Media manager reset");
+      
+      // Store the final content in a ref so it's immediately available for re-mount
+      contentForReMount.current = finalContent;
+      
+      // Update the content state with final content (has DigitalOcean URLs)
+      setBlogContent(finalContent);
+      
+      // Force re-mount the editor with new content
+      // The editor will use contentForReMount.current which has DigitalOcean URLs
+      setEditorKey(prev => prev + 1);
+      console.log("[BlogEditor] ✅ Editor will re-mount with DigitalOcean URLs");
+      console.log("[BlogEditor] contentForReMount.current has blob:", contentForReMount.current?.includes('blob:'));
+      console.log("[BlogEditor] contentForReMount.current has DO:", contentForReMount.current?.includes('nebwork-storage') || contentForReMount.current?.includes('digitaloceanspaces'));
+      console.log("[BlogEditor] contentForReMount.current set:", contentForReMount.current ? 'YES' : 'NO');
+      
+      // Reset the flag after re-mount completes
       setTimeout(() => {
         isProgrammaticUpdate.current = false;
-      }, 100);
-      
-      // Reset media manager after successful save
-      mediaManager.reset();
-      console.log("[BlogEditor] Media manager reset after save");
+        contentForReMount.current = null; // Clear the ref after re-mount
+        console.log("[BlogEditor] Editor re-mount complete, ready for edits");
+      }, 1000);
       
       setSaveOpen(false);
       setCommitMessage("");
@@ -700,7 +697,7 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
             <div className="flex-1 overflow-y-auto">
               <SimpleEditor
                 key={editorKey}
-                initialContent={blogContent}
+                initialContent={contentForReMount.current || blogContent}
                 onContentChange={(content) => {
                   setBlogContent(content);
                   // Only mark as unsaved if it's a real user change (not programmatic update)
@@ -725,9 +722,6 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
                 sidebarCollapsed={sidebarCollapsed}
                 onBack={() => handleNavigationAttempt(-1)}
                 onVersion={() => handleNavigationAttempt(`/worklogs/${postId}/versions`)}
-                enableCollaboration={isEditMode}
-                collaborationProvider={collaborationProvider}
-                currentUser={currentUser}
               />
             </div>
 

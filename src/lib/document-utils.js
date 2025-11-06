@@ -85,8 +85,13 @@ export const openDocumentViewer = async (fileUrl, filename) => {
 
   // Development mode: blob URLs need special handling
   if (isBlobUrl(fileUrl)) {
-    console.log('[openDocumentViewer] Opening blob document')
-    return openBlobDocument(fileUrl, filename)
+    console.log('[openDocumentViewer] Opening blob document (not uploaded yet)')
+    try {
+      return await openBlobDocument(fileUrl, filename)
+    } catch (error) {
+      console.error('[openDocumentViewer] Failed to open blob document:', error)
+      throw new Error('This document preview is no longer available. Please save your work to upload the document, then you can preview it.')
+    }
   }
 
   // Production mode: Use Office/Google Docs Viewer for supported formats
@@ -120,6 +125,12 @@ export const openDocumentViewer = async (fileUrl, filename) => {
 const openBlobDocument = async (blobUrl, filename) => {
   try {
     const response = await fetch(blobUrl)
+    
+    // Check if the blob URL is still valid
+    if (!response.ok) {
+      throw new Error(`Blob URL expired or invalid (${response.status})`)
+    }
+    
     const blob = await response.blob()
     const fileExt = filename?.split('.').pop()?.toLowerCase() || ''
     const mimeType = blob.type
