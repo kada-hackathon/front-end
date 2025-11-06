@@ -5,9 +5,6 @@ const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
 // const BASE_URL = 'https://test-dev-lw9pz.ondigitalocean.app';
 // const BASE_URL = 'http://localhost:5000';
 
-// WebSocket URL (ws:// for development, wss:// for production)
-const WS_BASE_URL = BASE_URL.replace(/^http/, 'ws');
-
 // AUTH ENDPOINTS
 export const AUTH_ENDPOINTS = {
   LOGIN: `${BASE_URL}/api/auth/login`,
@@ -23,6 +20,7 @@ export const WORKLOG_ENDPOINTS = {
   ONE: (id) => `${BASE_URL}/api/worklogs/${id}`,       // GET, PUT, DELETE single
   FILTER: `${BASE_URL}/api/worklogs/filter`,          // GET user logs
   VERSIONS: (id) => `${BASE_URL}/api/worklogs/${id}/versions`, // GET, POST versions
+  LOGHISTORY_ONE: (id) => `${BASE_URL}/api/worklogs/loghistory/${id}`, // GET Single Log
 };
 
 // ADMIN ENDPOINTS
@@ -46,11 +44,6 @@ export const UPLOAD_ENDPOINTS = {
   MULTIPLE: `${BASE_URL}/api/upload/multiple`,
   DELETE: `${BASE_URL}/api/upload`,
   DELETE_MULTIPLE: `${BASE_URL}/api/upload/multiple`,
-};
-
-// COLLABORATION ENDPOINTS (WebSocket)
-export const COLLABORATION_ENDPOINTS = {
-  WEBSOCKET: `${WS_BASE_URL}/collaboration`,
 };
 
 // Export base URL for direct use

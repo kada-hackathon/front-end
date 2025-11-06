@@ -48,7 +48,15 @@ export const DocumentNode = (props) => {
       await openDocumentViewer(src, filename)
     } catch (error) {
       console.error('Error opening document:', error)
-      alert('Failed to open document. Please try again.')
+      
+      // Show user-friendly error message
+      const errorMessage = error.message || 'Failed to open document. Please try again.'
+      
+      if (errorMessage.includes('no longer available') || errorMessage.includes('save your work')) {
+        alert('⚠️ Document preview expired\n\n' + errorMessage)
+      } else {
+        alert('❌ Failed to open document\n\n' + errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
