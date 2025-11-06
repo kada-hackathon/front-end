@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Eye, EyeOff, FileText, Circle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Eye, EyeOff, FileText, Circle, LogOut } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -8,37 +8,99 @@ import {
 } from "@/components/ui/dialog";
 import "./admin.css";
 import logoWithText from "@/assets/Logo/Logo with Text_White.png";
-import logoOnly from "@/assets/Logo/Logo Only_White.png";
+import { useNavigate } from "react-router-dom";
+import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from "../../config/api";
+import { toast } from "sonner";
 
 const Admin = () => {
+  const navigate = useNavigate();
   const [showPasswords, setShowPasswords] = useState({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showFormPassword, setShowFormPassword] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentAdmin, setCurrentAdmin] = useState({ name: 'Admin', email: '' });
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     division: "",
-    password: "",
+    password: "pass12345",
+    joinedDate: "",
   });
+  
+  // Pagination & Search states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState([]);
 
-  const users = [
-    {
-      id: 1,
-      fullName: "Salwanetta",
-      email: "Salwanetta@gmail.com",
-      division: "SoftwareDevelopment",
-      password: "password123",
-    },
-    {
-      id: 2,
-      fullName: "",
-      email: "",
-      division: "",
-      password: "",
-    },
-  ];
+  // Fetch current admin info
+  useEffect(() => {
+    const fetchAdminInfo = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (response.ok && data.user) {
+          setCurrentAdmin({
+            name: data.user.name || 'Admin',
+            email: data.user.email || ''
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching admin info:', err);
+      }
+    };
+    fetchAdminInfo();
+  }, []);
+
+  // Fetch all users (employees) with pagination
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const token = sessionStorage.getItem('token');
+        const response = await fetch(`${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        console.log('Fetched users data:', data);
+        
+        if (response.ok) {
+          const usersArray = data.data || [];
+          setUsers(usersArray);
+          setFilteredUsers(usersArray);
+          
+          // Set pagination info
+          if (data.pagination) {
+            setTotalPages(data.pagination.pages);
+            setTotalUsers(data.pagination.total);
+          }
+        } else {
+          toast.error('Failed to fetch users');
+          setUsers([]);
+          setFilteredUsers([]);
+        }
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        toast.error('Error loading users');
+        setUsers([]);
+        setFilteredUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, [currentPage]);
 
   const togglePassword = (userId) => {
     setShowPasswords((prev) => ({
@@ -55,44 +117,186 @@ const Admin = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (isEditMode) {
-      console.log("Edit user:", editingUserId, formData);
-      // TODO: Update user in database
-    } else {
-      console.log("Add new user:", formData);
-      // TODO: Add user to database
+  // Search functionality
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredUsers(users);
+      return;
     }
-    // Reset form and close dialog
-    setFormData({
-      fullName: "",
-      email: "",
-      division: "",
-      password: "",
-    });
-    setIsDialogOpen(false);
-    setIsEditMode(false);
-    setEditingUserId(null);
+
+    const query = searchQuery.toLowerCase();
+    const filtered = users.filter(user => 
+      (user.name || '').toLowerCase().includes(query) ||
+      (user.email || '').toLowerCase().includes(query) ||
+      (user.division || '').toLowerCase().includes(query)
+    );
+    setFilteredUsers(filtered);
+  }, [searchQuery, users]);
+
+  // Function to refresh users list
+  const refreshUsers = async () => {
+    setLoading(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      const response = await fetch(`${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      console.log('Refreshed users data:', data);
+      
+      if (response.ok) {
+        const usersArray = data.data || [];
+        setUsers(usersArray);
+        setFilteredUsers(usersArray);
+        
+        if (data.pagination) {
+          setTotalPages(data.pagination.pages);
+          setTotalUsers(data.pagination.total);
+        }
+      }
+    } catch (err) {
+      console.error('Error refreshing users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const token = sessionStorage.getItem('token');
+
+    try {
+      if (isEditMode) {
+        // Update existing user
+        const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEE(editingUserId), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: formData.fullName,
+            email: formData.email,
+            division: formData.division,
+            join_date: formData.joinedDate
+          })
+        });
+
+        const responseData = await response.json();
+        console.log('Edit response:', responseData);
+
+        if (response.ok) {
+          toast.success('User updated successfully');
+          setIsDialogOpen(false);
+          setSearchQuery(""); // Clear search to show updated data
+          await refreshUsers(); // Refresh the list
+        } else {
+          toast.error(responseData.message || 'Failed to update user');
+        }
+      } else {
+        // Add new user
+        const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: formData.fullName,
+            email: formData.email,
+            division: formData.division,
+            password: formData.password || 'pass12345',
+            join_date: formData.joinedDate,
+            role: 'user'
+          })
+        });
+
+        const responseData = await response.json();
+        console.log('Add response:', responseData);
+
+        if (response.ok) {
+          toast.success(`User added successfully! Password: ${formData.password || 'pass12345'}`);
+          setIsDialogOpen(false);
+          setSearchQuery(""); // Clear search
+          setCurrentPage(1); // Go to first page to see new user
+          await refreshUsers(); // Refresh the list
+        } else {
+          toast.error(responseData.message || 'Failed to add user');
+        }
+      }
+
+      // Reset form
+      setFormData({
+        fullName: "",
+        email: "",
+        division: "",
+        password: "pass12345",
+        joinedDate: "",
+      });
+      setIsEditMode(false);
+      setEditingUserId(null);
+    } catch (err) {
+      console.error('Error submitting form:', err);
+      toast.error('An error occurred');
+    }
   };
 
   const handleEdit = (user) => {
     setFormData({
-      fullName: user.fullName,
-      email: user.email,
-      division: user.division,
-      password: user.password,
+      fullName: user.name || user.fullName || "",
+      email: user.email || "",
+      division: user.division || "",
+      password: "pass12345",
+      joinedDate: user.join_date ? user.join_date.split('T')[0] : ""
     });
-    setEditingUserId(user.id);
+    setEditingUserId(user._id || user.id);
     setIsEditMode(true);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (userId) => {
+  const handleDelete = async (userId) => {
     if (window.confirm("Are you sure you want to delete this account?")) {
-      console.log("Delete user:", userId);
-      // TODO: Delete user from database
+      try {
+        const token = sessionStorage.getItem('token');
+        console.log('Deleting user:', userId);
+        
+        // DELETE endpoint expects id in URL params, not body
+        const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEE(userId), {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const responseData = await response.json();
+        console.log('Delete response:', responseData);
+
+        if (response.ok) {
+          toast.success('User deleted successfully');
+          setSearchQuery(""); // Clear search
+          
+          // If current page becomes empty after delete, go to previous page
+          if (filteredUsers.length === 1 && currentPage > 1) {
+            setCurrentPage(prev => prev - 1);
+          } else {
+            await refreshUsers();
+          }
+        } else {
+          toast.error(responseData.message || 'Failed to delete user');
+        }
+      } catch (err) {
+        console.error('Error deleting user:', err);
+        toast.error('An error occurred');
+      }
     }
+  };
+
+  const handleLogout = () => {
+    // Clear session storage
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    toast.success('Logged out successfully');
+    navigate('/login');
   };
 
   const handleAddAccount = () => {
@@ -100,7 +304,8 @@ const Admin = () => {
       fullName: "",
       email: "",
       division: "",
-      password: "",
+      password: "pass12345", // Default password
+      joinedDate: "",
     });
     setIsEditMode(false);
     setEditingUserId(null);
@@ -122,12 +327,33 @@ const Admin = () => {
           <button className="add-account-btn" onClick={handleAddAccount}>
             Add Account
           </button>
+          <button 
+            className="logout-btn" 
+            onClick={handleLogout}
+            style={{ 
+              marginRight: '1rem', 
+              padding: '0.5rem 1rem', 
+              background: 'transparent',
+              border: '1px solid white',
+              color: 'white',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <LogOut size={18} />
+            Logout
+          </button>
           <div className="user-info">
             <div className="user-details">
-              <div className="user-name">Salwanetta</div>
+              <div className="user-name">{currentAdmin.name}</div>
               <div className="user-role">Admin</div>
             </div>
-            <div className="user-avatar">S</div>
+            <div className="user-avatar">
+              {currentAdmin.name.substring(0, 1).toUpperCase()}
+            </div>
           </div>
         </div>
       </header>
@@ -136,66 +362,151 @@ const Admin = () => {
       <main className="admin-main">
         <h2 className="page-title">MANAGE USERS</h2>
 
-        <div className="table-wrapper">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th>No.</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Division</th>
-                <th>Password</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.id}</td>
-                  <td>{user.fullName}</td>
-                  <td className="email-cell">{user.email}</td>
-                  <td>{user.division}</td>
-                  <td>
-                    <div className="password-cell">
-                      <span className="password-text">
-                        {showPasswords[user.id] ? user.password : "••••••••"}
-                      </span>
-                      <button
-                        className="toggle-password-btn"
-                        onClick={() => togglePassword(user.id)}
-                        aria-label={showPasswords[user.id] ? "Hide password" : "Show password"}
-                      >
-                        {showPasswords[user.id] ? (
-                          <EyeOff size={16} />
-                        ) : (
-                          <Eye size={16} />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(user)}
-                        aria-label="Edit user"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(user.id)}
-                        aria-label="Delete user"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Search Bar */}
+        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Search by name, email, or division..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #ddd',
+              width: '400px',
+              fontSize: '0.95rem'
+            }}
+          />
+          <div style={{ color: '#666', fontSize: '0.9rem' }}>
+            Showing {filteredUsers.length} of {totalUsers} users (Page {currentPage} of {totalPages})
+          </div>
         </div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>Loading users...</div>
+        ) : (
+          <>
+            <div className="table-wrapper">
+              <table className="users-table">
+              <thead>
+                <tr>
+                  <th>No.</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Division</th>
+                  <th>Joined Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!Array.isArray(filteredUsers) || filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>
+                      {searchQuery ? 'No users found matching your search' : 'No users found'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user, index) => (
+                    <tr key={user._id || user.id}>
+                      <td>{(currentPage - 1) * 10 + index + 1}</td>
+                      <td>{user.name || user.fullName}</td>
+                      <td className="email-cell">{user.email}</td>
+                      <td>{user.division}</td>
+                      <td>{user.join_date ? new Date(user.join_date).toLocaleDateString('id-ID') : '-'}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button
+                            className="edit-btn"
+                            onClick={() => handleEdit({
+                              id: user._id || user.id,
+                              fullName: user.name || user.fullName,
+                              email: user.email,
+                              division: user.division,
+                              joinedDate: user.join_date ? new Date(user.join_date).toISOString().split('T')[0] : ''
+                            })}
+                            aria-label="Edit user"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="delete-btn"
+                            onClick={() => handleDelete(user._id || user.id)}
+                            aria-label="Delete user"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {!searchQuery && totalPages > 1 && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              gap: '1rem',
+              marginTop: '2rem',
+              padding: '1rem'
+            }}>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #ddd',
+                  background: currentPage === 1 ? '#f5f5f5' : 'white',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Previous
+              </button>
+              
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #ddd',
+                      background: currentPage === page ? '#4A90E2' : 'white',
+                      color: currentPage === page ? 'white' : '#333',
+                      cursor: 'pointer',
+                      fontWeight: currentPage === page ? '600' : '400'
+                    }}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #ddd',
+                  background: currentPage === totalPages ? '#f5f5f5' : 'white',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+        )}
       </main>
 
       {/* Add/Edit Account Dialog */}
@@ -248,31 +559,36 @@ const Admin = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="password">Password:</label>
-                <div className="password-input-wrapper">
+              {!isEditMode && (
+                <div className="form-group">
+                  <label htmlFor="password">Password:</label>
                   <input
-                    type={showFormPassword ? "text" : "password"}
+                    type="text"
                     id="password"
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
+                    placeholder="Default: pass12345"
                     required
                   />
-                  <button
-                    type="button"
-                    className="toggle-form-password-btn"
-                    onClick={() => setShowFormPassword(!showFormPassword)}
-                    aria-label={showFormPassword ? "Hide password" : "Show password"}
-                  >
-                    {showFormPassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
-                    )}
-                  </button>
+                  <small style={{ color: '#666', fontSize: '0.85rem' }}>
+                    Default password is "pass12345", but you can change it
+                  </small>
                 </div>
+              )}
+
+              <div className="form-group">
+                <label htmlFor="joinedDate">Joined Date:</label>
+                <input
+                  type="date"
+                  id="joinedDate"
+                  name="joinedDate"
+                  value={formData.joinedDate}
+                  onChange={handleInputChange}
+                  required
+                />
               </div>
+ 
 
               <button type="submit" className="submit-btn">
                 {isEditMode ? "Update" : "Registrasi"}

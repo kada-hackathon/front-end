@@ -39,11 +39,23 @@ function Login() {
       if(res.ok){
         // Save token and user (if returned) to sessionStorage
         sessionStorage.setItem('token', data.token || '');
-        if (data.user) sessionStorage.setItem('user', JSON.stringify(data.user));
+        if (data.user) {
+          sessionStorage.setItem('user', JSON.stringify(data.user));
+          console.log('Saved user data:', data.user);
+        }
 
-        // Navigate to the root/home route defined in App.jsx
-        // Note: in this project the Home page is mounted at '/'
-        navigate('/');
+        // Navigate based on user role
+        // If admin -> /admin page, otherwise -> home page
+        const userRole = data.user?.role || 'user';
+        console.log('User role:', userRole);
+        
+        if (userRole === 'admin') {
+          console.log('Admin login successful, redirecting to admin page');
+          navigate('/admin');
+        } else {
+          console.log('User login successful, redirecting to home');
+          navigate('/');
+        }
       } else {
         setErrorMessage(data.message || 'Login failed');
       }
