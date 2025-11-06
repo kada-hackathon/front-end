@@ -11,12 +11,15 @@ function Login() {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Auto clear expired token on component mount
+  // Check if user is already logged in
+  // If yes, redirect to home page (avoid staying on login page)
   useEffect(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    console.log('✅ Cleared expired/old tokens on login page load');
-  }, []);
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      console.log('✅ User already logged in, redirecting to home');
+      navigate('/');
+    }
+  }, [navigate]);
 
   // Handle login form submit
   const handleLogin = async (e) =>{
@@ -34,9 +37,9 @@ function Login() {
 
       const data = await res.json();
       if(res.ok){
-        // Save token and user (if returned) to localStorage
-        localStorage.setItem('token', data.token || '');
-        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+        // Save token and user (if returned) to sessionStorage
+        sessionStorage.setItem('token', data.token || '');
+        if (data.user) sessionStorage.setItem('user', JSON.stringify(data.user));
 
         // Navigate to the root/home route defined in App.jsx
         // Note: in this project the Home page is mounted at '/'

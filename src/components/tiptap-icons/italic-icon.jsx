@@ -21,3 +21,4 @@ export const ItalicIcon = React.memo(({
 })
 
 ItalicIcon.displayName = "ItalicIcon"
+

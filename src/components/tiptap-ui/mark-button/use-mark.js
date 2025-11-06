@@ -173,3 +173,4 @@ export function useMark(config) {
     Icon: markIcons[type],
   };
 }
+

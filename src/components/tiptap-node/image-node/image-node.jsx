@@ -55,3 +55,4 @@ export const ImageNode = (props) => {
     </NodeViewWrapper>
   )
 }
+

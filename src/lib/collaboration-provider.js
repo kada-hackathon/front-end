@@ -1,5 +1,6 @@
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import * as Y from 'yjs';
+import { COLLABORATION_ENDPOINTS } from '../config/api';
 
 // User colors for collaboration cursors
 const CURSOR_COLORS = [
@@ -21,9 +22,19 @@ export const getRandomColor = () => {
 export const createCollaborationProvider = ({
   documentId,
   user,
-  websocketUrl = 'wss://test-dev-lw9pz.ondigitalocean.app',
+  websocketUrl = COLLABORATION_ENDPOINTS.WEBSOCKET,
   token = null,
 }) => {
+  const authToken = token || sessionStorage.getItem('token');
+  
+  console.log('[Collaboration] Creating provider:', {
+    documentId,
+    websocketUrl,
+    user: user?.name,
+    hasToken: !!authToken,
+    tokenPreview: authToken ? `${authToken.substring(0, 20)}...` : 'none'
+  });
+
   // Create a new Y.js document
   const ydoc = new Y.Doc();
 
@@ -32,29 +43,36 @@ export const createCollaborationProvider = ({
     url: websocketUrl,
     name: documentId,
     document: ydoc,
-    token: token || localStorage.getItem('token'), // Use provided token or get from localStorage
+    token: authToken,
     
     // Configure awareness for cursor tracking
     onAwarenessUpdate: ({ states }) => {
-      // You can add custom logic here to handle awareness updates
-      console.log('Awareness updated:', states);
+      // Log awareness updates
+      const activeUsers = Array.from(states.values())
+        .filter(state => state.user)
+        .map(state => state.user.name);
+      console.log('[Collaboration] Active users:', activeUsers);
     },
     
     // Connection lifecycle hooks
     onConnect: () => {
-      console.log('Connected to collaboration server');
+      console.log('[Collaboration] ✅ Connected to collaboration server');
     },
     
-    onDisconnect: () => {
-      console.log('Disconnected from collaboration server');
+    onDisconnect: ({ event }) => {
+      console.log('[Collaboration] ❌ Disconnected from collaboration server', event);
     },
     
     onStatus: ({ status }) => {
-      console.log('Connection status:', status);
+      console.log('[Collaboration] Connection status:', status);
     },
     
-    onSynced: () => {
-      console.log('Document synced');
+    onSynced: ({ state }) => {
+      console.log('[Collaboration] ✅ Document synced, state:', state);
+    },
+    
+    onAuthenticationFailed: ({ reason }) => {
+      console.error('[Collaboration] ❌ Authentication failed:', reason);
     },
   });
 
@@ -64,6 +82,7 @@ export const createCollaborationProvider = ({
       name: user.name || user.username || 'Anonymous',
       color: user.color || getRandomColor(),
     });
+    console.log('[Collaboration] Set user awareness:', user.name);
   }
 
   return { provider, ydoc };
@@ -96,3 +115,4 @@ export const getActiveCollaborators = (provider) => {
 
   return collaborators;
 };
+

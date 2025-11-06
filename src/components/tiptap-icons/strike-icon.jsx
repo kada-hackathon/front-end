@@ -24,3 +24,4 @@ export const StrikeIcon = React.memo(({
 })
 
 StrikeIcon.displayName = "StrikeIcon"
+

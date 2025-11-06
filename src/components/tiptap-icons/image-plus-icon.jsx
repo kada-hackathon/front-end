@@ -23,3 +23,4 @@ export const ImagePlusIcon = React.memo(({
 })
 
 ImagePlusIcon.displayName = "ImagePlusIcon"
+

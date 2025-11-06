@@ -20,12 +20,14 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS, COLLABORATION_ENDPOINTS } from "../config/api";
+import { apiHandler } from "../utils/apiHandler";
+import { toast } from "sonner";
 import BASE_URL from "../config/api";
 import { useToast } from "@/hooks/use-toast";
 import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib/collaboration-provider";
 
-const BlogEditor = () => {
+  const BlogEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -89,7 +91,7 @@ const BlogEditor = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
@@ -146,7 +148,7 @@ const BlogEditor = () => {
 
     const fetchPost = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'GET',
           headers: {
@@ -224,7 +226,7 @@ const BlogEditor = () => {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
           method: 'GET',
           headers: {
@@ -243,17 +245,15 @@ const BlogEditor = () => {
   }, []);
 
   // Initialize collaboration automatically in edit mode
+  // Wait for content to be loaded first before setting up collaboration
   useEffect(() => {
     if (isEditMode && postId && currentUser) {
       console.log('[Collaboration] Initializing collaboration for document:', postId);
       
-      // Convert https to wss for WebSocket
-      const websocketUrl = BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-      
       const { provider, ydoc } = createCollaborationProvider({
         documentId: postId,
         user: currentUser,
-        websocketUrl: websocketUrl,
+        // websocketUrl is already set to COLLABORATION_ENDPOINTS.WEBSOCKET by default
       });
 
       setCollaborationProvider({ provider, ydoc });
@@ -335,7 +335,7 @@ const BlogEditor = () => {
     // Auto-save collaborators if in edit mode
     if (isEditMode && postId) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const mediaFiles = extractMediaFromContent(blogContent);
         await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
@@ -385,7 +385,7 @@ const BlogEditor = () => {
     // Auto-save collaborator removal if in edit mode
     if (isEditMode && postId) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const updatedCollaboratorIds = updatedCollaborators.map(c => c.id);
         const mediaFiles = extractMediaFromContent(blogContent);
         await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
@@ -515,7 +515,7 @@ const BlogEditor = () => {
     console.log("Saving blog with message:", commitMessage);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       let createdOrUpdatedWorklog;
 
       // Import media manager and upload functions
@@ -597,13 +597,13 @@ const BlogEditor = () => {
       // ADD VERSION (LOG HISTORY)
       const worklogId = createdOrUpdatedWorklog?._id;
       if (worklogId) {
+        const token = localStorage.getItem('token');
         await fetch(WORKLOG_ENDPOINTS.VERSIONS(worklogId), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          credentials: "include",
           body: JSON.stringify({
             message: commitMessage
           })
@@ -652,15 +652,27 @@ const BlogEditor = () => {
       }
       // Otherwise stay on the page - don't navigate to /worklog
     } catch (err) {
-      console.error('[BlogEditor] Error saving blog:', err);
+      console.error('Error saving blog:', err);
       
-      // Show error toast
-      toast({
-        title: "❌ Failed to save",
-        description: err.message || "An error occurred while saving your work log.",
-        variant: "destructive",
-        duration: 5000,
-      });
+      // Handle validation errors
+      if (err.validationErrors) {
+        // Display each validation error
+        const fieldNames = {
+          title: 'Title',
+          content: 'Content',
+          tag: 'Tags'
+        };
+        
+        Object.entries(err.validationErrors).forEach(([field, message]) => {
+          const fieldName = fieldNames[field] || field;
+          toast.error(`${fieldName}: ${message}`);
+        });
+      } else if (err.message === 'No authentication token found') {
+        toast.error('Session expired. Please login again.');
+        navigate('/login');
+      } else {
+        toast.error('Failed to save worklog. Please try again.');
+      }
     }
   };
 

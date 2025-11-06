@@ -20,3 +20,4 @@ export const UploadIcon = React.forwardRef((props, ref) => (
 ))
 
 UploadIcon.displayName = "UploadIcon"
+

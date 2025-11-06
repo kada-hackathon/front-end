@@ -37,3 +37,4 @@ export function useTiptapEditor(providedEditor) {
 
   return editorState || { editor: null }
 }
+

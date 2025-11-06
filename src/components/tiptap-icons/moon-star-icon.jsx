@@ -26,3 +26,4 @@ export const MoonStarIcon = React.memo(({
 })
 
 MoonStarIcon.displayName = "MoonStarIcon"
+

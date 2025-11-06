@@ -19,15 +19,14 @@ const WorkLogVersion = () => {
   useEffect(() => {
     const fetchVersions = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
 
         const res = await fetch(WORKLOG_ENDPOINTS.VERSIONS(id), {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
-          },
-          credentials: "include" // jika backend pakai cookie juga, recommended biarkan di sini
+          }
         });
 
         const data = await res.json();
@@ -107,3 +106,4 @@ const WorkLogVersion = () => {
 };
 
 export default WorkLogVersion;
+

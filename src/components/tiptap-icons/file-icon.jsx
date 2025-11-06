@@ -13,3 +13,4 @@ export const FileIcon = (props) => (
     <polyline points="13 2 13 9 20 9" />
   </svg>
 )
+

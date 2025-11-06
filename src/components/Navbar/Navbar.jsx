@@ -56,7 +56,7 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
 
   // Fetch user profile
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     
     if (!token) {
       setLoading(false);
@@ -98,7 +98,7 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
   useEffect(() => {
     if (!userDivision) return;
 
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     fetch(WORKLOG_ENDPOINTS.FILTER, {
       method: 'GET',
       headers: {

@@ -1,9 +1,30 @@
-import { MessageSquare, Trash2 } from "lucide-react";
+import { MessageSquare, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import "./ChatHistory.css";
 
-const ChatHistory = ({ history, onSelectChat, onDeleteChat, onNewChat }) => {
+/**
+ * ================================================================
+ * CHAT HISTORY SIDEBAR WITH PAGINATION
+ * ================================================================
+ * 
+ * Features:
+ * - Display list of all chat sessions
+ * - Load more button for pagination
+ * - Delete individual sessions
+ * - Create new chat
+ * - Loading states
+ * ================================================================
+ */
+const ChatHistory = ({ 
+  history, 
+  onSelectChat, 
+  onDeleteChat, 
+  onNewChat,
+  isLoading = false,      // Loading state for history
+  hasMore = false,        // Are there more pages?
+  onLoadMore = () => {}   // Load more callback
+}) => {
   const formatTime = (date) => {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
@@ -30,39 +51,80 @@ const ChatHistory = ({ history, onSelectChat, onDeleteChat, onNewChat }) => {
       </div>
       <ScrollArea className="chat-history-scroll">
         <div className="chat-history-list">
-          {history.length === 0 ? (
+          {/* Empty State */}
+          {history.length === 0 && !isLoading ? (
             <div className="chat-history-empty">
               <p className="chat-history-empty-text">No chat history yet</p>
+              <p className="text-xs text-gray-500 mt-2">
+                Start a new conversation to see it here
+              </p>
             </div>
           ) : (
-            history.map((chat) => (
-              <div
-                key={chat.id}
-                className="chat-history-item"
-                onClick={() => onSelectChat(chat.id)}
-              >
-                <div className="chat-history-item-content">
-                  <div className="chat-history-item-header">
-                    <h3 className="chat-history-item-title">{chat.title}</h3>
-                    <span className="chat-history-item-time">
-                      {formatTime(chat.timestamp)}
-                    </span>
-                  </div>
-                  <p className="chat-history-item-preview">{chat.lastMessage}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="chat-history-delete-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteChat(chat.id);
-                  }}
+            <>
+              {/* Chat List */}
+              {history.map((chat) => (
+                <div
+                  key={chat.id}
+                  className="chat-history-item"
+                  onClick={() => onSelectChat(chat.id)}
                 >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))
+                  <div className="chat-history-item-content">
+                    <div className="chat-history-item-header">
+                      <h3 className="chat-history-item-title">{chat.title}</h3>
+                      <span className="chat-history-item-time">
+                        {formatTime(chat.timestamp)}
+                      </span>
+                    </div>
+                    <p className="chat-history-item-preview">{chat.lastMessage}</p>
+                    {chat.messageCount && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {chat.messageCount} messages
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="chat-history-delete-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteChat(chat.id);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="p-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={onLoadMore}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More'
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Loading Indicator (first load) */}
+              {isLoading && history.length === 0 && (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  <span className="ml-2 text-gray-500">Loading history...</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>

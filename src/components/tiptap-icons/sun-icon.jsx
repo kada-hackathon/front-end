@@ -47,3 +47,4 @@ export const SunIcon = React.memo(({
 })
 
 SunIcon.displayName = "SunIcon"
+

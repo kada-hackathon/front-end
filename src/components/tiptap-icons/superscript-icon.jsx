@@ -33,3 +33,4 @@ export const SuperscriptIcon = React.memo(({
 })
 
 SuperscriptIcon.displayName = "SuperscriptIcon"
+

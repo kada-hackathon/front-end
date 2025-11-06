@@ -27,3 +27,4 @@ export const Code2Icon = React.memo(({
 })
 
 Code2Icon.displayName = "Code2Icon"
+

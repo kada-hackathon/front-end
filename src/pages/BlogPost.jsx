@@ -23,7 +23,7 @@ const BlogPost = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
@@ -47,7 +47,7 @@ const BlogPost = () => {
     
     const fetchPost = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'GET',
           headers: {
@@ -71,7 +71,7 @@ const BlogPost = () => {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
           method: 'GET',
           headers: {
@@ -107,7 +107,7 @@ const BlogPost = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
         method: 'DELETE',
         headers: {
@@ -205,7 +205,10 @@ const BlogPost = () => {
                       month: 'short',
                       year: 'numeric'
                     })}</p>
-                    <p>19.00 WIB</p>
+                    <div>{new Date(post.datetime || post.createdAt).toLocaleTimeString('id-ID', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</div>
                   </div>
                 </div>
 
@@ -238,7 +241,7 @@ const BlogPost = () => {
             </div>
           </div>
 
-          <FriendsList friends={friends} />
+          <FriendsList/>
         </div>
       </main>
     </div>
@@ -246,3 +249,4 @@ const BlogPost = () => {
 };
 
 export default BlogPost;
+

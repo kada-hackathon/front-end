@@ -23,3 +23,4 @@ export const HighlighterIcon = React.memo(({
 })
 
 HighlighterIcon.displayName = "HighlighterIcon"
+

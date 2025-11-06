@@ -18,7 +18,7 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
   useEffect(() => {
     const fetchRecentProjects = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) {
           console.warn('No token available');
           return;
