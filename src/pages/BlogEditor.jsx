@@ -257,15 +257,33 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
       });
 
       setCollaborationProvider({ provider, ydoc });
+      
+      // Listen for save events from other users (via localStorage)
+      const handleStorageChange = (e) => {
+        if (e.key === `worklog-saved-${postId}` && e.newValue) {
+          console.log('[Collaboration] Detected save from another user, reloading...');
+          toast({
+            title: "📝 Worklog Updated",
+            description: "A collaborator saved changes. Reloading...",
+            duration: 2000,
+          });
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      };
+      
+      window.addEventListener('storage', handleStorageChange);
 
       // Cleanup on unmount
       return () => {
         console.log('[Collaboration] Cleaning up collaboration provider');
+        window.removeEventListener('storage', handleStorageChange);
         destroyCollaborationProvider(provider);
         setCollaborationProvider(null);
       };
     }
-  }, [isEditMode, postId, currentUser]);
+  }, [isEditMode, postId, currentUser, toast]);
 
   // Get collaborator IDs for easier checking
   const collaboratorIds = collaborators.map(c => c.id);
@@ -620,13 +638,59 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
       console.log("[BlogEditor] Save response:", createdOrUpdatedWorklog);
       console.log("[BlogEditor] ========== SAVE COMPLETED ==========");
       
-      // CRITICAL: Update the editor content with final content (blob URLs replaced with DigitalOcean URLs)
-      // Set flag to prevent triggering unsaved changes
+      // Get the saved worklog ID
+      const savedWorklogId = createdOrUpdatedWorklog?._id || postId;
+      
+      // CRITICAL FIX for WebSocket/Collaboration:
+      // After save, we need to notify ALL users (including collaborators) about the URL changes
+      // The Y.js document shared via WebSocket still has blob URLs
+      // Solution: Use localStorage to broadcast save event to all open tabs/users
+      if (isEditMode && collaborationProvider) {
+        console.log("[BlogEditor] Broadcasting save event to all collaborators");
+        
+        // Broadcast save event to other tabs (this triggers storage event in other windows)
+        localStorage.setItem(`worklog-saved-${postId}`, Date.now().toString());
+        // Clean up the flag after a moment
+        setTimeout(() => {
+          localStorage.removeItem(`worklog-saved-${postId}`);
+        }, 2000);
+        
+        // Show toast before reload
+        toast({
+          title: "✅ Work log saved successfully!",
+          description: "Reloading to sync changes...",
+          duration: 2000,
+        });
+        
+        // Destroy collaboration provider before reload
+        destroyCollaborationProvider(collaborationProvider.provider);
+        setCollaborationProvider(null);
+        
+        // Reload this user's page to get fresh content with DigitalOcean URLs
+        // Other collaborators will reload via the storage event listener
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+        return; // Exit early since page will reload
+      } else if (!isEditMode && savedWorklogId) {
+        // For newly created worklogs, navigate to edit mode to enable collaboration
+        console.log("[BlogEditor] Navigating to edit mode for new worklog:", savedWorklogId);
+        
+        toast({
+          title: "✅ Work log saved successfully!",
+          description: "Redirecting to editor...",
+          duration: 2000,
+        });
+        
+        setTimeout(() => {
+          window.location.href = `/blog-editor?id=${savedWorklogId}`;
+        }, 1000);
+        return; // Exit early since navigating away
+      }
+      
+      // For non-collaboration mode (shouldn't happen, but fallback)
       isProgrammaticUpdate.current = true;
       setBlogContent(finalContent);
-      console.log("[BlogEditor] Editor content updated with DigitalOcean URLs (undo history preserved)");
-      
-      // Reset the flag after a brief delay to allow content update to propagate
       setTimeout(() => {
         isProgrammaticUpdate.current = false;
       }, 100);
