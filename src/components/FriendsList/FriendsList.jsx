@@ -20,7 +20,7 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
       return; // Skip jika ada props atau autoFetch disabled
     }
 
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
       setLoading(false);
       return;
@@ -47,7 +47,7 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
 
   // Fetch friends
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     
     // Gunakan props atau data yang di-fetch
     const division = userDivision || currentUserData.division;

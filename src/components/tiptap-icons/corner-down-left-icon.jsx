@@ -23,3 +23,4 @@ export const CornerDownLeftIcon = React.memo(({
 })
 
 CornerDownLeftIcon.displayName = "CornerDownLeftIcon"
+

@@ -11,10 +11,22 @@ import {
   FileCornerIcon,
   UploadPreview,
   UploadDragArea,
+  CloseIcon,
 } from "@/components/tiptap-node/shared/upload-utils"
 
-const DropZoneContent = ({ maxSize, limit }) => (
+const DropZoneContent = ({ maxSize, limit, onDelete }) => (
   <>
+    <button
+      type="button"
+      className="tiptap-audio-upload-delete-zone"
+      onClick={(e) => {
+        e.stopPropagation()
+        onDelete()
+      }}
+      title="Remove upload area"
+    >
+      <CloseIcon />
+    </button>
     <div className="tiptap-audio-upload-dropzone">
       <FileDocIcon className="tiptap-audio-upload-dropzone-rect-primary" />
       <FileCornerIcon className="tiptap-audio-upload-dropzone-rect-secondary" />
@@ -52,34 +64,41 @@ export const AudioUploadNode = (props) => {
     useFileUpload(uploadOptions)
 
   const handleUpload = async (files) => {
-    const urls = await uploadFiles(files)
+    console.log("Audio preview started, files:", files)
+    
+    // Import media manager
+    const { mediaManager } = await import("@/lib/media-manager")
+    
+    const pos = props.getPos()
 
-    if (urls.length > 0) {
-      const pos = props.getPos()
+    if (isValidPosition(pos)) {
+      // Create blob URLs for immediate preview (no upload yet)
+      const audioNodes = files.map((file, index) => {
+        const blobUrl = mediaManager.addPendingUpload(file)
+        const filename = file.name.replace(/\.[^/.]+$/, "") || "unknown"
+        
+        console.log("Creating audio preview node:", { blobUrl, filename })
+        return {
+          type: "audio",
+          attrs: {
+            src: blobUrl, // Use blob URL for preview
+            title: filename,
+            controls: true,
+          },
+        }
+      })
 
-      if (isValidPosition(pos)) {
-        const audioNodes = urls.map((url, index) => {
-          const filename =
-            files[index]?.name.replace(/\.[^/.]+$/, "") || "unknown"
-          return {
-            type: "audio",
-            attrs: {
-              src: url,
-              title: filename,
-              controls: true,
-            },
-          }
-        })
+      console.log("Inserting audio preview nodes:", audioNodes)
+      props.editor
+        .chain()
+        .focus()
+        .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+        .insertContentAt(pos, audioNodes)
+        .run()
 
-        props.editor
-          .chain()
-          .focus()
-          .deleteRange({ from: pos, to: pos + props.node.nodeSize })
-          .insertContentAt(pos, audioNodes)
-          .run()
-
-        focusNextNode(props.editor)
-      }
+      focusNextNode(props.editor)
+    } else {
+      console.error("Invalid position for audio insertion")
     }
   }
 
@@ -101,11 +120,15 @@ export const AudioUploadNode = (props) => {
 
   const hasFiles = fileItems.length > 0
 
+  const handleDeleteNode = () => {
+    props.deleteNode()
+  }
+
   return (
     <NodeViewWrapper className="tiptap-audio-upload" tabIndex={0} onClick={handleClick}>
       {!hasFiles && (
         <UploadDragArea onFile={handleUpload} className="tiptap-audio-upload-drag-area">
-          <DropZoneContent maxSize={maxSize} limit={limit} />
+          <DropZoneContent maxSize={maxSize} limit={limit} onDelete={handleDeleteNode} />
         </UploadDragArea>
       )}
       {hasFiles && (
@@ -149,3 +172,4 @@ export const AudioUploadNode = (props) => {
     </NodeViewWrapper>
   );
 }
+

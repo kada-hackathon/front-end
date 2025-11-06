@@ -106,6 +106,40 @@
     font-size: 0.75rem;
   }
 
+  .tiptap-image-upload-delete-zone {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      background-color: #dc2626;
+      color: white;
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
   .tiptap-image-upload-drag-area {
     padding: 2rem 1.5rem;
     border: 1.5px dashed var(--tiptap-image-upload-border);
@@ -120,6 +154,10 @@
     &:hover {
       border-color: var(--tiptap-image-upload-border-hover);
       background-color: var(--tiptap-image-upload-bg-hover);
+
+      .tiptap-image-upload-delete-zone {
+        opacity: 1;
+      }
     }
 
     &.drag-active {

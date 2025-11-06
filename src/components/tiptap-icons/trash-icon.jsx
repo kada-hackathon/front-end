@@ -23,3 +23,4 @@ export const TrashIcon = React.memo(({
 })
 
 TrashIcon.displayName = "TrashIcon"
+

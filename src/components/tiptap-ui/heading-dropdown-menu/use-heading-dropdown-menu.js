@@ -97,3 +97,4 @@ export function useHeadingDropdownMenu(config) {
     Icon: activeLevel ? headingIcons[activeLevel] : HeadingIcon,
   }
 }
+

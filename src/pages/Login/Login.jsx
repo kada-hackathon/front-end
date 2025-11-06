@@ -14,7 +14,7 @@ function Login() {
   // Check if user is already logged in
   // If yes, redirect to home page (avoid staying on login page)
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       console.log('✅ User already logged in, redirecting to home');
       navigate('/');
@@ -37,9 +37,9 @@ function Login() {
 
       const data = await res.json();
       if(res.ok){
-        // Save token and user (if returned) to localStorage
-        localStorage.setItem('token', data.token || '');
-        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+        // Save token and user (if returned) to sessionStorage
+        sessionStorage.setItem('token', data.token || '');
+        if (data.user) sessionStorage.setItem('user', JSON.stringify(data.user));
 
         // Navigate to the root/home route defined in App.jsx
         // Note: in this project the Home page is mounted at '/'

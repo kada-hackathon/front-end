@@ -41,7 +41,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
@@ -73,7 +73,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
     const fetchWorklogs = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         
         // Build query params
         const params = new URLSearchParams();

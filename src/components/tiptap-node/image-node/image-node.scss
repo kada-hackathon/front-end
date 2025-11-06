@@ -1,3 +1,71 @@
+.tiptap-image-node {
+  margin: 1rem 0;
+  
+  .tiptap-image-wrapper {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+
+    &:hover {
+      .tiptap-image-delete {
+        opacity: 1;
+      }
+    }
+  }
+
+  .tiptap-image-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background-color: rgba(220, 38, 38, 0.9);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+    &:hover {
+      background-color: #dc2626;
+      transform: scale(1.05);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  .tiptap-image {
+    max-width: 500px;
+    width: auto;
+    height: auto;
+    max-height: 450px;
+    display: block;
+    border-radius: 8px;
+    object-fit: contain;
+
+    @media (max-width: 768px) {
+      max-width: 100%;
+    }
+  }
+
+  &.ProseMirror-selectednode {
+    .tiptap-image-wrapper {
+      outline: 2px solid var(--tiptap-color-primary, #3b82f6);
+      outline-offset: 2px;
+      border-radius: 8px;
+    }
+  }
+}
+
 .tiptap.ProseMirror {
   img {
     max-width: 100%;

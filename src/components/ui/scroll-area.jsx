@@ -38,3 +38,4 @@ const ScrollBar = React.forwardRef(({ className, orientation = "vertical", ...pr
 ScrollBar.displayName = "ScrollBar";
 
 export { ScrollArea, ScrollBar };
+

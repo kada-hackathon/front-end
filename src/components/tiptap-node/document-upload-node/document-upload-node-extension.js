@@ -98,3 +98,4 @@ export const DocumentUploadNode = Node.create({
 })
 
 export default DocumentUploadNode
+

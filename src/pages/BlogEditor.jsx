@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Search, Users, Save, X } from "lucide-react";
 import {
@@ -20,13 +20,17 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS, COLLABORATION_ENDPOINTS } from "../config/api";
 import { apiHandler } from "../utils/apiHandler";
 import { toast } from "sonner";
+import BASE_URL from "../config/api";
+import { useToast } from "@/hooks/use-toast";
+import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib/collaboration-provider";
 
   const BlogEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -44,7 +48,18 @@ import { toast } from "sonner";
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const [editorKey, setEditorKey] = useState(0); // Key to force re-mount editor
+  
+  // Collaboration state (always enabled in edit mode)
+  const [collaborationProvider, setCollaborationProvider] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // Ref to track if we're programmatically updating content (to avoid triggering unsaved changes)
+  const isProgrammaticUpdate = useRef(false);
 
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [collaboratorToRemove, setCollaboratorToRemove] = useState(null);
+  const [showInviteConfirmDialog, setShowInviteConfirmDialog] = useState(false);
+  const [selectedFriendsToInvite, setSelectedFriendsToInvite] = useState([]);
   const postId = searchParams.get("id");
   const isEditMode = !!postId; // Determine if we're editing or creating
 
@@ -59,14 +74,24 @@ import { toast } from "sonner";
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    
+    // Cleanup blob URLs when component unmounts (but keep pending deletions)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Only clean up blob URLs, NOT pending deletions
+      import("@/lib/media-manager").then(({ mediaManager }) => {
+        mediaManager.cleanup(); // This now only cleans blob URLs, keeps deletions
+        console.log("[BlogEditor] Component unmounted - cleaned up blob URLs (kept pending deletions)");
+      });
+    };
   }, [hasUnsavedChanges]);
 
   // Get current user ID
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
@@ -77,6 +102,12 @@ import { toast } from "sonner";
         const data = await response.json();
         const userData = data.user || data;
         setCurrentUserId(userData.id || userData._id);
+        
+        // Set current user for collaboration
+        setCurrentUser({
+          name: userData.name || userData.username || "Anonymous",
+          color: '#958DF1', // You can generate random color per user
+        });
         
         // Set owner as current user (for both create and edit mode)
         setOwner({
@@ -96,15 +127,28 @@ import { toast } from "sonner";
   useEffect(() => {
     if (!postId) {
       // CREATE MODE: Set initial empty state
+      isProgrammaticUpdate.current = true;
       setBlogTitle("");
       setBlogTags([]);
       setBlogContent("");
+      
+      // Reset media manager for new post
+      import("@/lib/media-manager").then(({ mediaManager }) => {
+        mediaManager.reset();
+        console.log("[BlogEditor] Media manager reset for new post");
+      });
+      
+      // Reset flag after state updates
+      setTimeout(() => {
+        isProgrammaticUpdate.current = false;
+      }, 100);
+      
       return;
     }
 
     const fetchPost = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'GET',
           headers: {
@@ -129,10 +173,18 @@ import { toast } from "sonner";
           }
         }
         
+        // Set flag before loading initial data
+        isProgrammaticUpdate.current = true;
+        
         // Set data
         setBlogTitle(data.title || "");
         setBlogTags(data.tag || []);
         setBlogContent(data.content || "");
+        
+        // Reset media manager when loading existing content
+        const { mediaManager } = await import("@/lib/media-manager");
+        mediaManager.reset();
+        console.log("[BlogEditor] Media manager reset for existing content");
         
         // Set owner for CollabList
         if (data.user) {
@@ -154,6 +206,11 @@ import { toast } from "sonner";
           })));
         }
         
+        // Reset the programmatic update flag after the state has been updated
+        setTimeout(() => {
+          isProgrammaticUpdate.current = false;
+        }, 100);
+        
         // Reset editor to clear undo history after loading content
         setEditorKey(prev => prev + 1);
         setHasUnsavedChanges(false);
@@ -169,7 +226,7 @@ import { toast } from "sonner";
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
           method: 'GET',
           headers: {
@@ -187,16 +244,41 @@ import { toast } from "sonner";
     fetchFriends();
   }, []);
 
+  // Initialize collaboration automatically in edit mode
+  // Wait for content to be loaded first before setting up collaboration
+  useEffect(() => {
+    if (isEditMode && postId && currentUser) {
+      console.log('[Collaboration] Initializing collaboration for document:', postId);
+      
+      const { provider, ydoc } = createCollaborationProvider({
+        documentId: postId,
+        user: currentUser,
+        // websocketUrl is already set to COLLABORATION_ENDPOINTS.WEBSOCKET by default
+      });
+
+      setCollaborationProvider({ provider, ydoc });
+
+      // Cleanup on unmount
+      return () => {
+        console.log('[Collaboration] Cleaning up collaboration provider');
+        destroyCollaborationProvider(provider);
+        setCollaborationProvider(null);
+      };
+    }
+  }, [isEditMode, postId, currentUser]);
+
   // Get collaborator IDs for easier checking
   const collaboratorIds = collaborators.map(c => c.id);
 
   // Map friends and sort: collaborators first, then others
   const allFriends = friends
     .filter((friend) => {
-      const nameMatch = (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
-      const sameDivision = friend.division === owner?.division;
-      return nameMatch && sameDivision;
-    })
+  const friendId = friend._id || friend.id;
+  // Filter out current user (owner)
+  if (friendId === currentUserId) return false;  // ← PENAMBAHAN INI
+  // Filter by search query
+  return (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
+})
     .map((friend) => ({
       id: friend._id || friend.id,
       name: friend.name || friend.full_name || "Unknown",
@@ -226,7 +308,21 @@ import { toast } from "sonner";
     );
   };
 
-  const handleInvite = async () => {
+ const handleInvite = () => {
+    if (selectedFriends.length === 0) return;
+    
+    // Prepare data for confirmation
+    const friendsToInvite = allFriends.filter(friend => 
+      selectedFriends.includes(friend.id)
+    );
+    setSelectedFriendsToInvite(friendsToInvite);
+    
+    // Close invite dialog and show confirmation
+    setInviteOpen(false);
+    setShowInviteConfirmDialog(true);
+  };
+
+  const confirmInvite = async () => {
     console.log("Inviting friends:", selectedFriends);
     
     // Get all selected friends (including already added collaborators)
@@ -239,7 +335,8 @@ import { toast } from "sonner";
     // Auto-save collaborators if in edit mode
     if (isEditMode && postId) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
+        const mediaFiles = extractMediaFromContent(blogContent);
         await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
           headers: {
@@ -251,6 +348,7 @@ import { toast } from "sonner";
             content: blogContent,
             tag: blogTags,
             collaborators: allSelectedIds,
+            media: mediaFiles,
           })
         });
         console.log("Collaborators auto-saved");
@@ -259,12 +357,25 @@ import { toast } from "sonner";
       }
     }
     
-    setInviteOpen(false);
+    // Close confirmation dialog and reset
+    setShowInviteConfirmDialog(false);
+    setSelectedFriendsToInvite([]);
     setSelectedFriends([]);
     setSearchQuery("");
   };
 
-  const handleRemoveCollaborator = async (collaboratorId) => {
+  const handleRemoveCollaborator = (collaboratorId) => {
+    // Remove from collaborators list
+    const collaborator = collaborators.find(c => c.id === collaboratorId);
+    setCollaboratorToRemove(collaborator);
+    setShowRemoveDialog(true);
+  };
+    
+     const confirmRemoveCollaborator = async () => {
+    if (!collaboratorToRemove) return;
+    
+    const collaboratorId = collaboratorToRemove.id;
+    
     // Remove from collaborators list
     const updatedCollaborators = collaborators.filter(c => c.id !== collaboratorId);
     setCollaborators(updatedCollaborators);
@@ -274,8 +385,9 @@ import { toast } from "sonner";
     // Auto-save collaborator removal if in edit mode
     if (isEditMode && postId) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const updatedCollaboratorIds = updatedCollaborators.map(c => c.id);
+        const mediaFiles = extractMediaFromContent(blogContent);
         await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'PUT',
           headers: {
@@ -287,6 +399,7 @@ import { toast } from "sonner";
             content: blogContent,
             tag: blogTags,
             collaborators: updatedCollaboratorIds,
+            media: mediaFiles,
           })
         });
         console.log("Collaborator removal auto-saved");
@@ -294,6 +407,10 @@ import { toast } from "sonner";
         console.error('Error auto-saving collaborator removal:', err);
       }
     }
+    
+    // Close dialog and reset
+    setShowRemoveDialog(false);
+    setCollaboratorToRemove(null);
   };
 
   const handleNavigationAttempt = (path) => {
@@ -311,7 +428,12 @@ import { toast } from "sonner";
     }
   };
 
-  const handleContinueWithoutSaving = () => {
+  const handleContinueWithoutSaving = async () => {
+    // FULL RESET - clear everything including pending deletions
+    const { mediaManager } = await import("@/lib/media-manager");
+    mediaManager.reset(); // Full reset - clears uploads AND deletions
+    console.log("[BlogEditor] Full reset - discarded all pending changes including deletions");
+    
     setShowUnsavedDialog(false);
     setHasUnsavedChanges(false);
     if (pendingNavigation !== null) {
@@ -331,27 +453,145 @@ import { toast } from "sonner";
     setShowUnsavedDialog(false);
   };
 
+  // Extract media URLs from HTML content
+  const extractMediaFromContent = (htmlContent) => {
+    const media = [];
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+
+    // Extract images
+    const images = doc.querySelectorAll('img[src]');
+    images.forEach(img => {
+      const src = img.getAttribute('src');
+      if (src && src.includes('nebwork-storage')) {
+        media.push(src); // Only push the URL string
+      }
+    });
+
+    // Extract videos
+    const videos = doc.querySelectorAll('video source[src], video[src]');
+    videos.forEach(video => {
+      const src = video.getAttribute('src');
+      if (src && src.includes('nebwork-storage')) {
+        media.push(src); // Only push the URL string
+      }
+    });
+
+    // Extract audio
+    const audios = doc.querySelectorAll('audio source[src], audio[src]');
+    audios.forEach(audio => {
+      const src = audio.getAttribute('src');
+      if (src && src.includes('nebwork-storage')) {
+        media.push(src); // Only push the URL string
+      }
+    });
+
+    // Extract documents from TipTap document nodes
+    const documentNodes = doc.querySelectorAll('div[data-type="document"][data-src]');
+    documentNodes.forEach(docNode => {
+      const src = docNode.getAttribute('data-src');
+      if (src && src.includes('nebwork-storage')) {
+        media.push(src); // Only push the URL string
+      }
+    });
+
+    // Also extract documents from regular links and iframes (fallback)
+    const documents = doc.querySelectorAll('a[href*="nebwork-storage"], iframe[src*="nebwork-storage"]');
+    documents.forEach(doc => {
+      const src = doc.getAttribute('href') || doc.getAttribute('src');
+      if (src && src.includes('nebwork-storage') && !media.includes(src)) {
+        const extension = src.split('.').pop().toLowerCase();
+        const isDoc = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(extension);
+        if (isDoc) {
+          media.push(src); // Only push the URL string
+        }
+      }
+    });
+
+    return media;
+  };
+
   const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
 
     try {
+      const token = sessionStorage.getItem('token');
       let createdOrUpdatedWorklog;
 
-      // Prepare data
-      const worklogData = {
-        title: blogTitle,
-        content: blogContent,
-        tag: blogTags || [],
-        collaborators: collaborators.map(c => c.id),
-      };
+      // Import media manager and upload functions
+      const { mediaManager } = await import("@/lib/media-manager");
+      const { handleImageUpload, deleteMediaFile } = await import("@/lib/tiptap-utils");
+
+      // Step 1: Upload all pending media files
+      console.log("[BlogEditor] ========== SAVE STARTED ==========");
+      console.log("[BlogEditor] Current content length:", blogContent.length);
+      console.log("[BlogEditor] Pending uploads count:", mediaManager.getPendingUploads().length);
+      
+      const urlMap = await mediaManager.uploadAllPending(handleImageUpload);
+      console.log("[BlogEditor] Upload complete, mapped URLs:", urlMap.size);
+      
+      // Step 2: Replace blob URLs with DigitalOcean URLs in content
+      let finalContent = mediaManager.replaceBlobUrlsInContent(blogContent, urlMap);
+      console.log("[BlogEditor] Final content length after URL replacement:", finalContent.length);
+      
+      // Step 3: Delete removed media from DigitalOcean
+      const pendingDeletions = mediaManager.getPendingDeletions();
+      console.log("[BlogEditor] ==========================================");
+      console.log("[BlogEditor] STEP 3: DELETE REMOVED MEDIA");
+      console.log("[BlogEditor] Pending deletions count:", pendingDeletions.length);
+      console.log("[BlogEditor] Pending deletion URLs:", pendingDeletions);
+      console.log("[BlogEditor] ==========================================");
+      
+      if (pendingDeletions.length > 0) {
+        console.log("[BlogEditor] 🗑️ CALLING deleteAllPending() with deleteMediaFile function");
+        console.log("[BlogEditor] deleteMediaFile function:", typeof deleteMediaFile);
+        
+        await mediaManager.deleteAllPending(deleteMediaFile);
+        
+        console.log("[BlogEditor] ✅ deleteAllPending() completed");
+      } else {
+        console.log("[BlogEditor] ⚠️ No files to delete");
+      }
+
+      // Step 4: Extract media from final content
+      const mediaFiles = extractMediaFromContent(finalContent);
+      console.log("[BlogEditor] Extracted media files:", mediaFiles.length);
 
       if (isEditMode) {
-        // Update existing worklog
-        createdOrUpdatedWorklog = await apiHandler.worklog.updateWorklog(postId, worklogData);
+        // update
+        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: blogTitle || "Untitled Work Log",
+            content: finalContent,
+            tag: blogTags || [],
+            collaborators: collaborators.map(c => c.id),
+            media: mediaFiles,
+          })
+        });
+        createdOrUpdatedWorklog = await response.json();
 
       } else {
-        // Create new worklog
-        createdOrUpdatedWorklog = await apiHandler.worklog.saveWorklog(worklogData);
+        // create
+        const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: blogTitle || "Untitled Work Log",
+            content: finalContent,
+            tag: blogTags || [],
+            collaborators: collaborators.map(c => c.id),
+            media: mediaFiles,
+          })
+        });
+        createdOrUpdatedWorklog = await response.json();
       }
 
       // ADD VERSION (LOG HISTORY)
@@ -370,11 +610,36 @@ import { toast } from "sonner";
         });
       }
 
+      console.log("[BlogEditor] Save response:", createdOrUpdatedWorklog);
+      console.log("[BlogEditor] ========== SAVE COMPLETED ==========");
+      
+      // CRITICAL: Update the editor content with final content (blob URLs replaced with DigitalOcean URLs)
+      // Set flag to prevent triggering unsaved changes
+      isProgrammaticUpdate.current = true;
+      setBlogContent(finalContent);
+      console.log("[BlogEditor] Editor content updated with DigitalOcean URLs (undo history preserved)");
+      
+      // Reset the flag after a brief delay to allow content update to propagate
+      setTimeout(() => {
+        isProgrammaticUpdate.current = false;
+      }, 100);
+      
+      // Reset media manager after successful save
+      mediaManager.reset();
+      console.log("[BlogEditor] Media manager reset after save");
+      
       setSaveOpen(false);
       setCommitMessage("");
       setHasUnsavedChanges(false);
       
-      // Navigate after save if there's a pending navigation
+      // Show success toast notification
+      toast({
+        title: "✅ Work log saved successfully!",
+        description: "Your changes have been saved.",
+        duration: 3000,
+      });
+      
+      // Only navigate if there's a pending navigation (user tried to leave while editing)
       if (pendingNavigation !== null) {
         if (typeof pendingNavigation === 'function') {
           pendingNavigation();
@@ -384,9 +649,8 @@ import { toast } from "sonner";
           navigate(pendingNavigation);
         }
         setPendingNavigation(null);
-      } else {
-        navigate("/worklog");
       }
+      // Otherwise stay on the page - don't navigate to /worklog
     } catch (err) {
       console.error('Error saving blog:', err);
       
@@ -432,27 +696,38 @@ import { toast } from "sonner";
                 initialContent={blogContent}
                 onContentChange={(content) => {
                   setBlogContent(content);
-                  setHasUnsavedChanges(true);
+                  // Only mark as unsaved if it's a real user change (not programmatic update)
+                  if (!isProgrammaticUpdate.current) {
+                    setHasUnsavedChanges(true);
+                  }
                 }}
                 initialTitle={blogTitle}
                 initialTags={blogTags}
                 onTitleChange={(title) => {
                   setBlogTitle(title);
-                  setHasUnsavedChanges(true);
+                  if (!isProgrammaticUpdate.current) {
+                    setHasUnsavedChanges(true);
+                  }
                 }}
                 onTagsChange={(tags) => {
                   setBlogTags(tags);
-                  setHasUnsavedChanges(true);
+                  if (!isProgrammaticUpdate.current) {
+                    setHasUnsavedChanges(true);
+                  }
                 }}
                 sidebarCollapsed={sidebarCollapsed}
                 onBack={() => handleNavigationAttempt(-1)}
                 onVersion={() => handleNavigationAttempt(`/worklogs/${postId}/versions`)}
+                enableCollaboration={isEditMode}
+                collaborationProvider={collaborationProvider}
+                currentUser={currentUser}
               />
             </div>
 
             {/* Sticky Action Buttons - stick to bottom right of editor area */}
             <div className="sticky bottom-6 self-end mr-6 mb-6 flex flex-col gap-3 z-50" style={{ marginTop: '-120px' }}>
-              {/* INVITE DIALOG */}
+              {/* INVITE DIALOG - Only visible to owner */}
+              {currentUserId === owner?.id && (
               <AlertDialog open={inviteOpen} onOpenChange={setInviteOpen}>
                 <Tooltip delay={200}>
                   <TooltipTrigger asChild>
@@ -556,7 +831,7 @@ import { toast } from "sonner";
                       </div>
                     </div>
                   </AlertDialogContent>
-              </AlertDialog>
+              </AlertDialog>)}
 
               {/* SAVE WORKLOG DIALOG */}
               <AlertDialog open={saveOpen} onOpenChange={setSaveOpen}>
@@ -622,7 +897,7 @@ import { toast } from "sonner";
           <CollabList 
             owner={owner} 
             collaborators={collaborators} 
-            onRemoveCollaborator={handleRemoveCollaborator}
+            onRemoveCollaborator={currentUserId === owner?.id ? handleRemoveCollaborator : undefined}
             isOwner={currentUserId === owner?.id}
             onNavigate={handleNavigationAttempt}
           />
@@ -671,6 +946,110 @@ import { toast } from "sonner";
           </div>
         </AlertDialogContent>
       </AlertDialog>
+         {/* Remove Collaborator Confirmation Dialog */}
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Remove Collaborator
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-4">
+            <p className="text-center text-muted-foreground">
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-foreground">
+                {collaboratorToRemove?.name}
+              </span>{" "}
+              from this work log?
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={confirmRemoveCollaborator}
+              variant="destructive"
+              className="w-full"
+            >
+              Yes, Remove
+            </Button>
+            <Button
+              onClick={() => {
+                setShowRemoveDialog(false);
+                setCollaboratorToRemove(null);
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Remove Collaborator Confirmation Dialog */}
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        {/* ... kode remove dialog ... */}
+      </AlertDialog>
+
+      {/* TAMBAHKAN DIALOG INI: */}
+      {/* Invite Collaborator Confirmation Dialog */}
+      <AlertDialog open={showInviteConfirmDialog} onOpenChange={setShowInviteConfirmDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Invite Collaborators
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-4 space-y-3">
+            <p className="text-center text-muted-foreground">
+              Are you sure you want to invite the following collaborator{selectedFriendsToInvite.length > 1 ? 's' : ''}?
+            </p>
+            
+            {/* List of collaborators to invite */}
+            <div className="max-h-48 overflow-y-auto space-y-2 px-2">
+              {selectedFriendsToInvite.map((friend) => (
+                <div 
+                  key={friend.id}
+                  className="flex items-center gap-3 p-2 rounded-lg bg-accent/30 border border-border"
+                >
+                  <img
+                    src={friend.avatar}
+                    alt={friend.name}
+                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{friend.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{friend.division}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={confirmInvite}
+              className="w-full"
+            >
+              Yes, Invite
+            </Button>
+            <Button
+              onClick={() => {
+                setShowInviteConfirmDialog(false);
+                setSelectedFriendsToInvite([]);
+                setInviteOpen(true); // Reopen invite dialog
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+  
     </div>
   );
 };

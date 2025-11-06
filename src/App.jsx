@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import ChatBotPage from "./pages/ChatBotPage";
+import Admin from "./pages/Admin/Admin";
 import WorkLog from "./pages/WorkLog/WorkLog";
 import WorkLogVersion from "./pages/WorkLogVersion";
 import Profile from "./pages/Profile";
@@ -17,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from './components/ProtectedRoute';
 import { validateAndCleanupToken } from './utils/authUtils';
 import Login from "./pages/Login/Login";
+
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,7 @@ const App = () => {
             {/* PROTECTED ROUTES */}
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/chatbot" element={<ProtectedRoute><ChatBotPage /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/worklog" element={<ProtectedRoute><WorkLog /></ProtectedRoute>} />
             <Route path="/worklogs/:id/versions" element={<ProtectedRoute><WorkLogVersion /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -57,3 +60,4 @@ const App = () => {
 };
 
 export default App;
+

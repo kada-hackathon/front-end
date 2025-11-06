@@ -31,3 +31,4 @@ export function useThrottledCallback(fn, wait = 250, dependencies = [], options 
 }
 
 export default useThrottledCallback
+

@@ -49,7 +49,7 @@ const ChatBot = () => {
   // ============================================================
   // On component mount: Fetch user profile & load chat history (page 1)
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) return;
 
     // Fetch user profile for avatar display

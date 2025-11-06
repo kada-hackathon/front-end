@@ -44,7 +44,7 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
   const fetchUserWorklogs = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       // Fetch current user ID
       const userResponse = await fetch(AUTH_ENDPOINTS.PROFILE, {

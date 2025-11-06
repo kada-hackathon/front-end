@@ -20,13 +20,13 @@ const UPLOAD_HANDLERS = {
   document: (upload) => upload.handleDocument(),
 }
 
-export function MediaUploadButton({
+export const MediaUploadButton = React.forwardRef(function MediaUploadButton({
   editor: providedEditor,
   type,
   text,
   showTooltip = true,
   onInserted,
-}) {
+}, ref) {
   const { editor } = useTiptapEditor(providedEditor)
   const useUpload = UPLOAD_HOOKS[type]
   const upload = useUpload?.({ editor, onInserted })
@@ -57,4 +57,5 @@ export function MediaUploadButton({
       {text && <span className="tiptap-button-text">{text}</span>}
     </Button>
   );
-}
+});
+

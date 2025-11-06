@@ -3,8 +3,10 @@
  * Handle token validation and cleanup
  */
 
+import { AUTH_ENDPOINTS } from "../config/api";
+
 export const validateAndCleanupToken = async () => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   
   // Jika tidak ada token, return
   if (!token || token.trim() === '') {
@@ -13,7 +15,7 @@ export const validateAndCleanupToken = async () => {
 
   try {
     // Verify token ke backend
-    const res = await fetch('http://localhost:5000/api/auth/profile', {
+    const res = await fetch(AUTH_ENDPOINTS.PROFILE, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -27,8 +29,8 @@ export const validateAndCleanupToken = async () => {
     } else if (res.status === 401) {
       // Token invalid atau expired (401 Unauthorized)
       console.log('❌ Token invalid or expired (401) - clearing storage');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       return false;
     } else {
       // Other errors (500, 503, dll) - KEEP TOKEN
@@ -45,7 +47,8 @@ export const validateAndCleanupToken = async () => {
 // Logout function
 export const logout = (navigate) => {
   console.log('🚪 Logging out...');
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('user');
   navigate('/login');
 };
+

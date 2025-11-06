@@ -23,3 +23,4 @@ export const Undo2Icon = React.memo(({
 })
 
 Undo2Icon.displayName = "Undo2Icon"
+

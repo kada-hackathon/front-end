@@ -11,10 +11,22 @@ import {
   FileCornerIcon,
   UploadPreview,
   UploadDragArea,
+  CloseIcon,
 } from "@/components/tiptap-node/shared/upload-utils"
 
-const DropZoneContent = ({ maxSize, limit }) => (
+const DropZoneContent = ({ maxSize, limit, onDelete }) => (
   <>
+    <button
+      type="button"
+      className="tiptap-document-upload-delete-zone"
+      onClick={(e) => {
+        e.stopPropagation()
+        onDelete()
+      }}
+      title="Remove upload area"
+    >
+      <CloseIcon />
+    </button>
     <div className="tiptap-document-upload-dropzone">
       <FileDocIcon className="tiptap-document-upload-dropzone-rect-primary" />
       <FileCornerIcon className="tiptap-document-upload-dropzone-rect-secondary" />
@@ -52,34 +64,41 @@ export const DocumentUploadNode = (props) => {
     useFileUpload(uploadOptions)
 
   const handleUpload = async (files) => {
-    const urls = await uploadFiles(files)
+    console.log("Document preview started, files:", files)
+    
+    // Import media manager
+    const { mediaManager } = await import("@/lib/media-manager")
+    
+    const pos = props.getPos()
 
-    if (urls.length > 0) {
-      const pos = props.getPos()
+    if (isValidPosition(pos)) {
+      // Create blob URLs for immediate preview (no upload yet)
+      const documentNodes = files.map((file, index) => {
+        const blobUrl = mediaManager.addPendingUpload(file)
+        const filename = file.name || "unknown"
+        
+        console.log("Creating document preview node:", { blobUrl, filename })
+        return {
+          type: "document",
+          attrs: {
+            src: blobUrl, // Use blob URL for preview
+            filename: filename,
+            filesize: file.size || 0,
+          },
+        }
+      })
 
-      if (isValidPosition(pos)) {
-        const documentNodes = urls.map((url, index) => {
-          const file = files[index]
-          const filename = file?.name || "unknown"
-          return {
-            type: "document",
-            attrs: {
-              src: url,
-              filename: filename,
-              filesize: file?.size || 0,
-            },
-          }
-        })
+      console.log("Inserting document preview nodes:", documentNodes)
+      props.editor
+        .chain()
+        .focus()
+        .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+        .insertContentAt(pos, documentNodes)
+        .run()
 
-        props.editor
-          .chain()
-          .focus()
-          .deleteRange({ from: pos, to: pos + props.node.nodeSize })
-          .insertContentAt(pos, documentNodes)
-          .run()
-
-        focusNextNode(props.editor)
-      }
+      focusNextNode(props.editor)
+    } else {
+      console.error("Invalid position for document insertion")
     }
   }
 
@@ -101,11 +120,15 @@ export const DocumentUploadNode = (props) => {
 
   const hasFiles = fileItems.length > 0
 
+  const handleDeleteNode = () => {
+    props.deleteNode()
+  }
+
   return (
     <NodeViewWrapper className="tiptap-document-upload" tabIndex={0} onClick={handleClick}>
       {!hasFiles && (
         <UploadDragArea onFile={handleUpload} className="tiptap-document-upload-drag-area">
-          <DropZoneContent maxSize={maxSize} limit={limit} />
+          <DropZoneContent maxSize={maxSize} limit={limit} onDelete={handleDeleteNode} />
         </UploadDragArea>
       )}
       {hasFiles && (
@@ -149,3 +172,4 @@ export const DocumentUploadNode = (props) => {
     </NodeViewWrapper>
   );
 }
+

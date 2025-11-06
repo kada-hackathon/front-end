@@ -23,7 +23,7 @@ const BlogPost = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(AUTH_ENDPOINTS.PROFILE, {
           method: 'GET',
           headers: {
@@ -47,7 +47,7 @@ const BlogPost = () => {
     
     const fetchPost = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
           method: 'GET',
           headers: {
@@ -71,7 +71,7 @@ const BlogPost = () => {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEES, {
           method: 'GET',
           headers: {
@@ -107,7 +107,7 @@ const BlogPost = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
         method: 'DELETE',
         headers: {
@@ -249,3 +249,4 @@ const BlogPost = () => {
 };
 
 export default BlogPost;
+

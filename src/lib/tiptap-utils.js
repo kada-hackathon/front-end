@@ -241,26 +241,153 @@ export function isNodeTypeSelected(editor, types = []) {
 export const handleImageUpload = async (file, onProgress, abortSignal) => {
   // Validate file
   if (!file) {
+    console.error("No file provided")
     throw new Error("No file provided")
   }
 
+  console.log("Starting upload for file:", file.name, "Size:", file.size, "bytes")
+
   if (file.size > MAX_FILE_SIZE * 2) {
-    throw new Error(`File size exceeds maximum allowed (${MAX_FILE_SIZE * 2 / (1024 * 1024)}MB`)
+    const errorMsg = `File size exceeds maximum allowed (${MAX_FILE_SIZE * 2 / (1024 * 1024)}MB`
+    console.error(errorMsg)
+    throw new Error(errorMsg)
   }
 
-  // Simulate upload progress (replace with actual backend upload in production)
-  const totalSteps = 10
-  for (let i = 0; i <= totalSteps; i++) {
-    if (abortSignal?.aborted) {
-      throw new Error("Upload cancelled")
+  try {
+    // Create FormData for file upload
+    const formData = new FormData()
+    formData.append('file', file)
+    console.log("FormData created with file")
+
+    // Get authentication token
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+      console.error("No authentication token found")
+      throw new Error("Authentication required")
     }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onProgress?.({ progress: (i / totalSteps) * 100 })
+    console.log("Token found, preparing upload...")
+
+    // Upload to backend
+    const xhr = new XMLHttpRequest()
+
+    // Return a promise for the upload
+    return new Promise((resolve, reject) => {
+      // Handle abort signal
+      if (abortSignal) {
+        abortSignal.addEventListener('abort', () => {
+          xhr.abort()
+          reject(new Error("Upload cancelled"))
+        })
+      }
+
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = (e.loaded / e.total) * 100
+          onProgress?.({ progress })
+        }
+      })
+
+      // Handle completion
+      xhr.addEventListener('load', () => {
+        console.log("Upload completed with status:", xhr.status)
+        if (xhr.status === 200) {
+          try {
+            const response = JSON.parse(xhr.responseText)
+            console.log("Upload response:", response)
+            if (response.success && response.url) {
+              console.log("Upload successful! URL:", response.url)
+              resolve(response.url)
+            } else {
+              console.error("Upload failed:", response.message || 'No URL returned')
+              reject(new Error(response.message || 'Upload failed'))
+            }
+          } catch (error) {
+            console.error("Failed to parse response:", error)
+            reject(new Error('Invalid server response'))
+          }
+        } else {
+          console.error("Upload failed with status:", xhr.status, "Response:", xhr.responseText)
+          try {
+            const response = JSON.parse(xhr.responseText)
+            reject(new Error(response.message || `Upload failed with status ${xhr.status}`))
+          } catch {
+            reject(new Error(`Upload failed with status ${xhr.status}`))
+          }
+        }
+      })
+
+      // Handle errors
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error during upload'))
+      })
+
+      xhr.addEventListener('abort', () => {
+        reject(new Error('Upload cancelled'))
+      })
+
+      // Get API base URL - use DigitalOcean production backend
+      const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
+
+      // Send request
+      xhr.open('POST', `${BASE_URL}/api/upload`)
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.send(formData)
+    })
+  } catch (error) {
+    console.error('Upload error:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete media file from DigitalOcean Spaces
+ * @param {string} url - The URL of the file to delete
+ * @returns {Promise<boolean>} - Success status
+ */
+export const deleteMediaFile = async (url) => {
+  if (!url) {
+    console.error("[deleteMediaFile] No URL provided for deletion")
+    return false
   }
 
-  // Create a blob URL for immediate display
-  // In production, replace this with the actual uploaded file URL from your server
-  return URL.createObjectURL(file)
+  console.log("[deleteMediaFile] Deleting file from DigitalOcean:", url)
+
+  try {
+    // Get authentication token
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+      console.error("[deleteMediaFile] No authentication token found")
+      throw new Error("Authentication required")
+    }
+
+    const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app'
+    
+    console.log("[deleteMediaFile] Sending DELETE request with body:", { url })
+    
+    const response = await fetch(`${BASE_URL}/api/upload`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ url })
+    })
+
+    const result = await response.json()
+    console.log("[deleteMediaFile] Response:", { status: response.status, result })
+
+    if (response.ok && result.success) {
+      console.log("[deleteMediaFile] ✅ File deleted successfully from DigitalOcean:", url)
+      return true
+    } else {
+      console.error("[deleteMediaFile] ❌ Failed to delete file:", result.message, result)
+      return false
+    }
+  } catch (error) {
+    console.error("[deleteMediaFile] ❌ Error deleting file:", error)
+    return false
+  }
 }
 
 const ATTR_WHITESPACE = /[\u0000-\u0020\u00A0\u1680\u180E\u2000-\u2029\u205F\u3000]/g
