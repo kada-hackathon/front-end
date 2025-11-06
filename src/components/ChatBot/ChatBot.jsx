@@ -109,7 +109,7 @@ const ChatBot = () => {
   const loadChatHistory = async (page = 1, append = false) => {
     try {
       setIsLoadingHistory(true);
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       // Call paginated history endpoint
       const response = await fetch(`${CHATBOT_ENDPOINTS.GET_HISTORY}?page=${page}&limit=10`, {
@@ -222,7 +222,7 @@ const ChatBot = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
       console.error('No auth token found');
       return;
@@ -342,7 +342,7 @@ const ChatBot = () => {
   const handleSelectChat = async (sessionId) => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       const response = await fetch(CHATBOT_ENDPOINTS.GET_MESSAGES(sessionId), {
         method: 'GET',
@@ -422,7 +422,7 @@ const ChatBot = () => {
     if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       const response = await fetch(CHATBOT_ENDPOINTS.DELETE_SESSION(sessionId), {
         method: 'DELETE',
