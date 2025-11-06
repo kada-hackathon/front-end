@@ -1,141 +1,288 @@
-import './Admin.css'
-import logoOnly from '../../assets/Logo/Logo Only_White.png'
-import textOnly from '../../assets/Logo/Text Only_White.png'
-import { useNavigate } from 'react-router-dom';
-import {useState, useEffect} from 'react';
+import { useState } from "react";
+import { Eye, EyeOff, FileText, Circle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import "./admin.css";
+import logoWithText from "@/assets/Logo/Logo with Text_White.png";
+import logoOnly from "@/assets/Logo/Logo Only_White.png";
 
-function Admin() {
-  
+const Admin = () => {
+  const [showPasswords, setShowPasswords] = useState({});
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showFormPassword, setShowFormPassword] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    division: "",
+    password: "",
+  });
+
+  const users = [
+    {
+      id: 1,
+      fullName: "Salwanetta",
+      email: "Salwanetta@gmail.com",
+      division: "SoftwareDevelopment",
+      password: "password123",
+    },
+    {
+      id: 2,
+      fullName: "",
+      email: "",
+      division: "",
+      password: "",
+    },
+  ];
+
+  const togglePassword = (userId) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [userId]: !prev[userId],
+    }));
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isEditMode) {
+      console.log("Edit user:", editingUserId, formData);
+      // TODO: Update user in database
+    } else {
+      console.log("Add new user:", formData);
+      // TODO: Add user to database
+    }
+    // Reset form and close dialog
+    setFormData({
+      fullName: "",
+      email: "",
+      division: "",
+      password: "",
+    });
+    setIsDialogOpen(false);
+    setIsEditMode(false);
+    setEditingUserId(null);
+  };
+
+  const handleEdit = (user) => {
+    setFormData({
+      fullName: user.fullName,
+      email: user.email,
+      division: user.division,
+      password: user.password,
+    });
+    setEditingUserId(user.id);
+    setIsEditMode(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (userId) => {
+    if (window.confirm("Are you sure you want to delete this account?")) {
+      console.log("Delete user:", userId);
+      // TODO: Delete user from database
+    }
+  };
+
+  const handleAddAccount = () => {
+    setFormData({
+      fullName: "",
+      email: "",
+      division: "",
+      password: "",
+    });
+    setIsEditMode(false);
+    setEditingUserId(null);
+    setIsDialogOpen(true);
+  };
 
   return (
-    <div className="app">
-      
-       
-        
-        {/* Decorative Icons */}
-        <div className="docs-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.17" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-        </div>
-        
-        <div className="pencil-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-          </svg>
-        </div>
-        
-        <div className="people-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.22" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-        </div>
-        
-        <div className="folder-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.38" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          </svg>
-        </div>
-        
-        <div className="magnifier-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="0.4" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-        </div>
-        <div className="login-content">
-          <div className="welcome-section">
-            
-            <h1>Hello Admin !</h1>
-            <img src={textOnly} alt="Nebwork" className="text-only" />
+    <div className="admin-container">
+      {/* Header */}
+      <header className="admin-header">
+        <div className="menubar-header">
+          <div className="menubar-logo">
+            <img src={logoWithText} alt="NebWork" className="menubar-logo-img" />
           </div>
-          
-          <form className="login-form" onSubmit={handleRegistration}>
-            <div className="input-group">
-              <label>Full Name:</label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder=" "
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
-              <div className="underline"></div>
-            </div>
-
-            <div className="input-group">
-              <label>Division:</label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder=" "
-                value={division}
-                onChange={(e) => setDivision(e.target.value)}
-                required
-              />
-              <div className="underline"></div>
-            </div>
-
-            <div className="input-group">
-              <label>Email:</label>
-              <input
-                type="email"
-                className="input-field"
-                placeholder=" "
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <div className="underline"></div>
-            </div>
-
-            <div className="input-group">
-              <label>Password:</label>
-              <input
-                type="password"
-                className="input-field"
-                placeholder=" "
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <div className="underline"></div>
-            </div>
-
-            <div className="input-group">
-              <label>Date of Join:</label>
-              <input
-                type="date"
-                className="input-field"
-                placeholder=" "
-                value={dateOfJoin}
-                onChange={(e) => setDateOfJoin(e.target.value)}
-                required
-              />
-              <div className="underline"></div>
-            </div>
-            
-            {errorMessage && (
-              <p style={{ color: "red", fontSize: "0.9em" }}>{errorMessage}</p>
-            )}
-            <button type="submit" className="login-button">
-              Registrasi
-            </button>
-          </form>
-          
-          
         </div>
-      </div>
+      
 
+        <div className="header-right">
+          <button className="add-account-btn" onClick={handleAddAccount}>
+            Add Account
+          </button>
+          <div className="user-info">
+            <div className="user-details">
+              <div className="user-name">Salwanetta</div>
+              <div className="user-role">Admin</div>
+            </div>
+            <div className="user-avatar">S</div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="admin-main">
+        <h2 className="page-title">MANAGE USERS</h2>
+
+        <div className="table-wrapper">
+          <table className="users-table">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Division</th>
+                <th>Password</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.id}</td>
+                  <td>{user.fullName}</td>
+                  <td className="email-cell">{user.email}</td>
+                  <td>{user.division}</td>
+                  <td>
+                    <div className="password-cell">
+                      <span className="password-text">
+                        {showPasswords[user.id] ? user.password : "••••••••"}
+                      </span>
+                      <button
+                        className="toggle-password-btn"
+                        onClick={() => togglePassword(user.id)}
+                        aria-label={showPasswords[user.id] ? "Hide password" : "Show password"}
+                      >
+                        {showPasswords[user.id] ? (
+                          <EyeOff size={16} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="edit-btn"
+                        onClick={() => handleEdit(user)}
+                        aria-label="Edit user"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDelete(user.id)}
+                        aria-label="Delete user"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </main>
+
+      {/* Add/Edit Account Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="dialog-content">
+          <div className="dialog-form-container">
+            <div className="dialog-illustration">
+              <FileText className="illustration-icon document" size={120} strokeWidth={1} />
+              <Circle className="illustration-icon circle-1" size={60} strokeWidth={1} />
+              <Circle className="illustration-icon circle-2" size={80} strokeWidth={1} />
+              <div className="illustration-icon phone">
+                <div className="phone-screen"></div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="registration-form">
+              <div className="form-group">
+                <label htmlFor="fullName">Full Name:</label>
+                <input
+                  type="text"
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Email:</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="division">Division:</label>
+                <input
+                  type="text"
+                  id="division"
+                  name="division"
+                  value={formData.division}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="password">Password:</label>
+                <div className="password-input-wrapper">
+                  <input
+                    type={showFormPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="toggle-form-password-btn"
+                    onClick={() => setShowFormPassword(!showFormPassword)}
+                    aria-label={showFormPassword ? "Hide password" : "Show password"}
+                  >
+                    {showFormPassword ? (
+                      <EyeOff size={20} />
+                    ) : (
+                      <Eye size={20} />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" className="submit-btn">
+                {isEditMode ? "Update" : "Registrasi"}
+              </button>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
-}
+};
 
 export default Admin;
