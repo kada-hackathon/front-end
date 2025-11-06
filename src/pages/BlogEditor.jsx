@@ -597,15 +597,22 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
       // ADD VERSION (LOG HISTORY)
       const worklogId = createdOrUpdatedWorklog?._id;
       if (worklogId) {
-        const token = localStorage.getItem('token');
         await fetch(WORKLOG_ENDPOINTS.VERSIONS(worklogId), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
+          credentials: "include",
           body: JSON.stringify({
-            message: commitMessage
+            message: commitMessage,
+            snapshot: {
+              title: blogTitle || "Untitled Work Log",
+              content: blogContent,
+              tag: blogTags || [],
+              collaborators: collaborators.map(c => c.id),
+              media: mediaFiles,
+            }
           })
         });
       }

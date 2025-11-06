@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,12 +10,19 @@ import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../config/ap
 
 const BlogPost = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const snapshot = location.state?.snapshot;
+  const historyId = location.state?.historyId;
+
   const [searchParams] = useSearchParams();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const postId = searchParams.get("id");
   const [post, setPost] = useState(null);
+  const [displayPost, setDisplayPost] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dateTime, setDateTime] = useState(null);
   const [friends, setFriends] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
 
@@ -129,7 +136,43 @@ const BlogPost = () => {
     }
   };
 
-  if (loading) {
+  // FETCH LOG HISTORY + MERGE SNAPSHOT
+  useEffect(() => {
+    // case 1: buka versi history
+    if (snapshot && historyId) {
+      console.log("[DEBUG] MODE HISTORY – fetch loghistory:", historyId);
+
+      const token = sessionStorage.getItem("token");
+
+      fetch(WORKLOG_ENDPOINTS.LOGHISTORY_ONE(historyId), {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => {
+          console.log("[DEBUG] loghistory status:", r.status);
+          return r.json();
+        })
+        .then(json => {
+          console.log("[DEBUG] loghistory JSON:", json);
+
+          // MERGE
+          setDisplayPost({
+            ...snapshot,        // isi content
+            datetime: json.datetime // datetime history
+          });
+        })
+        .catch(err => console.error("[DEBUG] ERROR fetch loghistory:", err));
+
+      return; // <— STOP disini, jangan jalan bagian post
+    }
+
+    // case 2: normal post (tanpa versi)
+    if (post) {
+      console.log("[DEBUG] MODE NORMAL POST – pakai post data");
+      setDisplayPost(post);
+    }
+  }, [snapshot, historyId, post]);
+
+  if (loading || !displayPost) {
     return (
       <div className="flex h-screen bg-background items-center justify-center">
         <p>Loading post...</p>
@@ -167,7 +210,7 @@ const BlogPost = () => {
                   <ChevronLeft className="h-6 w-6" />
                 </Button>
                 
-                {canEdit && (
+                {!snapshot && canEdit && (
                   <div className="flex gap-2">
                     <Button onClick={handleEditClick} className="gap-2 h-9">
                       <Pencil className="h-4 w-4" />
@@ -200,34 +243,38 @@ const BlogPost = () => {
                     </div>
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
-                    <p>{new Date(post.datetime || post.createdAt).toLocaleDateString('id-ID', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric'
-                    })}</p>
-                    <div>{new Date(post.datetime || post.createdAt).toLocaleTimeString('id-ID', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</div>
+                    <p>
+                      {new Date(displayPost.datetime || displayPost.createdAt).toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </p>
+                    <p>
+                      {new Date(displayPost.datetime || displayPost.createdAt).toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })} WIB
+                    </p>
                   </div>
                 </div>
 
-                <h1 className="text-3xl font-bold mb-4 text-foreground">{post.title}</h1>
+                <h1 className="text-3xl font-bold mb-4 text-foreground">{displayPost.title}</h1>
 
-                {post.tag && post.tag.length > 0 && (
+                {displayPost.tag && displayPost.tag.length > 0 && (
                   <p className="text-sm text-muted-foreground mb-6">
-                    {post.tag.map((t) => t.startsWith('#') ? t : `#${t}`).join(" ")}
+                    {displayPost.tag.map((t) => t.startsWith('#') ? t : `#${t}`).join(" ")}
                   </p>
                 )}
 
                 <div 
                   className="prose prose-lg max-w-none text-foreground"
-                  dangerouslySetInnerHTML={{ __html: post.content || '' }}
+                  dangerouslySetInnerHTML={{ __html: displayPost.content || '' }}
                 />
 
-                {post.media && post.media.length > 0 && (
+                {displayPost.media && displayPost.media.length > 0 && (
                   <div className="mt-6">
-                    {post.media.map((mediaUrl, index) => (
+                    {displayPost.media.map((mediaUrl, index) => (
                       <img 
                         key={index}
                         src={mediaUrl} 

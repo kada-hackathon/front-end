@@ -23,6 +23,7 @@ export const WORKLOG_ENDPOINTS = {
   ONE: (id) => `${BASE_URL}/api/worklogs/${id}`,       // GET, PUT, DELETE single
   FILTER: `${BASE_URL}/api/worklogs/filter`,          // GET user logs
   VERSIONS: (id) => `${BASE_URL}/api/worklogs/${id}/versions`, // GET, POST versions
+  LOGHISTORY_ONE: (id) => `${BASE_URL}/api/worklogs/loghistory/${id}`, // GET Single Log
 };
 
 // ADMIN ENDPOINTS

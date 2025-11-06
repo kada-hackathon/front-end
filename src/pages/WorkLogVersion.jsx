@@ -13,6 +13,7 @@ const WorkLogVersion = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [versions, setVersions] = useState([]);
   const [title, setTitle] = useState("");
+  const [selectedHistory, setSelectedHistory] = useState(null);
 
   console.log("ID DARI ROUTER:", id);
 
@@ -44,6 +45,22 @@ const WorkLogVersion = () => {
 
     fetchVersions();
   }, [id]);
+
+  const fetchSingleHistory = async (hid) => {
+    const token = sessionStorage.getItem("token");
+    console.log("[DEBUG] GET LOGHISTORY URL:", WORKLOG_ENDPOINTS.LOGHISTORY_ONE(hid));
+
+    const res = await fetch(WORKLOG_ENDPOINTS.LOGHISTORY_ONE(hid), {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+    console.log("[DEBUG] DETAIL HISTORY:", data);
+
+    setSelectedHistory(data);
+  };
 
 
   return (
@@ -93,6 +110,20 @@ const WorkLogVersion = () => {
                     </span>
                   </div>
                   <p className="font-semibold text-base">{v.message}</p>
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      await fetchSingleHistory(v._id);
+                      navigate(`/blog-post?id=${id}`, {
+                        state: {
+                          snapshot: v.snapshot,
+                          historyId: v._id
+                        }
+                      });
+                    }}
+                  >
+                    Look this version
+                  </Button>
                 </div>
               ))}
             </div>
