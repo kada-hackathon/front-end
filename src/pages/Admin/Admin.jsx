@@ -26,7 +26,7 @@ const Admin = () => {
     fullName: "",
     email: "",
     division: "",
-    password: "pass12345",
+    password: "Pass@123",
     joinedDate: "",
   });
   
@@ -205,7 +205,7 @@ const Admin = () => {
             name: formData.fullName,
             email: formData.email,
             division: formData.division,
-            password: formData.password || 'pass12345',
+            password: formData.password || 'Pass@123',
             join_date: formData.joinedDate,
             role: 'user'
           })
@@ -215,7 +215,7 @@ const Admin = () => {
         console.log('Add response:', responseData);
 
         if (response.ok) {
-          toast.success(`User added successfully! Password: ${formData.password || 'pass12345'}`);
+          toast.success(`User added successfully! Password: ${formData.password || 'Pass@123'}`);
           setIsDialogOpen(false);
           setSearchQuery(""); // Clear search
           setCurrentPage(1); // Go to first page to see new user
@@ -230,7 +230,7 @@ const Admin = () => {
         fullName: "",
         email: "",
         division: "",
-        password: "pass12345",
+        password: "Pass@123",
         joinedDate: "",
       });
       setIsEditMode(false);
@@ -246,7 +246,7 @@ const Admin = () => {
       fullName: user.name || user.fullName || "",
       email: user.email || "",
       division: user.division || "",
-      password: "pass12345",
+      password: "Pass@123",
       joinedDate: user.join_date ? user.join_date.split('T')[0] : ""
     });
     setEditingUserId(user._id || user.id);
@@ -304,7 +304,7 @@ const Admin = () => {
       fullName: "",
       email: "",
       division: "",
-      password: "pass12345", // Default password
+      password: "Pass@123", // Default strong password
       joinedDate: "",
     });
     setIsEditMode(false);
@@ -568,11 +568,16 @@ const Admin = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder="Default: pass12345"
+                    placeholder="Min 8 chars, 1 uppercase, 1 number, 1 special char"
                     required
                   />
-                  <small style={{ color: '#666', fontSize: '0.85rem' }}>
-                    Default password is "pass12345", but you can change it
+                  <small style={{ color: '#666', fontSize: '0.85rem', display: 'block', marginTop: '0.25rem' }}>
+                    Password requirements:<br/>
+                    • Minimum 8 characters<br/>
+                    • At least 1 uppercase letter (A-Z)<br/>
+                    • At least 1 lowercase letter (a-z)<br/>
+                    • At least 1 number (0-9)<br/>
+                    • At least 1 special character (!@#$%^&*...)
                   </small>
                 </div>
               )}

@@ -16,7 +16,6 @@ function Login() {
   useEffect(() => {
     const token = sessionStorage.getItem('token');
     if (token) {
-      console.log('✅ User already logged in, redirecting to home');
       navigate('/');
     }
   }, [navigate]);
@@ -41,19 +40,16 @@ function Login() {
         sessionStorage.setItem('token', data.token || '');
         if (data.user) {
           sessionStorage.setItem('user', JSON.stringify(data.user));
-          console.log('Saved user data:', data.user);
+          // Remove in production: console.log('Saved user data:', data.user);
         }
 
         // Navigate based on user role
         // If admin -> /admin page, otherwise -> home page
         const userRole = data.user?.role || 'user';
-        console.log('User role:', userRole);
         
         if (userRole === 'admin') {
-          console.log('Admin login successful, redirecting to admin page');
           navigate('/admin');
         } else {
-          console.log('User login successful, redirecting to home');
           navigate('/');
         }
       } else {
