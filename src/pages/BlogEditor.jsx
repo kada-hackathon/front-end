@@ -22,7 +22,6 @@ import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 import { apiHandler } from "../utils/apiHandler";
-import { toast } from "sonner";
 import BASE_URL from "../config/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,6 +32,10 @@ import { useToast } from "@/hooks/use-toast";
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingWorklog, setIsLoadingWorklog] = useState(false);
+  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+  const [isRemovingCollaborator, setIsRemovingCollaborator] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
@@ -50,6 +53,8 @@ import { useToast } from "@/hooks/use-toast";
   
   // Ref to track if we're programmatically updating content (to avoid triggering unsaved changes)
   const isProgrammaticUpdate = useRef(false);
+  // Ref to avoid fetching the same post multiple times (prevents double-loading)
+  const fetchedPostIdRef = useRef(null);
   
   // Ref to store the content to use for editor re-mount (with DigitalOcean URLs)
   const contentForReMount = useRef(null);
@@ -139,6 +144,7 @@ import { useToast } from "@/hooks/use-toast";
     }
 
     const fetchPost = async () => {
+      setIsLoadingWorklog(true);
       try {
         const token = sessionStorage.getItem('token');
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
@@ -209,8 +215,17 @@ import { useToast } from "@/hooks/use-toast";
       } catch (err) {
         console.error('Error fetching post:', err);
         navigate(-1);
+      } finally {
+        setIsLoadingWorklog(false);
       }
     };
+    // Prevent fetching the same post multiple times (avoids double-loading)
+    if (fetchedPostIdRef.current === postId) {
+      console.log('[BlogEditor] Post already fetched for id:', postId);
+      return;
+    }
+    fetchedPostIdRef.current = postId;
+
     fetchPost();
   }, [postId, currentUserId, navigate]);
 
@@ -294,6 +309,10 @@ import { useToast } from "@/hooks/use-toast";
   const confirmInvite = async () => {
     console.log("Inviting friends:", selectedFriends);
     
+    // Close invite dialog and show loading
+    setShowInviteConfirmDialog(false);
+    setIsAddingCollaborator(true);
+    
     // Get all selected friends (including already added collaborators)
     const allSelectedIds = [...new Set([...collaboratorIds, ...selectedFriends])];
     const newCollaborators = allFriends.filter(friend => 
@@ -321,13 +340,20 @@ import { useToast } from "@/hooks/use-toast";
           })
         });
         console.log("Collaborators auto-saved");
+        
+        // Show success toast notification
+        toast({
+          title: "✅ Collaborators added successfully!",
+          description: "The selected collaborators have been added to this work log.",
+          duration: 3000,
+        });
       } catch (err) {
         console.error('Error auto-saving collaborators:', err);
       }
     }
     
-    // Close confirmation dialog and reset
-    setShowInviteConfirmDialog(false);
+    // Hide loading and reset
+    setIsAddingCollaborator(false);
     setSelectedFriendsToInvite([]);
     setSelectedFriends([]);
     setSearchQuery("");
@@ -344,6 +370,10 @@ import { useToast } from "@/hooks/use-toast";
     if (!collaboratorToRemove) return;
     
     const collaboratorId = collaboratorToRemove.id;
+    
+    // Close remove dialog and show loading
+    setShowRemoveDialog(false);
+    setIsRemovingCollaborator(true);
     
     // Remove from collaborators list
     const updatedCollaborators = collaborators.filter(c => c.id !== collaboratorId);
@@ -372,13 +402,20 @@ import { useToast } from "@/hooks/use-toast";
           })
         });
         console.log("Collaborator removal auto-saved");
+        
+        // Show success toast notification
+        toast({
+          title: "✅ Collaborator removed successfully!",
+          description: `${collaboratorToRemove.name} has been removed from this work log.`,
+          duration: 3000,
+        });
       } catch (err) {
         console.error('Error auto-saving collaborator removal:', err);
       }
     }
     
-    // Close dialog and reset
-    setShowRemoveDialog(false);
+    // Hide loading and reset
+    setIsRemovingCollaborator(false);
     setCollaboratorToRemove(null);
   };
 
@@ -483,6 +520,9 @@ import { useToast } from "@/hooks/use-toast";
   const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
 
+    // Show loading state
+    setIsSaving(true);
+
     try {
       const token = sessionStorage.getItem('token');
       let createdOrUpdatedWorklog;
@@ -506,8 +546,7 @@ import { useToast } from "@/hooks/use-toast";
       }
       
       const urlMap = await mediaManager.uploadAllPending(handleImageUpload);
-      console.log("[BlogEditor] Upload complete, mapped URLs:", urlMap.size);
-      
+   
       // Step 2: Replace blob URLs with DigitalOcean URLs in content
       console.log("[BlogEditor] ========== REPLACING BLOB URLs ==========");
       let finalContent = mediaManager.replaceBlobUrlsInContent(blogContent, urlMap);
@@ -515,11 +554,7 @@ import { useToast } from "@/hooks/use-toast";
       
       // Step 3: Delete removed media from DigitalOcean
       const pendingDeletions = mediaManager.getPendingDeletions();
-      console.log("[BlogEditor] ==========================================");
-      console.log("[BlogEditor] STEP 3: DELETE REMOVED MEDIA");
-      console.log("[BlogEditor] Pending deletions count:", pendingDeletions.length);
-      console.log("[BlogEditor] Pending deletion URLs:", pendingDeletions);
-      console.log("[BlogEditor] ==========================================");
+
       
       if (pendingDeletions.length > 0) {
         console.log("[BlogEditor] 🗑️ CALLING deleteAllPending() with deleteMediaFile function");
@@ -536,41 +571,23 @@ import { useToast } from "@/hooks/use-toast";
       const mediaFiles = extractMediaFromContent(finalContent);
       console.log("[BlogEditor] Extracted media files:", mediaFiles.length);
 
+      // ✅ VALIDATION: Validate before saving
+      const dataToSave = {
+        title: blogTitle || "Untitled Work Log",
+        content: finalContent,
+        tag: blogTags || [],
+        collaborators: collaborators.map(c => c.id),
+        media: mediaFiles,
+      };
+
       if (isEditMode) {
         // update
-        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: blogTitle || "Untitled Work Log",
-            content: finalContent,
-            tag: blogTags || [],
-            collaborators: collaborators.map(c => c.id),
-            media: mediaFiles,
-          })
-        });
-        createdOrUpdatedWorklog = await response.json();
-
+        const response = await apiHandler.worklog.updateWorklog(postId, dataToSave);
+        createdOrUpdatedWorklog = response;
       } else {
-        // create
-        const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: blogTitle || "Untitled Work Log",
-            content: finalContent,
-            tag: blogTags || [],
-            collaborators: collaborators.map(c => c.id),
-            media: mediaFiles,
-          })
-        });
-        createdOrUpdatedWorklog = await response.json();
+        // create - apiHandler.worklog.saveWorklog already has validation
+        const response = await apiHandler.worklog.saveWorklog(dataToSave);
+        createdOrUpdatedWorklog = response;
       }
 
       // ADD VERSION (LOG HISTORY)
@@ -636,6 +653,9 @@ import { useToast } from "@/hooks/use-toast";
       setCommitMessage("");
       setHasUnsavedChanges(false);
       
+      // Hide loading state
+      setIsSaving(false);
+      
       // Show success toast notification
       toast({
         title: "✅ Work log saved successfully!",
@@ -660,25 +680,64 @@ import { useToast } from "@/hooks/use-toast";
       
       // Handle validation errors
       if (err.validationErrors) {
-        // Display each validation error
+        // Combine all validation errors into one message
         const fieldNames = {
           title: 'Title',
           content: 'Content',
           tag: 'Tags'
         };
         
-        Object.entries(err.validationErrors).forEach(([field, message]) => {
-          const fieldName = fieldNames[field] || field;
-          toast.error(`${fieldName}: ${message}`);
+        const errorList = Object.entries(err.validationErrors)
+          .map(([field, message]) => {
+            const fieldName = fieldNames[field] || field;
+            return `${fieldName}: ${message}`;
+          });
+        
+        toast({
+          variant: "destructive",
+          title: "Validation Failed",
+          description: (
+            <div className="space-y-1">
+              {errorList.map((error, index) => (
+                <div key={index}>• {error}</div>
+              ))}
+            </div>
+          ),
+          duration: 5000,
         });
       } else if (err.message === 'No authentication token found') {
-        toast.error('Session expired. Please login again.');
+        toast({
+          variant: "destructive",
+          title: "Session Expired",
+          description: "Please login again.",
+          duration: 3000,
+        });
         navigate('/login');
+      } else if (err.message === 'Validation failed') {
+        toast({
+          variant: "destructive",
+          title: "Validation Failed",
+          description: "Please check your input and try again.",
+          duration: 3000,
+        });
       } else {
-        toast.error('Failed to save worklog. Please try again.');
+        toast({
+          variant: "destructive",
+          title: "Save Failed",
+          description: "Failed to save worklog. Please try again.",
+          duration: 3000,
+        });
       }
+      
+      // Hide loading state on error
+      setIsSaving(false);
     }
   };
+
+  // Show loading while fetching worklog in edit mode
+  if (isLoadingWorklog && isEditMode) {
+    return <Loading fullScreen message="Loading worklog..." />;
+  }
 
   return (
     <div className="flex h-screen bg-background">

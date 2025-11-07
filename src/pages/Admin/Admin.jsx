@@ -35,7 +35,19 @@ const Admin = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      // Reset to page 1 when search changes
+      setCurrentPage(1);
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch current admin info
   useEffect(() => {
@@ -61,13 +73,19 @@ const Admin = () => {
     fetchAdminInfo();
   }, []);
 
-  // Fetch all users (employees) with pagination
+  // Fetch all users (employees) with pagination and search
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
         const token = sessionStorage.getItem('token');
-        const response = await fetch(`${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10`, {
+        // Add search query to API call
+        const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : '';
+        const url = `${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10${searchParam}`;
+        console.log('Fetching users with URL:', url);
+        console.log('Search query:', debouncedSearch);
+        
+        const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -100,7 +118,7 @@ const Admin = () => {
       }
     };
     fetchUsers();
-  }, [currentPage]);
+  }, [currentPage, debouncedSearch]);
 
   const togglePassword = (userId) => {
     setShowPasswords((prev) => ({
@@ -117,28 +135,13 @@ const Admin = () => {
     }));
   };
 
-  // Search functionality
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredUsers(users);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = users.filter(user => 
-      (user.name || '').toLowerCase().includes(query) ||
-      (user.email || '').toLowerCase().includes(query) ||
-      (user.division || '').toLowerCase().includes(query)
-    );
-    setFilteredUsers(filtered);
-  }, [searchQuery, users]);
-
   // Function to refresh users list
   const refreshUsers = async () => {
     setLoading(true);
     try {
       const token = sessionStorage.getItem('token');
-      const response = await fetch(`${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10`, {
+      const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : '';
+      const response = await fetch(`${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10${searchParam}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -445,7 +448,7 @@ const Admin = () => {
           </div>
 
           {/* Pagination Controls */}
-          {!searchQuery && totalPages > 1 && (
+          {totalPages > 1 && (
             <div style={{ 
               display: 'flex', 
               justifyContent: 'center', 
