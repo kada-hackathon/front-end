@@ -15,6 +15,69 @@ import FriendsList from "@/components/FriendsList/FriendsList";
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, UPLOAD_ENDPOINTS } from "../config/api";
 import { Loading } from "@/components/ui/loading";
 import { useToast } from "@/hooks/use-toast";
+import { FileIcon, Download, ExternalLink } from "lucide-react";
+// Import TipTap node styles for proper rendering
+import "@/components/tiptap-node/document-node/document-node.scss";
+import "@/components/tiptap-node/image-node/image-node.scss";
+import "@/components/tiptap-node/video-node/video-node.scss";
+import "@/components/tiptap-node/audio-node/audio-node.scss";
+
+// Custom styles for BlogPost
+const blogPostStyles = `
+  .prose img,
+  .prose video,
+  .tiptap-image img,
+  .tiptap-video video {
+    border-radius: 16px !important;
+  }
+`;
+
+// Component to render documents embedded in content
+const DocumentPreview = ({ src, filename, filesize }) => {
+  const getFileExtension = (name) => {
+    const parts = name.split('.');
+    return parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
+  };
+
+  const getFileColor = (name) => {
+    const ext = getFileExtension(name).toLowerCase();
+    const colorMap = {
+      pdf: '#dc2626', doc: '#2563eb', docx: '#2563eb',
+      xls: '#16a34a', xlsx: '#16a34a',
+      ppt: '#ea580c', pptx: '#ea580c',
+      txt: '#6b7280',
+    };
+    return colorMap[ext] || '#8b5cf6';
+  };
+
+  const fileColor = getFileColor(filename);
+
+  return (
+    <div className="tiptap-document-node my-4">
+      <div 
+        className="tiptap-document-wrapper"
+        style={{ borderLeftColor: fileColor, cursor: 'pointer' }}
+        onClick={() => window.open(src, '_blank')}
+      >
+        <div className="tiptap-document-icon">
+          <div className="tiptap-document-icon-bg" style={{ backgroundColor: fileColor }}>
+            <FileIcon size={24} style={{ color: 'white' }} />
+          </div>
+          <span className="tiptap-document-ext" style={{ backgroundColor: fileColor, color: 'white' }}>
+            {getFileExtension(filename)}
+          </span>
+        </div>
+        <div className="tiptap-document-info">
+          <div className="tiptap-document-filename">{filename}</div>
+          {filesize && <div className="tiptap-document-filesize">{filesize}</div>}
+        </div>
+        <div className="tiptap-document-actions">
+          <ExternalLink size={20} />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const BlogPost = () => {
   const navigate = useNavigate();
@@ -76,6 +139,8 @@ const BlogPost = () => {
         const data = await response.json();
         console.log('Post response:', data);
         console.log('Post media array:', data.media);
+        console.log('Post content:', data.content);
+        console.log('Has document nodes:', data.content?.includes('data-type="document"'));
         setPost(data);
         setLoading(false);
       } catch (err) {
@@ -123,6 +188,86 @@ const BlogPost = () => {
   const handleDeleteClick = () => {
     setShowDeleteDialog(true);
   };
+
+  // Helper function to get last edited text
+  const getLastEditedText = (datetime) => {
+    if (!datetime) return "Last edited: Unknown";
+    
+    const now = new Date();
+    const edited = new Date(datetime);
+    const diffMs = now - edited;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMinutes < 1) {
+      return "Recently edited";
+    } else if (diffMinutes < 60) {
+      return `Last edited: ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+      return `Last edited: ${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffDays < 8) {
+      return `Last edited: ${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else {
+      return `Last edited: ${edited.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })}`;
+    }
+  };
+
+  // Process content to extract and render documents
+  const processContent = (htmlContent) => {
+    if (!htmlContent) return { __html: '' };
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    
+    // Find all document nodes
+    const documentNodes = doc.querySelectorAll('[data-type="document"]');
+    
+    documentNodes.forEach((node, index) => {
+      const src = node.getAttribute('data-src');
+      const filename = node.getAttribute('data-filename');
+      const filesize = node.getAttribute('data-filesize');
+      
+      if (src && filename) {
+        // Create a placeholder div that will be replaced by React
+        const placeholder = document.createElement('div');
+        placeholder.setAttribute('data-document-placeholder', index);
+        placeholder.setAttribute('data-src', src);
+        placeholder.setAttribute('data-filename', filename);
+        if (filesize) placeholder.setAttribute('data-filesize', filesize);
+        
+        node.parentNode.replaceChild(placeholder, node);
+      }
+    });
+    
+    return { __html: doc.body.innerHTML };
+  };
+
+  // Render document placeholders as React components
+  useEffect(() => {
+    if (!displayPost?.content) return;
+    
+    const placeholders = document.querySelectorAll('[data-document-placeholder]');
+    placeholders.forEach((placeholder) => {
+      const src = placeholder.getAttribute('data-src');
+      const filename = placeholder.getAttribute('data-filename');
+      const filesize = placeholder.getAttribute('data-filesize');
+      
+      if (src && filename && placeholder.childNodes.length === 0) {
+        const container = document.createElement('div');
+        placeholder.appendChild(container);
+        
+        import('react-dom/client').then(({ createRoot }) => {
+          const root = createRoot(container);
+          root.render(<DocumentPreview src={src} filename={filename} filesize={filesize} />);
+        });
+      }
+    });
+  }, [displayPost]);
 
   // Helper function to extract media URLs from content (for deletion)
   const extractMediaUrls = (content, mediaArray = []) => {
@@ -300,6 +445,7 @@ const BlogPost = () => {
 
   return (
     <div className="flex h-screen bg-background">
+      <style>{blogPostStyles}</style>
       <Menubar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -338,7 +484,21 @@ const BlogPost = () => {
                   </div>
                 )}
               </div>
-              <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-8">
+              
+              {/* Header Bar */}
+              <div className="bg-primary/10 rounded-t-2xl px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-primary">
+                    {post.collaborators && post.collaborators.length > 0 ? "Collaboration Work" : "Own Work"}
+                  </span>
+                </div>
+                <div className="text-sm text-muted-foreground italic">
+                  {getLastEditedText(displayPost.updatedAt || displayPost.datetime || displayPost.createdAt)}
+                </div>
+              </div>
+              
+              {/* Main Card - removed top border radius */}
+              <div className="bg-card/50 backdrop-blur-sm rounded-b-2xl p-8 border-t-0">
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <Avatar className="w-16 h-16">
@@ -379,7 +539,7 @@ const BlogPost = () => {
 
                 <div 
                   className="prose prose-lg max-w-none text-foreground"
-                  dangerouslySetInnerHTML={{ __html: displayPost.content || '' }}
+                  dangerouslySetInnerHTML={processContent(displayPost.content)}
                 />
               </div>
             </div>
@@ -426,7 +586,7 @@ const BlogPost = () => {
                   Deleting...
                 </div>
               ) : (
-                'Yes, Delete Permanently'
+                'Yes'
               )}
             </Button>
             <Button

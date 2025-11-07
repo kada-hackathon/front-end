@@ -35,6 +35,8 @@ import { Loading } from "@/components/ui/loading";
   const [saveOpen, setSaveOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingWorklog, setIsLoadingWorklog] = useState(false);
+  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+  const [isRemovingCollaborator, setIsRemovingCollaborator] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
@@ -341,6 +343,10 @@ import { Loading } from "@/components/ui/loading";
   const confirmInvite = async () => {
     console.log("Inviting friends:", selectedFriends);
     
+    // Close invite dialog and show loading
+    setShowInviteConfirmDialog(false);
+    setIsAddingCollaborator(true);
+    
     // Get all selected friends (including already added collaborators)
     const allSelectedIds = [...new Set([...collaboratorIds, ...selectedFriends])];
     const newCollaborators = allFriends.filter(friend => 
@@ -368,13 +374,20 @@ import { Loading } from "@/components/ui/loading";
           })
         });
         console.log("Collaborators auto-saved");
+        
+        // Show success toast notification
+        toast({
+          title: "✅ Collaborators added successfully!",
+          description: "The selected collaborators have been added to this work log.",
+          duration: 3000,
+        });
       } catch (err) {
         console.error('Error auto-saving collaborators:', err);
       }
     }
     
-    // Close confirmation dialog and reset
-    setShowInviteConfirmDialog(false);
+    // Hide loading and reset
+    setIsAddingCollaborator(false);
     setSelectedFriendsToInvite([]);
     setSelectedFriends([]);
     setSearchQuery("");
@@ -391,6 +404,10 @@ import { Loading } from "@/components/ui/loading";
     if (!collaboratorToRemove) return;
     
     const collaboratorId = collaboratorToRemove.id;
+    
+    // Close remove dialog and show loading
+    setShowRemoveDialog(false);
+    setIsRemovingCollaborator(true);
     
     // Remove from collaborators list
     const updatedCollaborators = collaborators.filter(c => c.id !== collaboratorId);
@@ -419,13 +436,20 @@ import { Loading } from "@/components/ui/loading";
           })
         });
         console.log("Collaborator removal auto-saved");
+        
+        // Show success toast notification
+        toast({
+          title: "✅ Collaborator removed successfully!",
+          description: `${collaboratorToRemove.name} has been removed from this work log.`,
+          duration: 3000,
+        });
       } catch (err) {
         console.error('Error auto-saving collaborator removal:', err);
       }
     }
     
-    // Close dialog and reset
-    setShowRemoveDialog(false);
+    // Hide loading and reset
+    setIsRemovingCollaborator(false);
     setCollaboratorToRemove(null);
   };
 
@@ -1013,7 +1037,43 @@ import { Loading } from "@/components/ui/loading";
           <div className="py-8 flex flex-col items-center gap-4">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
             <p className="text-center text-muted-foreground">
-              Please wait while we save your work log and upload media files...
+              Saving work log, please wait...
+            </p>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Adding Collaborator Progress Dialog */}
+      <AlertDialog open={isAddingCollaborator}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Adding Collaborators
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-8 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <p className="text-center text-muted-foreground">
+              Adding collaborators, please wait...
+            </p>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Removing Collaborator Progress Dialog */}
+      <AlertDialog open={isRemovingCollaborator}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Removing Collaborator
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-8 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <p className="text-center text-muted-foreground">
+              Removing collaborator, please wait...
             </p>
           </div>
         </AlertDialogContent>
