@@ -173,8 +173,8 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
             }),
             hashtags: worklog.tag || [],
             content: plainTextContent 
-              ? (plainTextContent.length > 100 
-                  ? `${plainTextContent.substring(0, 100)}...` 
+              ? (plainTextContent.length > 500 
+                  ? `${plainTextContent.substring(0, 500)}...` 
                   : plainTextContent)
               : "",
             image: worklog.media?.[0] || null,

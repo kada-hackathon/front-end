@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import NewPassword from "./pages/NewPassword/NewPassword";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import { validateAndCleanupToken } from './utils/authUtils';
 import Login from "./pages/Login/Login";
 
@@ -41,7 +42,7 @@ const App = () => {
             {/* PROTECTED ROUTES */}
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/chatbot" element={<ProtectedRoute><ChatBotPage /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/worklog" element={<ProtectedRoute><WorkLog /></ProtectedRoute>} />
             <Route path="/worklogs/:id/versions" element={<ProtectedRoute><WorkLogVersion /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

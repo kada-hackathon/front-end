@@ -22,7 +22,7 @@ describe('Worklog Validation Tests', () => {
       expect(result.errors.title).toBe('Title cannot contain special characters');
     });
 
-    test('should reject title longer than 200 characters', () => {
+    test('should reject title longer than 50 characters', () => {
       const longTitle = 'a'.repeat(201);
       const result = validationUtils.worklog.validateContent({
         title: longTitle,
@@ -30,7 +30,7 @@ describe('Worklog Validation Tests', () => {
         tag: []
       });
       expect(result.isValid).toBe(false);
-      expect(result.errors.title).toBe('Title maximum 200 characters');
+      expect(result.errors.title).toBe('Title maximum 50 characters');
     });
 
     test('should reject title with leading/trailing spaces', () => {
@@ -86,14 +86,14 @@ describe('Worklog Validation Tests', () => {
       expect(result.errors.tag).toBe('Tag "tag<1>" contains invalid characters');
     });
 
-    test('should reject tags longer than 20 characters', () => {
+    test('should reject tags longer than 30 characters', () => {
       const result = validationUtils.worklog.validateContent({
         title: 'Valid Title',
         content: 'Valid content',
-        tag: ['thisIsAVeryLongTagNameThatExceeds20Characters']
+        tag: ['thisIsAVeryLongTagNameThatExceeds30Characters']
       });
       expect(result.isValid).toBe(false);
-      expect(result.errors.tag).toBe('Tag "thisIsAVeryLongTagNameThatExceeds20Characters" is too long (max 20 characters)');
+      expect(result.errors.tag).toBe('Tag "thisIsAVeryLongTagNameThatExceeds30Characters" is too long (max 30 characters)');
     });
   });
 

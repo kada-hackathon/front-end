@@ -55,7 +55,8 @@ export const apiHandler = {
         title: securityUtils.sanitizeInput(data.title),
         content: securityUtils.sanitizeContent(data.content),
         tag: data.tag?.map(t => securityUtils.sanitizeInput(t)) || [],
-        collaborators: data.collaborators || []
+        collaborators: data.collaborators || [],
+        media: data.media || []
       };
 
         const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
@@ -98,7 +99,8 @@ export const apiHandler = {
         title: securityUtils.sanitizeInput(data.title),
         content: securityUtils.sanitizeContent(data.content),
         tag: data.tag?.map(t => securityUtils.sanitizeInput(t)) || [],
-        collaborators: data.collaborators || []
+        collaborators: data.collaborators || [],
+        media: data.media || []
       };
 
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(id), {

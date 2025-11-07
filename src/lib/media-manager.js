@@ -173,6 +173,10 @@ class MediaManager {
       return htmlContent
     }
     
+    console.log(`[MediaManager] ==================== URL REPLACEMENT ====================`)
+    console.log(`[MediaManager] Content length: ${htmlContent.length} characters`)
+    console.log(`[MediaManager] Number of blob → DigitalOcean mappings: ${urlMap.size}`)
+    
     let updatedContent = htmlContent
     let replacementCount = 0
     
@@ -180,17 +184,37 @@ class MediaManager {
       // Count occurrences before replacement
       const beforeCount = (updatedContent.match(new RegExp(blobUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length
       
+      if (beforeCount === 0) {
+        console.warn(`[MediaManager] ⚠️ Blob URL not found in content: ${blobUrl}`)
+        console.warn(`[MediaManager] This blob URL was uploaded but not used in the document`)
+      }
+      
       // Replace all occurrences of blob URL with DigitalOcean URL
       updatedContent = updatedContent.replaceAll(blobUrl, digitalOceanUrl)
       
-      // Count occurrences after replacement
-      const afterCount = (updatedContent.match(new RegExp(digitalOceanUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length
+      // Verify replacement
+      const digitalOceanCount = (updatedContent.match(new RegExp(digitalOceanUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length
       
-      console.log(`[MediaManager] Replaced blob URL: ${blobUrl.substring(0, 50)}... → ${digitalOceanUrl.substring(0, 50)}... (${beforeCount} occurrences)`)
+      console.log(`[MediaManager] 🔄 ${blobUrl.substring(0, 60)}...`)
+      console.log(`[MediaManager]    → ${digitalOceanUrl}`)
+      console.log(`[MediaManager]    ✅ Replaced ${beforeCount} occurrence(s)`)
+      
       replacementCount += beforeCount
     }
     
-    console.log(`[MediaManager] ✅ Replaced ${replacementCount} blob URLs in content (${urlMap.size} unique files)`)
+    console.log(`[MediaManager] ==================== REPLACEMENT COMPLETE ====================`)
+    console.log(`[MediaManager] ✅ Total replacements: ${replacementCount}`)
+    console.log(`[MediaManager] ✅ Updated content length: ${updatedContent.length} characters`)
+    
+    // Verify no blob URLs remain
+    const remainingBlobs = (updatedContent.match(/blob:http[^\s"')]+/g) || [])
+    if (remainingBlobs.length > 0) {
+      console.warn(`[MediaManager] ⚠️ WARNING: ${remainingBlobs.length} blob URL(s) still in content:`)
+      remainingBlobs.forEach(blob => console.warn(`[MediaManager]    - ${blob}`))
+    } else {
+      console.log(`[MediaManager] ✅ No blob URLs remaining in content`)
+    }
+    
     return updatedContent
   }
 
