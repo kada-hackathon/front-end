@@ -55,8 +55,18 @@ export const apiHandler = {
         title: securityUtils.sanitizeInput(data.title),
         content: securityUtils.sanitizeContent(data.content),
         tag: data.tag?.map(t => securityUtils.sanitizeInput(t)) || [],
-        collaborators: data.collaborators || []
+        collaborators: data.collaborators || [],
+        media: data.media || []
       };
+
+        console.log('[apiHandler.saveWorklog] 🚀 Sending to backend:', {
+          title: sanitizedData.title,
+          contentLength: sanitizedData.content.length,
+          tagsCount: sanitizedData.tag.length,
+          collaboratorsCount: sanitizedData.collaborators.length,
+          mediaCount: sanitizedData.media.length,
+          mediaUrls: sanitizedData.media
+        });
 
         const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
           method: 'POST',
@@ -98,8 +108,18 @@ export const apiHandler = {
         title: securityUtils.sanitizeInput(data.title),
         content: securityUtils.sanitizeContent(data.content),
         tag: data.tag?.map(t => securityUtils.sanitizeInput(t)) || [],
-        collaborators: data.collaborators || []
+        collaborators: data.collaborators || [],
+        media: data.media || []
       };
+
+        console.log('[apiHandler.updateWorklog] 🚀 Sending to backend:', {
+          title: sanitizedData.title,
+          contentLength: sanitizedData.content.length,
+          tagsCount: sanitizedData.tag.length,
+          collaboratorsCount: sanitizedData.collaborators.length,
+          mediaCount: sanitizedData.media.length,
+          mediaUrls: sanitizedData.media
+        });
 
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(id), {
           method: 'PUT',

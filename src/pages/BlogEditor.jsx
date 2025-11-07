@@ -614,21 +614,26 @@ import { Loading } from "@/components/ui/loading";
       console.log("[BlogEditor] Current content length:", blogContent.length);
       console.log("[BlogEditor] Pending uploads count:", mediaManager.getPendingUploads().length);
       
-      const urlMap = await mediaManager.uploadAllPending(handleImageUpload);
-      console.log("[BlogEditor] Upload complete, mapped URLs:", urlMap.size);
+      // Log pending uploads details
+      const pendingUploads = mediaManager.getPendingUploads();
+      if (pendingUploads.length > 0) {
+        console.log("[BlogEditor] Pending uploads:");
+        pendingUploads.forEach((upload, index) => {
+          console.log(`[BlogEditor]   ${index + 1}. ${upload.file.name} (${upload.blobUrl.substring(0, 60)}...)`);
+        });
+      }
       
+      const urlMap = await mediaManager.uploadAllPending(handleImageUpload);
+   
       // Step 2: Replace blob URLs with DigitalOcean URLs in content
+      console.log("[BlogEditor] ========== REPLACING BLOB URLs ==========");
       let finalContent = mediaManager.replaceBlobUrlsInContent(blogContent, urlMap);
-      console.log("[BlogEditor] Final content length after URL replacement:", finalContent.length);
+      console.log("[BlogEditor] ========== REPLACEMENT COMPLETE ==========");
       
       // Step 3: SKIP deletion on save - only delete when user leaves editor
       // This allows undo/redo to work even after saving
       const pendingDeletions = mediaManager.getPendingDeletions();
-      console.log("[BlogEditor] ==========================================");
-      console.log("[BlogEditor] STEP 3: SKIP DELETION (Delayed until editor close)");
-      console.log("[BlogEditor] Pending deletions count:", pendingDeletions.length);
-      console.log("[BlogEditor] These will be deleted when you leave the editor");
-      console.log("[BlogEditor] ==========================================");
+
       
       // Note: Deletions are tracked but not executed on save
       // They will be executed when user navigates away from the editor
@@ -636,42 +641,34 @@ import { Loading } from "@/components/ui/loading";
       // Step 4: Extract media from final content
       const mediaFiles = extractMediaFromContent(finalContent);
       console.log("[BlogEditor] Extracted media files:", mediaFiles.length);
+      console.log("[BlogEditor] Media files array:", mediaFiles);
+
+      // ✅ VALIDATION: Validate before saving
+      const dataToSave = {
+        title: blogTitle || "Untitled Work Log",
+        content: finalContent,
+        tag: blogTags || [],
+        collaborators: collaborators.map(c => c.id),
+        media: mediaFiles,
+      };
+
+      console.log("[BlogEditor] 📦 Data to save:", {
+        title: dataToSave.title,
+        contentLength: dataToSave.content.length,
+        tagsCount: dataToSave.tag.length,
+        collaboratorsCount: dataToSave.collaborators.length,
+        mediaCount: dataToSave.media.length,
+        mediaUrls: dataToSave.media
+      });
 
       if (isEditMode) {
         // update
-        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: blogTitle || "Untitled Work Log",
-            content: finalContent,
-            tag: blogTags || [],
-            collaborators: collaborators.map(c => c.id),
-            media: mediaFiles,
-          })
-        });
-        createdOrUpdatedWorklog = await response.json();
-
+        const response = await apiHandler.worklog.updateWorklog(postId, dataToSave);
+        createdOrUpdatedWorklog = response;
       } else {
-        // create
-        const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: blogTitle || "Untitled Work Log",
-            content: finalContent,
-            tag: blogTags || [],
-            collaborators: collaborators.map(c => c.id),
-            media: mediaFiles,
-          })
-        });
-        createdOrUpdatedWorklog = await response.json();
+        // create - apiHandler.worklog.saveWorklog already has validation
+        const response = await apiHandler.worklog.saveWorklog(dataToSave);
+        createdOrUpdatedWorklog = response;
       }
 
       // ADD VERSION (LOG HISTORY)
@@ -688,7 +685,7 @@ import { Loading } from "@/components/ui/loading";
             message: commitMessage,
             snapshot: {
               title: blogTitle || "Untitled Work Log",
-              content: blogContent,
+              content: finalContent, // FIXED: Use finalContent with DigitalOcean URLs, not blogContent with blob URLs
               tag: blogTags || [],
               collaborators: collaborators.map(c => c.id),
               media: mediaFiles,
@@ -703,10 +700,30 @@ import { Loading } from "@/components/ui/loading";
       // CRITICAL: Update the editor content with final content (blob URLs replaced with DigitalOcean URLs)
       // Set flag to prevent triggering unsaved changes
       isProgrammaticUpdate.current = true;
-      setBlogContent(finalContent);
-      console.log("[BlogEditor] Editor content updated with DigitalOcean URLs (undo history preserved)");
       
-      // Reset the flag after a brief delay to allow content update to propagate
+      console.log("[BlogEditor] 🔄 Updating editor with DigitalOcean URLs...");
+      console.log("[BlogEditor] URL replacements made:", urlMap.size);
+      console.log("[BlogEditor] Final content preview:", finalContent.substring(0, 200));
+      
+      // Reset media manager BEFORE updating state (clear blob URLs)
+      mediaManager.reset();
+      console.log("[BlogEditor] Media manager reset");
+      
+      // Store the final content in a ref so it's immediately available for re-mount
+      contentForReMount.current = finalContent;
+      
+      // Update the content state with final content (has DigitalOcean URLs)
+      setBlogContent(finalContent);
+      
+      // Force re-mount the editor with new content
+      // The editor will use contentForReMount.current which has DigitalOcean URLs
+      setEditorKey(prev => prev + 1);
+      console.log("[BlogEditor] ✅ Editor will re-mount with DigitalOcean URLs");
+      console.log("[BlogEditor] contentForReMount.current has blob:", contentForReMount.current?.includes('blob:'));
+      console.log("[BlogEditor] contentForReMount.current has DO:", contentForReMount.current?.includes('nebwork-storage') || contentForReMount.current?.includes('digitaloceanspaces'));
+      console.log("[BlogEditor] contentForReMount.current set:", contentForReMount.current ? 'YES' : 'NO');
+      
+      // Reset the flag after re-mount completes
       setTimeout(() => {
         isProgrammaticUpdate.current = false;
       }, 100);
@@ -758,23 +775,57 @@ import { Loading } from "@/components/ui/loading";
       
       // Handle validation errors
       if (err.validationErrors) {
-        // Display each validation error
+        // Combine all validation errors into one message
         const fieldNames = {
           title: 'Title',
           content: 'Content',
           tag: 'Tags'
         };
         
-        Object.entries(err.validationErrors).forEach(([field, message]) => {
-          const fieldName = fieldNames[field] || field;
-          toast.error(`${fieldName}: ${message}`);
+        const errorList = Object.entries(err.validationErrors)
+          .map(([field, message]) => {
+            const fieldName = fieldNames[field] || field;
+            return `${fieldName}: ${message}`;
+          });
+        
+        toast({
+          variant: "destructive",
+          title: "Validation Failed",
+          description: (
+            <div className="space-y-1">
+              {errorList.map((error, index) => (
+                <div key={index}>• {error}</div>
+              ))}
+            </div>
+          ),
+          duration: 5000,
         });
       } else if (err.message === 'No authentication token found') {
-        toast.error('Session expired. Please login again.');
+        toast({
+          variant: "destructive",
+          title: "Session Expired",
+          description: "Please login again.",
+          duration: 3000,
+        });
         navigate('/login');
+      } else if (err.message === 'Validation failed') {
+        toast({
+          variant: "destructive",
+          title: "Validation Failed",
+          description: "Please check your input and try again.",
+          duration: 3000,
+        });
       } else {
-        toast.error('Failed to save worklog. Please try again.');
+        toast({
+          variant: "destructive",
+          title: "Save Failed",
+          description: "Failed to save worklog. Please try again.",
+          duration: 3000,
+        });
       }
+      
+      // Hide loading state on error
+      setIsSaving(false);
     }
   };
 
@@ -800,7 +851,7 @@ import { Loading } from "@/components/ui/loading";
             <div className="flex-1 overflow-y-auto">
               <SimpleEditor
                 key={editorKey}
-                initialContent={blogContent}
+                initialContent={contentForReMount.current || blogContent}
                 onContentChange={(content) => {
                   setBlogContent(content);
                   // Only mark as unsaved if it's a real user change (not programmatic update)

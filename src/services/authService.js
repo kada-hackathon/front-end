@@ -2,7 +2,7 @@
 export const authService = {
   getToken() {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
       }
@@ -15,12 +15,12 @@ export const authService = {
 
   setToken(token) {
     if (token) {
-      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
     }
   },
 
   removeToken() {
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
   },
 
   isAuthenticated() {
