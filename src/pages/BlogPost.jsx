@@ -3,10 +3,18 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
-import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS, WORKLOG_ENDPOINTS } from "../config/api";
+import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, UPLOAD_ENDPOINTS } from "../config/api";
+import { Loading } from "@/components/ui/loading";
+import { useToast } from "@/hooks/use-toast";
 
 const BlogPost = () => {
   const navigate = useNavigate();
@@ -25,6 +33,9 @@ const BlogPost = () => {
   const [dateTime, setDateTime] = useState(null);
   const [friends, setFriends] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   // Get current user ID
   useEffect(() => {
@@ -64,6 +75,7 @@ const BlogPost = () => {
         });
         const data = await response.json();
         console.log('Post response:', data);
+        console.log('Post media array:', data.media);
         setPost(data);
         setLoading(false);
       } catch (err) {
@@ -108,13 +120,95 @@ const BlogPost = () => {
     navigate(`/blog-editor?id=${postId}`);
   };
 
-  const handleDeleteClick = async () => {
-    if (!window.confirm('Are you sure you want to delete this work log? This action cannot be undone.')) {
-      return;
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  // Helper function to extract media URLs from content (for deletion)
+  const extractMediaUrls = (content, mediaArray = []) => {
+    const urls = [];
+    
+    // Extract from media array (it's an array of URL strings)
+    if (Array.isArray(mediaArray)) {
+      mediaArray.forEach(mediaUrl => {
+        if (typeof mediaUrl === 'string' && mediaUrl.includes('digitaloceanspaces.com')) {
+          urls.push(mediaUrl);
+        }
+      });
     }
+    
+    // Extract from HTML content (images and videos)
+    if (content && typeof content === 'string') {
+      const imgRegex = /<img[^>]+src="([^">]+)"/g;
+      const videoRegex = /<video[^>]+src="([^">]+)"/g;
+      const sourceRegex = /<source[^>]+src="([^">]+)"/g;
+      
+      let match;
+      while ((match = imgRegex.exec(content)) !== null) {
+        if (match[1] && match[1].includes('digitaloceanspaces.com')) {
+          urls.push(match[1]);
+        }
+      }
+      
+      while ((match = videoRegex.exec(content)) !== null) {
+        if (match[1] && match[1].includes('digitaloceanspaces.com')) {
+          urls.push(match[1]);
+        }
+      }
+      
+      while ((match = sourceRegex.exec(content)) !== null) {
+        if (match[1] && match[1].includes('digitaloceanspaces.com')) {
+          urls.push(match[1]);
+        }
+      }
+    }
+    
+    // Remove duplicates
+    return [...new Set(urls)];
+  };
+
+  const confirmDelete = async () => {
+    setIsDeleting(true);
 
     try {
       const token = sessionStorage.getItem('token');
+      
+      console.log('Full post object:', post);
+      console.log('Post content:', post?.content);
+      console.log('Post media:', post?.media);
+      
+      // Step 1: Extract and delete media files first
+      if (post && (post.content || post.media)) {
+        const mediaUrls = extractMediaUrls(post.content, post.media);
+        
+        console.log('Extracted media URLs:', mediaUrls);
+        
+        if (mediaUrls.length > 0) {
+          console.log('Attempting to delete media files:', mediaUrls);
+          
+          const deleteMediaResponse = await fetch(UPLOAD_ENDPOINTS.DELETE_MULTIPLE, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ urls: mediaUrls })
+          });
+          
+          const deleteResult = await deleteMediaResponse.json();
+          console.log('Delete media response:', deleteResult);
+          
+          if (!deleteMediaResponse.ok) {
+            console.warn('Failed to delete some media files:', deleteResult);
+          } else {
+            console.log('Media files deleted successfully');
+          }
+        } else {
+          console.log('No media URLs found to delete');
+        }
+      }
+      
+      // Step 2: Delete the worklog
       const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
         method: 'DELETE',
         headers: {
@@ -124,15 +218,33 @@ const BlogPost = () => {
       });
 
       if (response.ok) {
-        alert('Work log deleted successfully!');
-        navigate('/');
+        setShowDeleteDialog(false);
+        toast({
+          title: "✅ Work log deleted successfully!",
+          description: "The work log has been removed.",
+          duration: 3000,
+        });
+        // Navigate after showing success message
+        setTimeout(() => {
+          navigate('/');
+        }, 1000);
       } else {
         const data = await response.json();
-        alert(data.message || 'Failed to delete work log');
+        toast({
+          title: "Failed to delete work log",
+          description: data.message || "Please try again.",
+          variant: "destructive",
+        });
+        setIsDeleting(false);
       }
     } catch (err) {
       console.error('Error deleting work log:', err);
-      alert('Failed to delete work log. Please try again.');
+      toast({
+        title: "Failed to delete work log",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+      setIsDeleting(false);
     }
   };
 
@@ -157,7 +269,8 @@ const BlogPost = () => {
           // MERGE
           setDisplayPost({
             ...snapshot,        // isi content
-            datetime: json.datetime // datetime history
+            datetime: json.datetime, // datetime history
+            media: post?.media || [] // preserve media from main post
           });
         })
         .catch(err => console.error("[DEBUG] ERROR fetch loghistory:", err));
@@ -168,16 +281,13 @@ const BlogPost = () => {
     // case 2: normal post (tanpa versi)
     if (post) {
       console.log("[DEBUG] MODE NORMAL POST – pakai post data");
+      console.log("[DEBUG] Post media:", post.media);
       setDisplayPost(post);
     }
   }, [snapshot, historyId, post]);
 
   if (loading || !displayPost) {
-    return (
-      <div className="flex h-screen bg-background items-center justify-center">
-        <p>Loading post...</p>
-      </div>
-    );
+    return <Loading fullScreen message="Loading work log..." />;
   }
 
   if (!post) {
@@ -271,19 +381,6 @@ const BlogPost = () => {
                   className="prose prose-lg max-w-none text-foreground"
                   dangerouslySetInnerHTML={{ __html: displayPost.content || '' }}
                 />
-
-                {displayPost.media && displayPost.media.length > 0 && (
-                  <div className="mt-6">
-                    {displayPost.media.map((mediaUrl, index) => (
-                      <img 
-                        key={index}
-                        src={mediaUrl} 
-                        alt={`Media ${index + 1}`}
-                        className="max-w-full rounded-lg"
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -291,6 +388,60 @@ const BlogPost = () => {
           <FriendsList/>
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-2xl font-bold text-center text-destructive">
+                Delete Work Log
+              </AlertDialogTitle>
+            </AlertDialogHeader>
+
+            <div className="py-3">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
+              <p className="text-center font-semibold text-foreground mb-2">
+                This action cannot be undone!
+              </p>
+              <p className="text-center text-sm text-muted-foreground">
+                All content, media files, and version history will be permanently deleted.
+              </p>
+            </div>
+            
+            <p className="text-center text-muted-foreground">
+              Are you sure you want to delete this work log?
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={confirmDelete}
+              variant="destructive"
+              className="w-full"
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Deleting...
+                </div>
+              ) : (
+                'Yes, Delete Permanently'
+              )}
+            </Button>
+            <Button
+              onClick={() => {
+                setShowDeleteDialog(false);
+              }}
+              variant="outline"
+              className="w-full"
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

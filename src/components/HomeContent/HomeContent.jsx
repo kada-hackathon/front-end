@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./HomeContent.css";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS} from "../../config/api";
+import { Loading } from "@/components/ui/loading";
 
 // Utility function to strip HTML tags
 const stripHtmlTags = (html) => {
@@ -218,7 +219,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
       
       
       {loading ? (
-        <div className="text-center py-8">Loading posts...</div>
+        <Loading message="Loading work logs..." />
       ) : posts.length === 0 ? (
         <div className="text-center py-8">No work logs yet</div>
       ) : (

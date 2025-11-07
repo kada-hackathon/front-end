@@ -22,10 +22,10 @@ import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS, COLLABORATION_ENDPOINTS } from "../config/api";
 import { apiHandler } from "../utils/apiHandler";
-import { toast } from "sonner";
 import BASE_URL from "../config/api";
 import { useToast } from "@/hooks/use-toast";
 import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib/collaboration-provider";
+import { Loading } from "@/components/ui/loading";
 
   const BlogEditor = () => {
   const navigate = useNavigate();
@@ -34,6 +34,8 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingWorklog, setIsLoadingWorklog] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
@@ -55,6 +57,11 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
   
   // Ref to track if we're programmatically updating content (to avoid triggering unsaved changes)
   const isProgrammaticUpdate = useRef(false);
+  // Ref to avoid fetching the same post multiple times (prevents double-loading)
+  const fetchedPostIdRef = useRef(null);
+  
+  // Ref to store the content to use for editor re-mount (with DigitalOcean URLs)
+  const contentForReMount = useRef(null);
 
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [collaboratorToRemove, setCollaboratorToRemove] = useState(null);
@@ -147,6 +154,7 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
     }
 
     const fetchPost = async () => {
+      setIsLoadingWorklog(true);
       try {
         const token = sessionStorage.getItem('token');
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
@@ -188,22 +196,49 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
         
         // Set owner for CollabList
         if (data.user) {
+          const ownerAvatar = data.user.profilePicture || 
+                             data.user.profile_photo || 
+                             data.user.avatar || 
+                             "/placeholder.svg";
+          console.log('[BlogEditor] Setting owner:', {
+            name: data.user.name,
+            avatar: ownerAvatar,
+            hasProfilePicture: !!data.user.profilePicture,
+            hasProfilePhoto: !!data.user.profile_photo,
+            hasAvatar: !!data.user.avatar
+          });
+          
           setOwner({
             id: data.user._id || data.user.id,
             name: data.user.name || "Unknown",
             division: data.user.division || "Unknown",
-            avatar: data.user.profilePicture || data.user.profile_photo || "/placeholder.svg"
+            avatar: ownerAvatar
           });
         }
         
         // Set collaborators for CollabList
         if (data.collaborators && data.collaborators.length > 0) {
-          setCollaborators(data.collaborators.map(collab => ({
-            id: collab._id || collab.id,
-            name: collab.name || "Unknown",
-            division: collab.division || "Unknown",
-            avatar: collab.profilePicture || collab.profile_photo || "/placeholder.svg"
-          })));
+          console.log('[BlogEditor] Setting collaborators:', data.collaborators.length);
+          setCollaborators(data.collaborators.map(collab => {
+            const collabAvatar = collab.profilePicture || 
+                                collab.profile_photo || 
+                                collab.avatar || 
+                                "/placeholder.svg";
+            console.log('[BlogEditor] Collaborator:', {
+              name: collab.name,
+              avatar: collabAvatar,
+              hasProfilePicture: !!collab.profilePicture,
+              hasProfilePhoto: !!collab.profile_photo,
+              hasAvatar: !!collab.avatar
+            });
+            
+            return {
+              id: collab._id || collab.id,
+              name: collab.name || "Unknown",
+              division: collab.division || "Unknown",
+              avatar: collabAvatar
+            };
+          }));
         }
         
         // Reset the programmatic update flag after the state has been updated
@@ -217,10 +252,19 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
       } catch (err) {
         console.error('Error fetching post:', err);
         navigate(-1);
+      } finally {
+        setIsLoadingWorklog(false);
       }
     };
+    // Prevent fetching the same post multiple times (avoids double-loading)
+    if (fetchedPostIdRef.current === postId) {
+      console.log('[BlogEditor] Post already fetched for id:', postId);
+      return;
+    }
+    fetchedPostIdRef.current = postId;
+
     fetchPost();
-  }, [postId, currentUserId, navigate]);
+  }, [postId, navigate]);
 
   // Fetch friends dari backend
   useEffect(() => {
@@ -275,16 +319,22 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
     .filter((friend) => {
   const friendId = friend._id || friend.id;
   // Filter out current user (owner)
-  if (friendId === currentUserId) return false;  // ← PENAMBAHAN INI
+  if (friendId === currentUserId) return false;
   // Filter by search query
   return (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
 })
-    .map((friend) => ({
-      id: friend._id || friend.id,
-      name: friend.name || friend.full_name || "Unknown",
-      division: friend.division || "Unknown",
-      avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg"
-    }));
+    .map((friend) => {
+      const friendAvatar = friend.profilePicture || 
+                          friend.profile_photo || 
+                          friend.avatar || 
+                          "/placeholder.svg";
+      return {
+        id: friend._id || friend.id,
+        name: friend.name || friend.full_name || "Unknown",
+        division: friend.division || "Unknown",
+        avatar: friendAvatar
+      };
+    });
 
   // Sort: collaborators first, then others
   const filteredFriends = allFriends.sort((a, b) => {
@@ -459,60 +509,83 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
 
+    console.log('[extractMedia] Starting extraction from HTML content');
+
     // Extract images
     const images = doc.querySelectorAll('img[src]');
+    console.log('[extractMedia] Found images:', images.length);
     images.forEach(img => {
       const src = img.getAttribute('src');
-      if (src && src.includes('nebwork-storage')) {
-        media.push(src); // Only push the URL string
+      console.log('[extractMedia] Image src:', src);
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
+        media.push(src);
+        console.log('[extractMedia] ✅ Added image to media array');
       }
     });
 
     // Extract videos
     const videos = doc.querySelectorAll('video source[src], video[src]');
+    console.log('[extractMedia] Found videos:', videos.length);
     videos.forEach(video => {
       const src = video.getAttribute('src');
-      if (src && src.includes('nebwork-storage')) {
-        media.push(src); // Only push the URL string
+      console.log('[extractMedia] Video src:', src);
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
+        media.push(src);
+        console.log('[extractMedia] ✅ Added video to media array');
       }
     });
 
     // Extract audio
     const audios = doc.querySelectorAll('audio source[src], audio[src]');
+    console.log('[extractMedia] Found audios:', audios.length);
     audios.forEach(audio => {
       const src = audio.getAttribute('src');
-      if (src && src.includes('nebwork-storage')) {
-        media.push(src); // Only push the URL string
+      console.log('[extractMedia] Audio src:', src);
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
+        media.push(src);
+        console.log('[extractMedia] ✅ Added audio to media array');
       }
     });
 
     // Extract documents from TipTap document nodes
-    const documentNodes = doc.querySelectorAll('div[data-type="document"][data-src]');
+    const documentNodes = doc.querySelectorAll('div[data-type="document"][data-src], [data-type="document"][data-src]');
+    console.log('[extractMedia] Found document nodes:', documentNodes.length);
     documentNodes.forEach(docNode => {
       const src = docNode.getAttribute('data-src');
-      if (src && src.includes('nebwork-storage')) {
-        media.push(src); // Only push the URL string
+      console.log('[extractMedia] Document src:', src);
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
+        media.push(src);
+        console.log('[extractMedia] ✅ Added document to media array');
       }
     });
 
     // Also extract documents from regular links and iframes (fallback)
-    const documents = doc.querySelectorAll('a[href*="nebwork-storage"], iframe[src*="nebwork-storage"]');
+    const documents = doc.querySelectorAll('a[href*="nebwork-storage"], a[href*="digitaloceanspaces.com"], iframe[src*="nebwork-storage"], iframe[src*="digitaloceanspaces.com"]');
+    console.log('[extractMedia] Found document links/iframes:', documents.length);
     documents.forEach(doc => {
       const src = doc.getAttribute('href') || doc.getAttribute('src');
-      if (src && src.includes('nebwork-storage') && !media.includes(src)) {
-        const extension = src.split('.').pop().toLowerCase();
-        const isDoc = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(extension);
+      console.log('[extractMedia] Document link/iframe src:', src);
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com')) && !media.includes(src)) {
+        const extension = src.split('.').pop().toLowerCase().split('?')[0];
+        const isDoc = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'].includes(extension);
+        console.log('[extractMedia] Extension:', extension, 'Is document:', isDoc);
         if (isDoc) {
-          media.push(src); // Only push the URL string
+          media.push(src);
+          console.log('[extractMedia] ✅ Added document link to media array');
         }
       }
     });
 
+    console.log('[extractMedia] 📊 FINAL RESULT: Total media URLs extracted:', media.length);
+    console.log('[extractMedia] Media URLs:', media);
     return media;
   };
 
   const handleSaveBlog = async () => {
     console.log("Saving blog with message:", commitMessage);
+
+    // Show loading state
+    setIsSaving(true);
 
     try {
       const token = sessionStorage.getItem('token');
@@ -639,6 +712,9 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
       setCommitMessage("");
       setHasUnsavedChanges(false);
       
+      // Hide loading state
+      setIsSaving(false);
+      
       // Show success toast notification
       toast({
         title: "✅ Work log saved successfully!",
@@ -661,6 +737,9 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
     } catch (err) {
       console.error('Error saving blog:', err);
       
+      // Hide loading state on error
+      setIsSaving(false);
+      
       // Handle validation errors
       if (err.validationErrors) {
         // Display each validation error
@@ -682,6 +761,11 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
       }
     }
   };
+
+  // Show loading while fetching worklog in edit mode
+  if (isLoadingWorklog && isEditMode) {
+    return <Loading fullScreen message="Loading worklog..." />;
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -953,6 +1037,25 @@ import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Saving Progress Dialog */}
+      <AlertDialog open={isSaving}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Saving Work Log
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-8 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <p className="text-center text-muted-foreground">
+              Please wait while we save your work log and upload media files...
+            </p>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
          {/* Remove Collaborator Confirmation Dialog */}
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent className="max-w-md">

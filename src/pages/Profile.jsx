@@ -18,6 +18,7 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
 import { AUTH_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
+import { Loading } from "@/components/ui/loading";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const Profile = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -188,8 +190,16 @@ const Profile = () => {
     const token = sessionStorage.getItem('token');
     
     if (!token) {
+      setLoading(false);
       return;
     }
+
+    // Only proceed if we have currentUserId (for viewing other profiles)
+    if (viewUserId && !currentUserId) {
+      return;
+    }
+
+    setLoading(true);
 
     // Format date to "Month Day, Year" format
     const formatDateToDisplay = (date) => {
@@ -230,9 +240,11 @@ const Profile = () => {
               dateOfJoin: formatDateToDisplay(user.join_date || user.dateOfJoin)
             });
           }
+          setLoading(false);
         })
         .catch(err => {
           console.error('Error fetching user profile:', err);
+          setLoading(false);
         });
     } else {
       // Viewing own profile
@@ -257,12 +269,18 @@ const Profile = () => {
             profilePicture: profilePic,
             dateOfJoin: formatDateToDisplay(user.join_date || user.dateOfJoin)
           });
+          setLoading(false);
         })
         .catch(err => {
           console.error('Error fetching profile:', err);
+          setLoading(false);
         });
     }
   }, [viewUserId, currentUserId]);
+
+  if (loading) {
+    return <Loading fullScreen message="Loading profile..." />;
+  }
 
   return (
     <div className="flex h-screen bg-background">
