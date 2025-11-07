@@ -79,14 +79,14 @@ import { Loading } from "@/components/ui/loading";
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     
-    // Cleanup blob URLs when component unmounts (but keep pending deletions)
+    // Cleanup blob URLs when component unmounts
+    // (Actual file deletion happens during navigation in handleNavigateAway)
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       
-      // Only clean up blob URLs, NOT pending deletions
       import("@/lib/media-manager").then(({ mediaManager }) => {
-        mediaManager.cleanup(); // This now only cleans blob URLs, keeps deletions
-        console.log("[BlogEditor] Component unmounted - cleaned up blob URLs (kept pending deletions)");
+        mediaManager.cleanup();
+        console.log("[BlogEditor] Component unmounted - cleaned up blob URLs");
       });
     };
   }, [hasUnsavedChanges]);
@@ -112,7 +112,7 @@ import { Loading } from "@/components/ui/loading";
           id: userData.id || userData._id,
           name: userData.name || "Unknown",
           division: userData.division || "Unknown",
-          avatar: userData.profilePicture || userData.profile_photo || "/placeholder.svg"
+          avatar: userData.profile_photo || userData.profilePicture || "/placeholder.svg"
         });
       } catch (err) {
         console.error('Error fetching current user:', err);
@@ -187,15 +187,15 @@ import { Loading } from "@/components/ui/loading";
         
         // Set owner for CollabList
         if (data.user) {
-          const ownerAvatar = data.user.profilePicture || 
-                             data.user.profile_photo || 
+          const ownerAvatar = data.user.profile_photo || 
+                             data.user.profilePicture || 
                              data.user.avatar || 
                              "/placeholder.svg";
           console.log('[BlogEditor] Setting owner:', {
             name: data.user.name,
             avatar: ownerAvatar,
-            hasProfilePicture: !!data.user.profilePicture,
             hasProfilePhoto: !!data.user.profile_photo,
+            hasProfilePicture: !!data.user.profilePicture,
             hasAvatar: !!data.user.avatar
           });
           
@@ -211,15 +211,15 @@ import { Loading } from "@/components/ui/loading";
         if (data.collaborators && data.collaborators.length > 0) {
           console.log('[BlogEditor] Setting collaborators:', data.collaborators.length);
           setCollaborators(data.collaborators.map(collab => {
-            const collabAvatar = collab.profilePicture || 
-                                collab.profile_photo || 
+            const collabAvatar = collab.profile_photo || 
+                                collab.profilePicture || 
                                 collab.avatar || 
                                 "/placeholder.svg";
             console.log('[BlogEditor] Collaborator:', {
               name: collab.name,
               avatar: collabAvatar,
-              hasProfilePicture: !!collab.profilePicture,
               hasProfilePhoto: !!collab.profile_photo,
+              hasProfilePicture: !!collab.profilePicture,
               hasAvatar: !!collab.avatar
             });
             
@@ -292,8 +292,8 @@ import { Loading } from "@/components/ui/loading";
   return (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
 })
     .map((friend) => {
-      const friendAvatar = friend.profilePicture || 
-                          friend.profile_photo || 
+      const friendAvatar = friend.profile_photo || 
+                          friend.profilePicture || 
                           friend.avatar || 
                           "/placeholder.svg";
       return {
@@ -458,21 +458,45 @@ import { Loading } from "@/components/ui/loading";
       setPendingNavigation(path);
       setShowUnsavedDialog(true);
     } else {
-      if (typeof path === 'function') {
-        path();
-      } else if (typeof path === 'number') {
-        navigate(path);
-      } else {
-        navigate(path);
-      }
+      // Delete pending deletions before navigating away
+      handleNavigateAway(path);
+    }
+  };
+
+  const handleNavigateAway = async (path) => {
+    // Delete pending files before leaving
+    const { mediaManager } = await import("@/lib/media-manager");
+    const { deleteMediaFile } = await import("@/lib/tiptap-utils");
+    const pendingDeletions = mediaManager.getPendingDeletions();
+    
+    if (pendingDeletions.length > 0) {
+      console.log("[BlogEditor] Navigating away - deleting", pendingDeletions.length, "pending files");
+      await mediaManager.deleteAllPending(deleteMediaFile);
+      console.log("[BlogEditor] ✅ Deleted all pending files before navigation");
+    }
+    
+    // Now navigate
+    if (typeof path === 'function') {
+      path();
+    } else if (typeof path === 'number') {
+      navigate(path);
+    } else {
+      navigate(path);
     }
   };
 
   const handleContinueWithoutSaving = async () => {
-    // FULL RESET - clear everything including pending deletions
+    // When discarding unsaved changes, we should NOT delete files
+    // because the saved version still has them!
+    // We only clear the pending deletions queue.
     const { mediaManager } = await import("@/lib/media-manager");
-    mediaManager.reset(); // Full reset - clears uploads AND deletions
-    console.log("[BlogEditor] Full reset - discarded all pending changes including deletions");
+    
+    console.log("[BlogEditor] Continue without saving - discarding unsaved changes");
+    console.log("[BlogEditor] Clearing pending deletions WITHOUT actually deleting files");
+    
+    // FULL RESET - clear everything without deleting files
+    mediaManager.reset();
+    console.log("[BlogEditor] Full reset - discarded all pending changes (files preserved)");
     
     setShowUnsavedDialog(false);
     setHasUnsavedChanges(false);
@@ -597,24 +621,17 @@ import { Loading } from "@/components/ui/loading";
       let finalContent = mediaManager.replaceBlobUrlsInContent(blogContent, urlMap);
       console.log("[BlogEditor] Final content length after URL replacement:", finalContent.length);
       
-      // Step 3: Delete removed media from DigitalOcean
+      // Step 3: SKIP deletion on save - only delete when user leaves editor
+      // This allows undo/redo to work even after saving
       const pendingDeletions = mediaManager.getPendingDeletions();
       console.log("[BlogEditor] ==========================================");
-      console.log("[BlogEditor] STEP 3: DELETE REMOVED MEDIA");
+      console.log("[BlogEditor] STEP 3: SKIP DELETION (Delayed until editor close)");
       console.log("[BlogEditor] Pending deletions count:", pendingDeletions.length);
-      console.log("[BlogEditor] Pending deletion URLs:", pendingDeletions);
+      console.log("[BlogEditor] These will be deleted when you leave the editor");
       console.log("[BlogEditor] ==========================================");
       
-      if (pendingDeletions.length > 0) {
-        console.log("[BlogEditor] 🗑️ CALLING deleteAllPending() with deleteMediaFile function");
-        console.log("[BlogEditor] deleteMediaFile function:", typeof deleteMediaFile);
-        
-        await mediaManager.deleteAllPending(deleteMediaFile);
-        
-        console.log("[BlogEditor] ✅ deleteAllPending() completed");
-      } else {
-        console.log("[BlogEditor] ⚠️ No files to delete");
-      }
+      // Note: Deletions are tracked but not executed on save
+      // They will be executed when user navigates away from the editor
 
       // Step 4: Extract media from final content
       const mediaFiles = extractMediaFromContent(finalContent);
@@ -694,9 +711,9 @@ import { Loading } from "@/components/ui/loading";
         isProgrammaticUpdate.current = false;
       }, 100);
       
-      // Reset media manager after successful save
-      mediaManager.reset();
-      console.log("[BlogEditor] Media manager reset after save");
+      // Reset ONLY uploads after save (keep deletions for undo support)
+      mediaManager.resetUploads();
+      console.log("[BlogEditor] Uploads cleared - deletions preserved for undo");
       
       setSaveOpen(false);
       setCommitMessage("");
@@ -714,6 +731,15 @@ import { Loading } from "@/components/ui/loading";
       
       // Only navigate if there's a pending navigation (user tried to leave while editing)
       if (pendingNavigation !== null) {
+        // Delete pending deletions before navigating
+        const pendingDeletions = mediaManager.getPendingDeletions();
+        if (pendingDeletions.length > 0) {
+          console.log("[BlogEditor] Deleting", pendingDeletions.length, "files before navigation");
+          await mediaManager.deleteAllPending(deleteMediaFile);
+          console.log("[BlogEditor] ✅ Deleted pending files before navigation");
+        }
+        
+        // Now navigate
         if (typeof pendingNavigation === 'function') {
           pendingNavigation();
         } else if (typeof pendingNavigation === 'number') {

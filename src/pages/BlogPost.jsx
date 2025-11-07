@@ -30,6 +30,13 @@ const blogPostStyles = `
   .tiptap-video video {
     border-radius: 16px !important;
   }
+  
+  .prose audio,
+  .tiptap-audio {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+  }
 `;
 
 // Component to render documents embedded in content
@@ -282,26 +289,46 @@ const BlogPost = () => {
       });
     }
     
-    // Extract from HTML content (images and videos)
+    // Extract from HTML content (images, videos, audio, and documents)
     if (content && typeof content === 'string') {
       const imgRegex = /<img[^>]+src="([^">]+)"/g;
       const videoRegex = /<video[^>]+src="([^">]+)"/g;
       const sourceRegex = /<source[^>]+src="([^">]+)"/g;
+      const audioRegex = /<audio[^>]+src="([^">]+)"/g;
+      const documentRegex = /<div[^>]+data-type="document"[^>]*data-src="([^">]+)"/g;
       
       let match;
+      
+      // Extract image URLs
       while ((match = imgRegex.exec(content)) !== null) {
         if (match[1] && match[1].includes('digitaloceanspaces.com')) {
           urls.push(match[1]);
         }
       }
       
+      // Extract video URLs
       while ((match = videoRegex.exec(content)) !== null) {
         if (match[1] && match[1].includes('digitaloceanspaces.com')) {
           urls.push(match[1]);
         }
       }
       
+      // Extract source URLs (for video/audio)
       while ((match = sourceRegex.exec(content)) !== null) {
+        if (match[1] && match[1].includes('digitaloceanspaces.com')) {
+          urls.push(match[1]);
+        }
+      }
+      
+      // Extract audio URLs
+      while ((match = audioRegex.exec(content)) !== null) {
+        if (match[1] && match[1].includes('digitaloceanspaces.com')) {
+          urls.push(match[1]);
+        }
+      }
+      
+      // Extract document URLs
+      while ((match = documentRegex.exec(content)) !== null) {
         if (match[1] && match[1].includes('digitaloceanspaces.com')) {
           urls.push(match[1]);
         }
@@ -322,14 +349,15 @@ const BlogPost = () => {
       console.log('Post content:', post?.content);
       console.log('Post media:', post?.media);
       
-      // Step 1: Extract and delete media files first
+      // Step 1: Extract and delete media files first (images, videos, audio, documents)
       if (post && (post.content || post.media)) {
         const mediaUrls = extractMediaUrls(post.content, post.media);
         
-        console.log('Extracted media URLs:', mediaUrls);
+        console.log('Extracted media URLs (all types):', mediaUrls);
+        console.log('Total media files to delete:', mediaUrls.length);
         
         if (mediaUrls.length > 0) {
-          console.log('Attempting to delete media files:', mediaUrls);
+          console.log('Attempting to delete all media files from DigitalOcean:', mediaUrls);
           
           const deleteMediaResponse = await fetch(UPLOAD_ENDPOINTS.DELETE_MULTIPLE, {
             method: 'DELETE',
@@ -345,8 +373,9 @@ const BlogPost = () => {
           
           if (!deleteMediaResponse.ok) {
             console.warn('Failed to delete some media files:', deleteResult);
+            // Continue with worklog deletion even if media deletion fails
           } else {
-            console.log('Media files deleted successfully');
+            console.log('✅ All media files deleted successfully from DigitalOcean');
           }
         } else {
           console.log('No media URLs found to delete');
