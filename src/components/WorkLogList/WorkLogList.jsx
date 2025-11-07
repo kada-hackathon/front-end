@@ -108,8 +108,8 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
           title: worklog.title || "Untitled",
           hashtags: worklog.tag || [],
           description: plainTextContent 
-            ? (plainTextContent.length > 100 
-                ? `${plainTextContent.substring(0, 100)}...` 
+            ? (plainTextContent.length > 500 
+                ? `${plainTextContent.substring(0, 500)}...` 
                 : plainTextContent)
             : "No description",
           date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID'),
