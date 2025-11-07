@@ -266,6 +266,24 @@ class MediaManager {
     
     console.log(`[MediaManager] Reset complete - all tracking cleared`)
   }
+
+  /**
+   * Reset only uploads after save (keep pending deletions for undo support)
+   */
+  resetUploads() {
+    console.log(`[MediaManager] Resetting uploads only (keeping ${this.pendingDeletions.size} pending deletions)`)
+    
+    // Clean up blob URLs
+    for (const blobUrl of this.pendingUploads.keys()) {
+      URL.revokeObjectURL(blobUrl)
+    }
+    
+    // Clear only uploads and blob map, NOT deletions
+    this.pendingUploads.clear()
+    this.blobToUrlMap.clear()
+    
+    console.log(`[MediaManager] Uploads cleared - deletions preserved for undo support`)
+  }
 }
 
 // Create a singleton instance

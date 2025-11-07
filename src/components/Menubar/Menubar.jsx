@@ -106,16 +106,50 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
     }
   };
 
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   return (
     <aside className={cn("menubar", collapsed && "menubar-collapsed")}>
       {collapsed ? (
-        <div className="menubar-collapsed-logo">
-          <img src={logoOnly} alt="NebWork" className="menubar-collapsed-logo-img" />
+        <div 
+          className="menubar-collapsed-logo" 
+          onClick={handleLogoClick}
+          style={{ 
+            cursor: 'pointer', 
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none'
+          }}
+        >
+          <img 
+            src={logoOnly} 
+            alt="NebWork" 
+            className="menubar-collapsed-logo-img"
+            draggable={false}
+          />
         </div>
       ) : (
         <div className="menubar-header">
-          <div className="menubar-logo">
-            <img src={logoWithText} alt="NebWork" className="menubar-logo-img" />
+          <div 
+            className="menubar-logo"
+            onClick={handleLogoClick}
+            style={{ 
+              cursor: 'pointer', 
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              MozUserSelect: 'none',
+              msUserSelect: 'none'
+            }}
+          >
+            <img 
+              src={logoWithText} 
+              alt="NebWork" 
+              className="menubar-logo-img"
+              draggable={false}
+            />
           </div>
         </div>
       )}

@@ -2,6 +2,13 @@
 import * as React from "react"
 import { NodeViewWrapper } from "@tiptap/react"
 import { FileIcon, ExternalLink, X } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
 import { 
   formatFileSize, 
   getFileExtension,
@@ -31,6 +38,7 @@ export const DocumentNode = (props) => {
   const { src, filename, filesize } = props.node.attrs
   const { deleteNode } = props
   const [isLoading, setIsLoading] = React.useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const fileColor = getFileColor(filename)
 
   const isBlob = isBlobUrl(src)
@@ -62,16 +70,18 @@ export const DocumentNode = (props) => {
     }
   }
 
-  const handleDelete = async (e) => {
+  const handleDeleteClick = (e) => {
     e.stopPropagation()
     console.log("[DocumentNode] Delete button clicked for:", src)
-    
-    if (confirm('Are you sure you want to delete this document?')) {
-      const { mediaManager } = await import("@/lib/media-manager")
-      mediaManager.addPendingDeletion(src)
-      console.log("[DocumentNode] Added to pending deletions:", mediaManager.getPendingDeletions())
-      deleteNode()
-    }
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDelete = async () => {
+    const { mediaManager } = await import("@/lib/media-manager")
+    mediaManager.addPendingDeletion(src)
+    console.log("[DocumentNode] Added to pending deletions:", mediaManager.getPendingDeletions())
+    deleteNode()
+    setShowDeleteDialog(false)
   }
 
   return (
@@ -96,7 +106,7 @@ export const DocumentNode = (props) => {
         <div className="tiptap-document-actions">
           <button
             className="tiptap-document-delete"
-            onClick={handleDelete}
+            onClick={handleDeleteClick}
             title="Delete document"
             aria-label="Delete document"
           >
@@ -111,6 +121,45 @@ export const DocumentNode = (props) => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Delete Document
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-4">
+            <p className="text-center text-muted-foreground">
+              Are you sure you want to delete this document?
+              {filename && (
+                <span className="block mt-2 font-semibold text-foreground">
+                  "{filename}"
+                </span>
+              )}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={confirmDelete}
+              variant="destructive"
+              className="w-full"
+            >
+              Yes, Delete
+            </Button>
+            <Button
+              onClick={() => setShowDeleteDialog(false)}
+              variant="outline"
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </NodeViewWrapper>
   )
 }
