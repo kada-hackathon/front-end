@@ -16,7 +16,6 @@ function Login() {
   useEffect(() => {
     const token = sessionStorage.getItem('token');
     if (token) {
-      console.log('✅ User already logged in, redirecting to home');
       navigate('/');
     }
   }, [navigate]);
@@ -39,11 +38,20 @@ function Login() {
       if(res.ok){
         // Save token and user (if returned) to sessionStorage
         sessionStorage.setItem('token', data.token || '');
-        if (data.user) sessionStorage.setItem('user', JSON.stringify(data.user));
+        if (data.user) {
+          sessionStorage.setItem('user', JSON.stringify(data.user));
+          // Remove in production: console.log('Saved user data:', data.user);
+        }
 
-        // Navigate to the root/home route defined in App.jsx
-        // Note: in this project the Home page is mounted at '/'
-        navigate('/');
+        // Navigate based on user role
+        // If admin -> /admin page, otherwise -> home page
+        const userRole = data.user?.role || 'user';
+        
+        if (userRole === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       } else {
         setErrorMessage(data.message || 'Login failed');
       }
