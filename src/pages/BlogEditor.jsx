@@ -20,11 +20,10 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS, COLLABORATION_ENDPOINTS } from "../config/api";
+import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 import { apiHandler } from "../utils/apiHandler";
 import BASE_URL from "../config/api";
 import { useToast } from "@/hooks/use-toast";
-import { createCollaborationProvider, destroyCollaborationProvider } from "@/lib/collaboration-provider";
 import { Loading } from "@/components/ui/loading";
 
   const BlogEditor = () => {
@@ -50,10 +49,6 @@ import { Loading } from "@/components/ui/loading";
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const [editorKey, setEditorKey] = useState(0); // Key to force re-mount editor
-  
-  // Collaboration state (always enabled in edit mode)
-  const [collaborationProvider, setCollaborationProvider] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
   
   // Ref to track if we're programmatically updating content (to avoid triggering unsaved changes)
   const isProgrammaticUpdate = useRef(false);
@@ -109,12 +104,6 @@ import { Loading } from "@/components/ui/loading";
         const data = await response.json();
         const userData = data.user || data;
         setCurrentUserId(userData.id || userData._id);
-        
-        // Set current user for collaboration
-        setCurrentUser({
-          name: userData.name || userData.username || "Anonymous",
-          color: '#958DF1', // You can generate random color per user
-        });
         
         // Set owner as current user (for both create and edit mode)
         setOwner({
@@ -287,29 +276,6 @@ import { Loading } from "@/components/ui/loading";
     };
     fetchFriends();
   }, []);
-
-  // Initialize collaboration automatically in edit mode
-  // Wait for content to be loaded first before setting up collaboration
-  useEffect(() => {
-    if (isEditMode && postId && currentUser) {
-      console.log('[Collaboration] Initializing collaboration for document:', postId);
-      
-      const { provider, ydoc } = createCollaborationProvider({
-        documentId: postId,
-        user: currentUser,
-        // websocketUrl is already set to COLLABORATION_ENDPOINTS.WEBSOCKET by default
-      });
-
-      setCollaborationProvider({ provider, ydoc });
-
-      // Cleanup on unmount
-      return () => {
-        console.log('[Collaboration] Cleaning up collaboration provider');
-        destroyCollaborationProvider(provider);
-        setCollaborationProvider(null);
-      };
-    }
-  }, [isEditMode, postId, currentUser]);
 
   // Get collaborator IDs for easier checking
   const collaboratorIds = collaborators.map(c => c.id);
@@ -809,9 +775,6 @@ import { Loading } from "@/components/ui/loading";
                 sidebarCollapsed={sidebarCollapsed}
                 onBack={() => handleNavigationAttempt(-1)}
                 onVersion={() => handleNavigationAttempt(`/worklogs/${postId}/versions`)}
-                enableCollaboration={isEditMode}
-                collaborationProvider={collaborationProvider}
-                currentUser={currentUser}
               />
             </div>
 
