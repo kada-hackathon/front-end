@@ -3,7 +3,7 @@
 
 const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
 // const BASE_URL = 'https://test-dev-lw9pz.ondigitalocean.app';
-// const BASE_URL = 'http://localhost:5000';
+//const BASE_URL = 'http://localhost:5000';
 
 // AUTH ENDPOINTS
 export const AUTH_ENDPOINTS = {
