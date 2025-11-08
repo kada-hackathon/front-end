@@ -245,12 +245,22 @@ const Admin = () => {
   };
 
   const handleEdit = (user) => {
+    // Handle join_date properly - extract date part only
+    let joinDate = "";
+    if (user.join_date) {
+      try {
+        joinDate = user.join_date.split('T')[0];
+      } catch (e) {
+        console.log('Error parsing join_date:', e);
+      }
+    }
+
     setFormData({
       fullName: user.name || user.fullName || "",
       email: user.email || "",
       division: user.division || "",
       password: "Pass@123",
-      joinedDate: user.join_date ? user.join_date.split('T')[0] : ""
+      joinedDate: joinDate
     });
     setEditingUserId(user._id || user.id);
     setIsEditMode(true);
@@ -421,11 +431,11 @@ const Admin = () => {
                           <button
                             className="edit-btn"
                             onClick={() => handleEdit({
-                              id: user._id || user.id,
-                              fullName: user.name || user.fullName,
+                              _id: user._id || user.id,
+                              name: user.name || user.fullName,
                               email: user.email,
                               division: user.division,
-                              joinedDate: user.join_date ? new Date(user.join_date).toISOString().split('T')[0] : ''
+                              join_date: user.join_date
                             })}
                             aria-label="Edit user"
                           >
@@ -593,7 +603,6 @@ const Admin = () => {
                   name="joinedDate"
                   value={formData.joinedDate}
                   onChange={handleInputChange}
-                  required
                 />
               </div>
  
