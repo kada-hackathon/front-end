@@ -6,30 +6,10 @@ import ChatHistory from "../ChatHistory/ChatHistory";
 import "./ChatBot.css";
 import { AUTH_ENDPOINTS, CHATBOT_ENDPOINTS } from "../../config/api";
 
-/**
- * ================================================================
- * CHATBOT COMPONENT - FULL INTEGRATION WITH AI BACKEND
- * ================================================================
- * 
- * Features:
- * - Real AI integration (not mock responses)
- * - Pagination for chat history (load more)
- * - Auto-save after each message exchange
- * - Proper session management with UUID
- * - Loading states & error handling
- * - Optimistic UI updates
- * 
- * Backend Endpoints Used:
- * - POST /api/chatbot - Send message, get AI response (auto-saves)
- * - GET /api/chatbot/history?page=1&limit=10 - List sessions with pagination
- * - GET /api/chatbot/session/:id - Get all messages in session
- * - DELETE /api/chatbot/session/:id - Delete entire session
- * ================================================================
- */
+
+
 const ChatBot = () => {
-  // ============================================================
-  // STATE MANAGEMENT
-  // ============================================================
+
   const [messages, setMessages] = useState([]);           // Current session messages
   const [inputValue, setInputValue] = useState("");       // User input text
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -44,10 +24,6 @@ const ChatBot = () => {
     profilePicture: "/placeholder.svg"
   });
 
-  // ============================================================
-  // INITIAL DATA LOADING
-  // ============================================================
-  // On component mount: Fetch user profile & load chat history (page 1)
   useEffect(() => {
     const token = sessionStorage.getItem('token');
     if (!token) return;
@@ -74,38 +50,7 @@ const ChatBot = () => {
     loadChatHistory(1);
   }, []);
 
-  /**
-   * ================================================================
-   * LOAD CHAT HISTORY WITH PAGINATION
-   * ================================================================
-   * 
-   * Purpose: Fetch list of all chat sessions with metadata
-   * 
-   * Backend Response Format:
-   * {
-   *   chats: [
-   *     {
-   *       session_id: "session-123",
-   *       title: "What did John work on...",      // Truncated first message
-   *       last_message: "According to logs...",    // Truncated last response
-   *       message_count: 5,
-   *       created_at: "2024-01-15T10:00:00Z",
-   *       updated_at: "2024-01-15T12:30:00Z"
-   *     }
-   *   ],
-   *   pagination: {
-   *     current_page: 1,
-   *     total_pages: 5,
-   *     total_sessions: 45,
-   *     has_next: true,
-   *     has_prev: false
-   *   }
-   * }
-   * 
-   * @param {number} page - Page number to load (1-indexed)
-   * @param {boolean} append - If true, append to existing history (load more)
-   * ================================================================
-   */
+ 
   const loadChatHistory = async (page = 1, append = false) => {
     try {
       setIsLoadingHistory(true);
@@ -157,68 +102,19 @@ const ChatBot = () => {
     }
   };
 
-  /**
-   * ================================================================
-   * LOAD MORE HISTORY (PAGINATION)
-   * ================================================================
-   * 
-   * Called when user clicks "Load More" button
-   * Fetches next page and appends to existing history
-   * ================================================================
-   */
+
   const loadMoreHistory = () => {
     if (!isLoadingHistory && hasMoreHistory) {
       loadChatHistory(historyPage + 1, true);
     }
   };
 
-  /**
-   * ================================================================
-   * GENERATE SESSION ID
-   * ================================================================
-   * 
-   * Format: session-{timestamp}
-   * Example: session-1699876543210
-   * 
-   * Why this format?
-   * - Sortable by creation time
-   * - Unique across users (timestamp + random collision unlikely)
-   * - Human-readable for debugging
-   * ================================================================
-   */
+  
   const generateSessionId = () => {
     return `session-${Date.now()}`;
   };
 
-  /**
-   * ================================================================
-   * SEND MESSAGE TO AI & GET RESPONSE
-   * ================================================================
-   * 
-   * Flow:
-   * 1. Generate session ID if new conversation
-   * 2. Add user message to UI (optimistic update)
-   * 3. Clear input & show loading state
-   * 4. Call backend AI endpoint
-   * 5. Backend auto-saves to database
-   * 6. Add AI response to UI
-   * 7. Reload history sidebar to show updated preview
-   * 
-   * Backend Endpoint: POST /api/chatbot
-   * Request: { message: "user question", session_id: "session-123" }
-   * Response: { 
-   *   session_id, 
-   *   message, 
-   *   response,           // AI answer (RAG-enhanced)
-   *   context_logs_count, // How many worklogs used
-   *   processing_time,    // Performance metrics
-   *   timestamp 
-   * }
-   * 
-   * Important: Backend auto-saves after generating response!
-   * No need for separate save call.
-   * ================================================================
-   */
+  
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -235,7 +131,6 @@ const ChatBot = () => {
       setCurrentSessionId(sessionId);
     }
 
-    // Optimistic UI update: Show user message immediately
     const userMessage = {
       id: `user-${Date.now()}`,
       text: inputValue,
@@ -309,36 +204,7 @@ const ChatBot = () => {
     }
   };
 
-  /**
-   * ================================================================
-   * SELECT & LOAD CHAT SESSION
-   * ================================================================
-   * 
-   * Called when user clicks a chat in history sidebar
-   * 
-   * Backend Endpoint: GET /api/chatbot/session/:session_id
-   * Response: {
-   *   messages: [
-   *     {
-   *       _id: "...",
-   *       user: "...",
-   *       session_id: "session-123",
-   *       message: "User's question",
-   *       response: "AI's answer",
-   *       context_used: 3,
-   *       createdAt: "2024-01-15T10:00:00Z"
-   *     },
-   *     ...
-   *   ],
-   *   session_id: "session-123",
-   *   total: 5
-   * }
-   * 
-   * Transform to frontend format:
-   * - Each exchange becomes 2 messages (user + bot)
-   * - Flat array for chat display
-   * ================================================================
-   */
+  
   const handleSelectChat = async (sessionId) => {
     try {
       setIsLoading(true);
@@ -393,26 +259,7 @@ const ChatBot = () => {
     }
   };
 
-  /**
-   * ================================================================
-   * DELETE CHAT SESSION
-   * ================================================================
-   * 
-   * Permanently deletes all messages in the session
-   * 
-   * Backend Endpoint: DELETE /api/chatbot/session/:session_id
-   * Response: {
-   *   message: "Chat session deleted successfully",
-   *   session_id: "session-123",
-   *   deleted_count: 10
-   * }
-   * 
-   * UI Updates:
-   * - Remove from history sidebar
-   * - Clear chat area if currently viewing deleted session
-   * - Show confirmation before deleting
-   * ================================================================
-   */
+
   const handleDeleteChat = async (sessionId) => {
     // Confirm deletion
     const confirmed = window.confirm(
@@ -457,31 +304,13 @@ const ChatBot = () => {
     }
   };
 
-  /**
-   * ================================================================
-   * START NEW CHAT
-   * ================================================================
-   * 
-   * Creates a new empty conversation
-   * 
-   * Design Decision: Don't save empty session to backend
-   * Why?
-   * - Backend auto-saves on first message anyway
-   * - Avoid empty sessions cluttering database
-   * - Simpler flow (no unnecessary API call)
-   * 
-   * Just clear local state and generate new session ID
-   * Session will be created when user sends first message
-   * ================================================================
-   */
   const handleNewChat = () => {
     // Clear current session
     setCurrentSessionId(null);
     setMessages([]);
     setInputValue("");
     
-    // Note: Session ID will be generated when user sends first message
-    // No need to call backend here (reduces unnecessary API calls)
+    // Session ID will be generated when user sends first message
   };
 
   return (
