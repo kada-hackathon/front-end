@@ -165,9 +165,6 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         });
         
         setPosts(convertedPosts);
-        
-        // Log state update
-        console.log('Updated posts state with', convertedPosts.length, 'items');
       } catch (err) {
         console.error('Error fetching worklogs:', err);
         setPosts([]);

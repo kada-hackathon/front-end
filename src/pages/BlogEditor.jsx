@@ -86,7 +86,6 @@ import { Loading } from "@/components/ui/loading";
       
       import("@/lib/media-manager").then(({ mediaManager }) => {
         mediaManager.cleanup();
-        console.log("[BlogEditor] Component unmounted - cleaned up blob URLs");
       });
     };
   }, [hasUnsavedChanges]);
@@ -136,7 +135,6 @@ import { Loading } from "@/components/ui/loading";
       // Reset media manager for new post
       import("@/lib/media-manager").then(({ mediaManager }) => {
         mediaManager.reset();
-        console.log("[BlogEditor] Media manager reset for new post");
       });
       
       // Reset flag after state updates
@@ -159,7 +157,6 @@ import { Loading } from "@/components/ui/loading";
           }
         });
         const data = await response.json();
-        console.log('Post response:', data);
         
         // Check access before setting data
         if (currentUserId) {
@@ -186,7 +183,6 @@ import { Loading } from "@/components/ui/loading";
         // Reset media manager when loading existing content
         const { mediaManager } = await import("@/lib/media-manager");
         mediaManager.reset();
-        console.log("[BlogEditor] Media manager reset for existing content");
         
         // Set owner for CollabList
         if (data.user) {
@@ -328,7 +324,6 @@ import { Loading } from "@/components/ui/loading";
   };
 
   const confirmInvite = async () => {
-    console.log("Inviting friends:", selectedFriends);
     
     // Close invite dialog and show loading
     setShowInviteConfirmDialog(false);
@@ -360,7 +355,6 @@ import { Loading } from "@/components/ui/loading";
             media: mediaFiles,
           })
         });
-        console.log("Collaborators auto-saved");
         
         // Show success toast notification
         toast({
@@ -422,7 +416,6 @@ import { Loading } from "@/components/ui/loading";
             media: mediaFiles,
           })
         });
-        console.log("Collaborator removal auto-saved");
         
         // Show success toast notification
         toast({
@@ -457,9 +450,7 @@ import { Loading } from "@/components/ui/loading";
     const pendingDeletions = mediaManager.getPendingDeletions();
     
     if (pendingDeletions.length > 0) {
-      console.log("[BlogEditor] Navigating away - deleting", pendingDeletions.length, "pending files");
       await mediaManager.deleteAllPending(deleteMediaFile);
-      console.log("[BlogEditor] ✅ Deleted all pending files before navigation");
     }
     
     // Now navigate
@@ -478,12 +469,8 @@ import { Loading } from "@/components/ui/loading";
     // We only clear the pending deletions queue.
     const { mediaManager } = await import("@/lib/media-manager");
     
-    console.log("[BlogEditor] Continue without saving - discarding unsaved changes");
-    console.log("[BlogEditor] Clearing pending deletions WITHOUT actually deleting files");
-    
     // FULL RESET - clear everything without deleting files
     mediaManager.reset();
-    console.log("[BlogEditor] Full reset - discarded all pending changes (files preserved)");
     
     setShowUnsavedDialog(false);
     setHasUnsavedChanges(false);
@@ -510,80 +497,59 @@ import { Loading } from "@/components/ui/loading";
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
 
-    console.log('[extractMedia] Starting extraction from HTML content');
-
     // Extract images
     const images = doc.querySelectorAll('img[src]');
-    console.log('[extractMedia] Found images:', images.length);
     images.forEach(img => {
       const src = img.getAttribute('src');
-      console.log('[extractMedia] Image src:', src);
       if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
         media.push(src);
-        console.log('[extractMedia] ✅ Added image to media array');
       }
     });
 
     // Extract videos
     const videos = doc.querySelectorAll('video source[src], video[src]');
-    console.log('[extractMedia] Found videos:', videos.length);
     videos.forEach(video => {
       const src = video.getAttribute('src');
-      console.log('[extractMedia] Video src:', src);
       if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
         media.push(src);
-        console.log('[extractMedia] ✅ Added video to media array');
       }
     });
 
     // Extract audio
     const audios = doc.querySelectorAll('audio source[src], audio[src]');
-    console.log('[extractMedia] Found audios:', audios.length);
     audios.forEach(audio => {
       const src = audio.getAttribute('src');
-      console.log('[extractMedia] Audio src:', src);
       if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
         media.push(src);
-        console.log('[extractMedia] ✅ Added audio to media array');
       }
     });
 
     // Extract documents from TipTap document nodes
     const documentNodes = doc.querySelectorAll('div[data-type="document"][data-src], [data-type="document"][data-src]');
-    console.log('[extractMedia] Found document nodes:', documentNodes.length);
     documentNodes.forEach(docNode => {
       const src = docNode.getAttribute('data-src');
-      console.log('[extractMedia] Document src:', src);
       if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
         media.push(src);
-        console.log('[extractMedia] ✅ Added document to media array');
       }
     });
 
     // Also extract documents from regular links and iframes (fallback)
     const documents = doc.querySelectorAll('a[href*="nebwork-storage"], a[href*="digitaloceanspaces.com"], iframe[src*="nebwork-storage"], iframe[src*="digitaloceanspaces.com"]');
-    console.log('[extractMedia] Found document links/iframes:', documents.length);
     documents.forEach(doc => {
       const src = doc.getAttribute('href') || doc.getAttribute('src');
-      console.log('[extractMedia] Document link/iframe src:', src);
       if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com')) && !media.includes(src)) {
         const extension = src.split('.').pop().toLowerCase().split('?')[0];
         const isDoc = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'].includes(extension);
-        console.log('[extractMedia] Extension:', extension, 'Is document:', isDoc);
         if (isDoc) {
           media.push(src);
-          console.log('[extractMedia] ✅ Added document link to media array');
         }
       }
     });
 
-    console.log('[extractMedia] 📊 FINAL RESULT: Total media URLs extracted:', media.length);
-    console.log('[extractMedia] Media URLs:', media);
     return media;
   };
 
   const handleSaveBlog = async () => {
-    console.log("Saving blog with message:", commitMessage);
 
     // Show loading state
     setIsSaving(true);
@@ -597,25 +563,11 @@ import { Loading } from "@/components/ui/loading";
       const { handleImageUpload, deleteMediaFile } = await import("@/lib/tiptap-utils");
 
       // Step 1: Upload all pending media files
-      console.log("[BlogEditor] ========== SAVE STARTED ==========");
-      console.log("[BlogEditor] Current content length:", blogContent.length);
-      console.log("[BlogEditor] Pending uploads count:", mediaManager.getPendingUploads().length);
-      
-      // Log pending uploads details
-      const pendingUploads = mediaManager.getPendingUploads();
-      if (pendingUploads.length > 0) {
-        console.log("[BlogEditor] Pending uploads:");
-        pendingUploads.forEach((upload, index) => {
-          console.log(`[BlogEditor]   ${index + 1}. ${upload.file.name} (${upload.blobUrl.substring(0, 60)}...)`);
-        });
-      }
       
       const urlMap = await mediaManager.uploadAllPending(handleImageUpload);
    
       // Step 2: Replace blob URLs with DigitalOcean URLs in content
-      console.log("[BlogEditor] ========== REPLACING BLOB URLs ==========");
       let finalContent = mediaManager.replaceBlobUrlsInContent(blogContent, urlMap);
-      console.log("[BlogEditor] ========== REPLACEMENT COMPLETE ==========");
       
       // Step 3: SKIP deletion on save - only delete when user leaves editor
       // This allows undo/redo to work even after saving
@@ -627,8 +579,6 @@ import { Loading } from "@/components/ui/loading";
 
       // Step 4: Extract media from final content
       const mediaFiles = extractMediaFromContent(finalContent);
-      console.log("[BlogEditor] Extracted media files:", mediaFiles.length);
-      console.log("[BlogEditor] Media files array:", mediaFiles);
 
       // ✅ VALIDATION: Validate before saving
       const dataToSave = {
@@ -638,15 +588,6 @@ import { Loading } from "@/components/ui/loading";
         collaborators: collaborators.map(c => c.id),
         media: mediaFiles,
       };
-
-      console.log("[BlogEditor] 📦 Data to save:", {
-        title: dataToSave.title,
-        contentLength: dataToSave.content.length,
-        tagsCount: dataToSave.tag.length,
-        collaboratorsCount: dataToSave.collaborators.length,
-        mediaCount: dataToSave.media.length,
-        mediaUrls: dataToSave.media
-      });
 
       if (isEditMode) {
         // update
@@ -681,20 +622,13 @@ import { Loading } from "@/components/ui/loading";
         });
       }
 
-      console.log("[BlogEditor] Save response:", createdOrUpdatedWorklog);
-      console.log("[BlogEditor] ========== SAVE COMPLETED ==========");
       
       // CRITICAL: Update the editor content with final content (blob URLs replaced with DigitalOcean URLs)
       // Set flag to prevent triggering unsaved changes
       isProgrammaticUpdate.current = true;
       
-      console.log("[BlogEditor] 🔄 Updating editor with DigitalOcean URLs...");
-      console.log("[BlogEditor] URL replacements made:", urlMap.size);
-      console.log("[BlogEditor] Final content preview:", finalContent.substring(0, 200));
-      
       // Reset media manager BEFORE updating state (clear blob URLs)
       mediaManager.reset();
-      console.log("[BlogEditor] Media manager reset");
       
       // Store the final content in a ref so it's immediately available for re-mount
       contentForReMount.current = finalContent;
@@ -705,10 +639,6 @@ import { Loading } from "@/components/ui/loading";
       // Force re-mount the editor with new content
       // The editor will use contentForReMount.current which has DigitalOcean URLs
       setEditorKey(prev => prev + 1);
-      console.log("[BlogEditor] ✅ Editor will re-mount with DigitalOcean URLs");
-      console.log("[BlogEditor] contentForReMount.current has blob:", contentForReMount.current?.includes('blob:'));
-      console.log("[BlogEditor] contentForReMount.current has DO:", contentForReMount.current?.includes('nebwork-storage') || contentForReMount.current?.includes('digitaloceanspaces'));
-      console.log("[BlogEditor] contentForReMount.current set:", contentForReMount.current ? 'YES' : 'NO');
       
       // Reset the flag after re-mount completes
       setTimeout(() => {
@@ -717,7 +647,6 @@ import { Loading } from "@/components/ui/loading";
       
       // Reset ONLY uploads after save (keep deletions for undo support)
       mediaManager.resetUploads();
-      console.log("[BlogEditor] Uploads cleared - deletions preserved for undo");
       
       setSaveOpen(false);
       setCommitMessage("");
@@ -738,9 +667,7 @@ import { Loading } from "@/components/ui/loading";
         // Delete pending deletions before navigating
         const pendingDeletions = mediaManager.getPendingDeletions();
         if (pendingDeletions.length > 0) {
-          console.log("[BlogEditor] Deleting", pendingDeletions.length, "files before navigation");
           await mediaManager.deleteAllPending(deleteMediaFile);
-          console.log("[BlogEditor] ✅ Deleted pending files before navigation");
         }
         
         // Now navigate

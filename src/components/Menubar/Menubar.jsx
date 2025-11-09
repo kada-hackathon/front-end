@@ -34,7 +34,6 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
         });
         const userData = await userResponse.json();
         const currentUserId = userData.user?.id || userData.user?._id || userData.id || userData._id;
-        console.log('Current user ID:', currentUserId);
         
         // Fetch all worklogs
         const worklogsResponse = await fetch(WORKLOG_ENDPOINTS.FILTER, {
@@ -54,10 +53,8 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
         }
         
         const worklogsData = await worklogsResponse.json();
-        console.log('Worklogs response:', worklogsData);
         
         let allWorklogs = Array.isArray(worklogsData) ? worklogsData : (worklogsData?.worklogs || []);
-        console.log('All worklogs count:', allWorklogs.length);
         
         // Filter: only works created by current user (owner)
         const userWorklogs = allWorklogs.filter(worklog => {
@@ -65,7 +62,6 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
           return isOwner;
         });
         
-        console.log('User worklogs count:', userWorklogs.length);
         
         // Sort by date (newest first) and take top 3
         const sortedWorklogs = userWorklogs.sort((a, b) => {
@@ -79,7 +75,6 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
           title: worklog.title || "Untitled"
         }));
         
-        console.log('Recent 3 projects:', recent3);
         setRecentProjects(recent3);
       } catch (err) {
         console.error('Error fetching recent projects:', err);

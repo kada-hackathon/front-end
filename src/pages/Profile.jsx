@@ -69,7 +69,6 @@ const Profile = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result;
-        console.log('Photo loaded, base64 length:', base64String.length);
         
         // Update preview and mark as changed
         setProfileData(prev => ({
@@ -122,11 +121,6 @@ const Profile = () => {
         profilePicture: profileData.profilePicture
       };
 
-      console.log('Sending update:', {
-        profilePictureLength: updateData.profilePicture.length,
-        isBase64: updateData.profilePicture.startsWith('data:image')
-      });
-
       const res = await fetch(AUTH_ENDPOINTS.PROFILE, {
         method: 'PUT',
         headers: {
@@ -138,13 +132,10 @@ const Profile = () => {
 
       const data = await res.json();
       
-      console.log('Response:', data);
-      
       if (res.ok) {
         setHasChanges(false); // Reset changes flag
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
-        console.log('Profile updated successfully');
       } else {
         alert(data.message || 'Failed to update profile');
       }
@@ -257,7 +248,6 @@ const Profile = () => {
       })
         .then(res => res.json())
         .then(data => {
-          console.log('Profile data:', data);
           const user = data.user || data;
 
           const profilePic = user.profilePicture || "/placeholder.svg";

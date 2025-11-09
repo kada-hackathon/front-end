@@ -101,7 +101,6 @@ const ChatHistory = ({
                     className="w-full"
                     onClick={(e) => {
                       e.preventDefault();
-                      console.log('Load More clicked, hasMore:', hasMore, 'isLoading:', isLoading);
                       onLoadMore();
                     }}
                     disabled={isLoading}

@@ -77,7 +77,6 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
     })
       .then(res => res.json())
       .then(data => {
-        console.log('Profile response:', data);
         const userData = data.user || data;
         const division = userData.division || "Employee";
         setUserDivision(division);
@@ -114,7 +113,6 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
         return res.json();
       })
       .then(data => {
-        console.log('Navbar - Tags fetch response:', data);
         const worklogs = data.worklogs || data || [];
         const divisionWorklogs = worklogs.filter(w => w.user?.division === userDivision);
         // Extract unique tags

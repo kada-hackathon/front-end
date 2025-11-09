@@ -282,7 +282,6 @@ const ChatBot = () => {
       }
 
       const data = await response.json();
-      console.log(`Deleted ${data.deleted_count} messages from session ${sessionId}`);
 
       // Remove from history sidebar (optimistic update)
       setChatHistory(prev => prev.filter(chat => chat.id !== sessionId));

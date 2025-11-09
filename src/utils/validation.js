@@ -2,7 +2,6 @@ export const validationUtils = {
   worklog: {
     validateContent({ title, content, tag }) {
       const errors = {};
-      console.log('Validating worklog:', { title, content, tag }); // Debug input
 
       // Title validation
       if (!title?.trim()) {
@@ -32,41 +31,32 @@ export const validationUtils = {
         plainContent = String(content).trim();
       }
       
-      console.log('Plain content:', plainContent); // Debug content
-      console.log('Plain content length:', plainContent.length); // Debug length
 
       // Check if content is truly empty after stripping HTML and trimming
       if (!plainContent || plainContent.length === 0) {
         errors.content = 'Content cannot be empty';
-        console.log('Content is empty after processing'); // Debug empty content
       }
       
       // Tags validation
-      console.log('Processing tags:', tag); // Debug tags input
       if (tag && Array.isArray(tag)) {
         // Check max tags
         if (tag.length > 5) {
           errors.tag = 'Maximum 5 tags';
-          console.log('Too many tags:', tag.length);
         }
         
         // Check individual tags
         tag.forEach((t, index) => {
           if (t && t.length > 30) {
             errors.tag = `Tag "${t}" is too long (max 30 characters)`;
-            console.log('Long tag found:', t);
           }
           if (t && /[<>{}]/.test(t)) {
             errors.tag = `Tag "${t}" contains invalid characters`;
-            console.log('Invalid tag found:', t);
           }
         });
       }
       
-      console.log('Validation errors:', errors); // Debug errors
       
       const isValid = Object.keys(errors).length === 0;
-      console.log('Validation result:', isValid); // Debug result
       
       return { 
         isValid,

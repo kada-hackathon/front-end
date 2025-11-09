@@ -341,19 +341,11 @@ const BlogPost = () => {
     try {
       const token = sessionStorage.getItem('token');
       
-      console.log('Full post object:', post);
-      console.log('Post content:', post?.content);
-      console.log('Post media:', post?.media);
-      
       // Step 1: Extract and delete media files first (images, videos, audio, documents)
       if (post && (post.content || post.media)) {
         const mediaUrls = extractMediaUrls(post.content, post.media);
         
-        console.log('Extracted media URLs (all types):', mediaUrls);
-        console.log('Total media files to delete:', mediaUrls.length);
-        
         if (mediaUrls.length > 0) {
-          console.log('Attempting to delete all media files from DigitalOcean:', mediaUrls);
           
           const deleteMediaResponse = await fetch(UPLOAD_ENDPOINTS.DELETE_MULTIPLE, {
             method: 'DELETE',
@@ -365,16 +357,11 @@ const BlogPost = () => {
           });
           
           const deleteResult = await deleteMediaResponse.json();
-          console.log('Delete media response:', deleteResult);
           
           if (!deleteMediaResponse.ok) {
             console.warn('Failed to delete some media files:', deleteResult);
             // Continue with worklog deletion even if media deletion fails
-          } else {
-            console.log('✅ All media files deleted successfully from DigitalOcean');
           }
-        } else {
-          console.log('No media URLs found to delete');
         }
       }
       
@@ -422,7 +409,6 @@ const BlogPost = () => {
   useEffect(() => {
     // case 1: buka versi history
     if (snapshot && historyId) {
-      console.log("[DEBUG] MODE HISTORY – fetch loghistory:", historyId);
 
       const token = sessionStorage.getItem("token");
 
@@ -430,11 +416,9 @@ const BlogPost = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(r => {
-          console.log("[DEBUG] loghistory status:", r.status);
           return r.json();
         })
         .then(json => {
-          console.log("[DEBUG] loghistory JSON:", json);
 
           // MERGE
           setDisplayPost({
@@ -450,8 +434,6 @@ const BlogPost = () => {
 
     // case 2: normal post (tanpa versi)
     if (post) {
-      console.log("[DEBUG] MODE NORMAL POST – pakai post data");
-      console.log("[DEBUG] Post media:", post.media);
       setDisplayPost(post);
     }
   }, [snapshot, historyId, post]);
@@ -499,8 +481,9 @@ const BlogPost = () => {
                     </Button>
                     {isOwner && (
                       <Button 
-                        onClick={handleDeleteClick} 
-                        className="gap-2 h-9 bg-red-600 hover:bg-red-700 text-white"
+                        onClick={handleDeleteClick}
+                        variant="destructive"
+                        className="gap-2 h-9"
                       >
                         <Trash2 className="h-4 w-4" />
                         Delete Work Log

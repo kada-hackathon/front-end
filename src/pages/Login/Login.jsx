@@ -40,7 +40,6 @@ function Login() {
         sessionStorage.setItem('token', data.token || '');
         if (data.user) {
           sessionStorage.setItem('user', JSON.stringify(data.user));
-          // Remove in production: console.log('Saved user data:', data.user);
         }
 
         // Navigate based on user role

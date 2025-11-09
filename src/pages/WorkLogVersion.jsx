@@ -15,7 +15,6 @@ const WorkLogVersion = () => {
   const [title, setTitle] = useState("");
   const [selectedHistory, setSelectedHistory] = useState(null);
 
-  console.log("ID DARI ROUTER:", id);
 
   useEffect(() => {
     const fetchVersions = async () => {
@@ -32,8 +31,6 @@ const WorkLogVersion = () => {
 
         const data = await res.json();
 
-        console.log("VERSIONS DATA", data);
-
         setVersions(data?.versions ?? []);  // fallback aman
         setTitle(data?.title ?? "");
       } catch (err) {
@@ -48,7 +45,6 @@ const WorkLogVersion = () => {
 
   const fetchSingleHistory = async (hid) => {
     const token = sessionStorage.getItem("token");
-    console.log("[DEBUG] GET LOGHISTORY URL:", WORKLOG_ENDPOINTS.LOGHISTORY_ONE(hid));
 
     const res = await fetch(WORKLOG_ENDPOINTS.LOGHISTORY_ONE(hid), {
       headers: {
@@ -57,7 +53,6 @@ const WorkLogVersion = () => {
     });
 
     const data = await res.json();
-    console.log("[DEBUG] DETAIL HISTORY:", data);
 
     setSelectedHistory(data);
   };
