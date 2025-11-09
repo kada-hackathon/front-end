@@ -1,4 +1,4 @@
-import './login.css'
+import './Login.css'
 import logoOnly from '../../assets/Logo/Logo Only_White.png'
 import textOnly from '../../assets/Logo/Text Only_White.png'
 import { useNavigate } from 'react-router-dom';

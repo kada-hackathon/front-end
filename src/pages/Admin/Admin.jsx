@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import "./admin.css";
+import "./Admin.css";
 import logoWithText from "@/assets/Logo/Logo with Text_White.png";
 import { useNavigate } from "react-router-dom";
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from "../../config/api";
