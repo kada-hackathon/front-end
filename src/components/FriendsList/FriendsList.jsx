@@ -6,7 +6,26 @@ import { AUTH_ENDPOINTS, ADMIN_ENDPOINTS } from "../../config/api";
 
 const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
   const navigate = useNavigate();
-  const [friends, setFriends] = useState([]);
+  const [friends, setFriends] = useState([
+    {
+      id: "loading-1",
+      name: "Loading...",
+      division: "Loading...",
+      avatar: "/placeholder.jpeg"
+    },
+    {
+      id: "loading-2",
+      name: "Loading...",
+      division: "Loading...",
+      avatar: "/placeholder.jpeg"
+    },
+    {
+      id: "loading-3",
+      name: "Loading...",
+      division: "Loading...",
+      avatar: "/placeholder.jpeg"
+    }
+  ]);
   const [loading, setLoading] = useState(true);
   const [currentUserData, setCurrentUserData] = useState({ division: "", id: "" });
 
@@ -94,7 +113,7 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
           id: emp._id,
           name: emp.name,
           division: emp.division,
-          avatar: emp.profile_photo || '/placeholder.svg'
+          avatar: emp.profile_photo || '/placeholder.jpeg'
         }));
 
         //console.log('FriendsList: Formatted friends:', formattedFriends);
@@ -111,17 +130,15 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
     <aside className="friends-list">
       <h3 className="friends-list-title">Your Friends</h3>
       <div className="friends-list-container">
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        ) : friends.length === 0 ? (
+        {friends.length === 0 ? (
           <p className="text-sm text-muted-foreground">No friends in your division</p>
         ) : (
           friends.map((friend) => (
             <div 
               key={friend.id} 
               className="friend-item"
-              onClick={() => handleFriendClick(friend.id)}
-              style={{ cursor: 'pointer' }}
+              onClick={() => loading ? null : handleFriendClick(friend.id)}
+              style={{ cursor: loading ? 'default' : 'pointer' }}
             >
               <Avatar className="friend-avatar">
                 <AvatarImage src={friend.avatar} />

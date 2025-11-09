@@ -113,7 +113,7 @@ import { Loading } from "@/components/ui/loading";
             id: userData.id || userData._id,
             name: userData.name || "Unknown",
             division: userData.division || "Unknown",
-            avatar: userData.profile_photo || userData.profilePicture || "/placeholder.svg"
+            avatar: userData.profile_photo || userData.profilePicture || "/placeholder.jpeg"
           });
         }
       } catch (err) {
@@ -189,7 +189,7 @@ import { Loading } from "@/components/ui/loading";
           const ownerAvatar = data.user.profile_photo || 
                              data.user.profilePicture || 
                              data.user.avatar || 
-                             "/placeholder.svg";
+                             "/placeholder.jpeg";
           
           setOwner({
             id: data.user._id || data.user.id,
@@ -205,7 +205,7 @@ import { Loading } from "@/components/ui/loading";
             const collabAvatar = collab.profile_photo || 
                                 collab.profilePicture || 
                                 collab.avatar || 
-                                "/placeholder.svg";
+                                "/placeholder.jpeg";
             
             return {
               id: collab._id || collab.id,
@@ -278,7 +278,7 @@ import { Loading } from "@/components/ui/loading";
       const friendAvatar = friend.profile_photo || 
                           friend.profilePicture || 
                           friend.avatar || 
-                          "/placeholder.svg";
+                          "/placeholder.jpeg";
       return {
         id: friend._id || friend.id,
         name: friend.name || friend.full_name || "Unknown",
@@ -1179,3 +1179,4 @@ import { Loading } from "@/components/ui/loading";
 };
 
 export default BlogEditor;
+

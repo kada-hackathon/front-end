@@ -19,7 +19,7 @@ const ChatBot = () => {
   const [hasMoreHistory, setHasMoreHistory] = useState(true); // Pagination flag
   const [userProfile, setUserProfile] = useState({
     name: "User",
-    profilePicture: "/placeholder.svg"
+    profilePicture: "/placeholder.jpeg"
   });
 
   useEffect(() => {
@@ -39,7 +39,7 @@ const ChatBot = () => {
         const userData = data.user || data;
         setUserProfile({
           name: userData.name || "User",
-          profilePicture: userData.profile_photo || userData.profilePicture || "/placeholder.svg"
+          profilePicture: userData.profile_photo || userData.profilePicture || "/placeholder.jpeg"
         });
       })
       .catch(err => console.error('Error fetching user profile:', err));
