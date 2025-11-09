@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import '../Login/login.css';
+import '../Login/Login.css';
 import './NewPassword.css';
 import { AUTH_ENDPOINTS } from '../../config/api';
 import logoWithText from "../../assets/Logo/Logo with Text_White.png";
