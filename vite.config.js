@@ -15,7 +15,8 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     allowedHosts: [
       "frontend-he2bh.ondigitalocean.app",
-      ".ondigitalocean.app"
+      ".ondigitalocean.app",
+      "nebwork.app"
     ]
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
