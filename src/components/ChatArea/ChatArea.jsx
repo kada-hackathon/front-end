@@ -68,7 +68,7 @@ const ChatArea = ({
                 </div>
                 {message.sender === "user" && (
                   <Avatar className="chat-message-avatar">
-                    <AvatarImage src={userProfile?.profilePicture || "/placeholder.svg"} />
+                    <AvatarImage src={userProfile?.profilePicture || "/placeholder.jpeg"} />
                     <AvatarFallback>{userProfile?.name?.substring(0, 2).toUpperCase() || "GA"}</AvatarFallback>
                   </Avatar>
                 )}
@@ -125,3 +125,4 @@ const ChatArea = ({
 };
 
 export default ChatArea;
+

@@ -120,7 +120,7 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
           author: {
             name: worklog.user?.name || "Unknown",
             division: worklog.user?.division || "Unknown Division",
-            avatar: worklog.user?.profilePicture || worklog.user?.profile_photo || "/placeholder.svg",
+            avatar: worklog.user?.profilePicture || worklog.user?.profile_photo || "/placeholder.jpeg",
           },
           isOwner,
           isCollaborator: !isOwner && worklog.collaborators?.some(collab => 
@@ -267,3 +267,4 @@ const WorkLogList = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
 };
 
 export default WorkLogList;
+
