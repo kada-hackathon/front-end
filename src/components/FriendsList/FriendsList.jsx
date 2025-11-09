@@ -53,10 +53,8 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
     const division = userDivision || currentUserData.division;
     const id = userId || currentUserData.id;
 
-    console.log('FriendsList mount - userDivision:', division, 'userId:', id, 'token:', token ? 'exists' : 'null');
     
     if (!token || !division || !id) {
-      console.log('FriendsList: missing required data');
       setLoading(false);
       return;
     }
@@ -70,11 +68,9 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
       }
     })
       .then(res => {
-        console.log('FriendsList: fetch response status:', res.status);
         return res.json();
       })
       .then(data => {
-        console.log('FriendsList: All employees response:', data);
         
         // Extract employees from response - bisa dari data atau employees field
         const allEmployees = data.data || data.employees || data || [];
@@ -86,7 +82,6 @@ const FriendsList = ({ userDivision, userId, autoFetch = true }) => {
           return;
         }
 
-        console.log('FriendsList: allEmployees count:', allEmployees.length);
 
         // Filter employees dengan division sama dan exclude current user
         const filteredFriends = allEmployees.filter(emp => 

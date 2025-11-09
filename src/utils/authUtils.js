@@ -24,11 +24,9 @@ export const validateAndCleanupToken = async () => {
     });
 
     if (res.ok) {
-      console.log('✅ Token valid');
       return true;
     } else if (res.status === 401) {
       // Token invalid atau expired (401 Unauthorized)
-      console.log('❌ Token invalid or expired (401) - clearing storage');
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
       return false;
@@ -46,7 +44,6 @@ export const validateAndCleanupToken = async () => {
 
 // Logout function
 export const logout = (navigate) => {
-  console.log('🚪 Logging out...');
   sessionStorage.removeItem('token');
   sessionStorage.removeItem('user');
   navigate('/login');

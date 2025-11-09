@@ -18,6 +18,7 @@ import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
 import FriendsList from "@/components/FriendsList/FriendsList";
 import { AUTH_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
+import { Loading } from "@/components/ui/loading";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const Profile = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -67,7 +69,6 @@ const Profile = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result;
-        console.log('Photo loaded, base64 length:', base64String.length);
         
         // Update preview and mark as changed
         setProfileData(prev => ({
@@ -120,11 +121,6 @@ const Profile = () => {
         profilePicture: profileData.profilePicture
       };
 
-      console.log('Sending update:', {
-        profilePictureLength: updateData.profilePicture.length,
-        isBase64: updateData.profilePicture.startsWith('data:image')
-      });
-
       const res = await fetch(AUTH_ENDPOINTS.PROFILE, {
         method: 'PUT',
         headers: {
@@ -136,13 +132,10 @@ const Profile = () => {
 
       const data = await res.json();
       
-      console.log('Response:', data);
-      
       if (res.ok) {
         setHasChanges(false); // Reset changes flag
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
-        console.log('Profile updated successfully');
       } else {
         alert(data.message || 'Failed to update profile');
       }
@@ -188,8 +181,16 @@ const Profile = () => {
     const token = sessionStorage.getItem('token');
     
     if (!token) {
+      setLoading(false);
       return;
     }
+
+    // Only proceed if we have currentUserId (for viewing other profiles)
+    if (viewUserId && !currentUserId) {
+      return;
+    }
+
+    setLoading(true);
 
     // Format date to "Month Day, Year" format
     const formatDateToDisplay = (date) => {
@@ -230,9 +231,11 @@ const Profile = () => {
               dateOfJoin: formatDateToDisplay(user.join_date || user.dateOfJoin)
             });
           }
+          setLoading(false);
         })
         .catch(err => {
           console.error('Error fetching user profile:', err);
+          setLoading(false);
         });
     } else {
       // Viewing own profile
@@ -245,7 +248,6 @@ const Profile = () => {
       })
         .then(res => res.json())
         .then(data => {
-          console.log('Profile data:', data);
           const user = data.user || data;
 
           const profilePic = user.profilePicture || "/placeholder.svg";
@@ -257,12 +259,18 @@ const Profile = () => {
             profilePicture: profilePic,
             dateOfJoin: formatDateToDisplay(user.join_date || user.dateOfJoin)
           });
+          setLoading(false);
         })
         .catch(err => {
           console.error('Error fetching profile:', err);
+          setLoading(false);
         });
     }
   }, [viewUserId, currentUserId]);
+
+  if (loading) {
+    return <Loading fullScreen message="Loading profile..." />;
+  }
 
   return (
     <div className="flex h-screen bg-background">

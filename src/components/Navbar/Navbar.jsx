@@ -77,7 +77,6 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
     })
       .then(res => res.json())
       .then(data => {
-        console.log('Profile response:', data);
         const userData = data.user || data;
         const division = userData.division || "Employee";
         setUserDivision(division);
@@ -114,7 +113,6 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
         return res.json();
       })
       .then(data => {
-        console.log('Navbar - Tags fetch response:', data);
         const worklogs = data.worklogs || data || [];
         const divisionWorklogs = worklogs.filter(w => w.user?.division === userDivision);
         // Extract unique tags
@@ -163,10 +161,12 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
   };
 
   const toggleTag = (tag) => {
+    // Remove # from tag for consistent comparison
+    const cleanTag = tag.replace(/^#+/, '');
     setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
+      prev.includes(cleanTag) 
+        ? prev.filter(t => t !== cleanTag)
+        : [...prev, cleanTag]
     );
   };
 
@@ -178,6 +178,9 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
 
   return (
     <header className="navbar">
+      {/* Left spacer for centering */}
+      <div className="navbar-spacer"></div>
+
       <div className="navbar-search">
         <Search className="navbar-search-icon" />
         <Input
@@ -224,19 +227,22 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
                   onChange={(e) => setTagSearch(e.target.value)}
                 />
                 <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-                  {filteredTags.map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className={`px-3 py-1 rounded text-sm transition-all ${
-                        selectedTags.includes(tag.replace(/^#+/, ''))
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted hover:bg-muted/80'
-                      }`}
-                    >
-                      {formatHashtag(tag)}
-                    </button>
-                  ))}
+                  {filteredTags.map(tag => {
+                    const cleanTag = tag.replace(/^#+/, '');
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => toggleTag(tag)}
+                        className={`px-3 py-1 rounded text-sm transition-all ${
+                          selectedTags.includes(cleanTag)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted hover:bg-muted/80'
+                        }`}
+                      >
+                        {formatHashtag(tag)}
+                      </button>
+                    );
+                  })}
                 </div>
                 {availableTags.length > 15 && filteredTags.length === 15 && !tagSearch && (
                   <p className="text-xs text-muted-foreground mt-2">Showing 15 most recent tags. Use search to find more.</p>

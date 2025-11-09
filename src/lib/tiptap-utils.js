@@ -245,8 +245,6 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
     throw new Error("No file provided")
   }
 
-  console.log("Starting upload for file:", file.name, "Size:", file.size, "bytes")
-
   if (file.size > MAX_FILE_SIZE * 2) {
     const errorMsg = `File size exceeds maximum allowed (${MAX_FILE_SIZE * 2 / (1024 * 1024)}MB`
     console.error(errorMsg)
@@ -257,7 +255,6 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
     // Create FormData for file upload
     const formData = new FormData()
     formData.append('file', file)
-    console.log("FormData created with file")
 
     // Get authentication token
     const token = sessionStorage.getItem('token')
@@ -265,7 +262,6 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
       console.error("No authentication token found")
       throw new Error("Authentication required")
     }
-    console.log("Token found, preparing upload...")
 
     // Upload to backend
     const xhr = new XMLHttpRequest()
@@ -290,13 +286,10 @@ export const handleImageUpload = async (file, onProgress, abortSignal) => {
 
       // Handle completion
       xhr.addEventListener('load', () => {
-        console.log("Upload completed with status:", xhr.status)
         if (xhr.status === 200) {
           try {
             const response = JSON.parse(xhr.responseText)
-            console.log("Upload response:", response)
             if (response.success && response.url) {
-              console.log("Upload successful! URL:", response.url)
               resolve(response.url)
             } else {
               console.error("Upload failed:", response.message || 'No URL returned')
@@ -351,8 +344,6 @@ export const deleteMediaFile = async (url) => {
     return false
   }
 
-  console.log("[deleteMediaFile] Deleting file from DigitalOcean:", url)
-
   try {
     // Get authentication token
     const token = sessionStorage.getItem('token')
@@ -362,8 +353,6 @@ export const deleteMediaFile = async (url) => {
     }
 
     const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app'
-    
-    console.log("[deleteMediaFile] Sending DELETE request with body:", { url })
     
     const response = await fetch(`${BASE_URL}/api/upload`, {
       method: 'DELETE',
@@ -375,10 +364,8 @@ export const deleteMediaFile = async (url) => {
     })
 
     const result = await response.json()
-    console.log("[deleteMediaFile] Response:", { status: response.status, result })
 
     if (response.ok && result.success) {
-      console.log("[deleteMediaFile] ✅ File deleted successfully from DigitalOcean:", url)
       return true
     } else {
       console.error("[deleteMediaFile] ❌ Failed to delete file:", result.message, result)

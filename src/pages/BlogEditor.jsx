@@ -22,9 +22,9 @@ import CollabList from "@/components/CollabList/CollabList";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS, ADMIN_ENDPOINTS } from "../config/api";
 import { apiHandler } from "../utils/apiHandler";
-import { toast } from "sonner";
 import BASE_URL from "../config/api";
 import { useToast } from "@/hooks/use-toast";
+import { Loading } from "@/components/ui/loading";
 
   const BlogEditor = () => {
   const navigate = useNavigate();
@@ -33,6 +33,10 @@ import { useToast } from "@/hooks/use-toast";
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingWorklog, setIsLoadingWorklog] = useState(false);
+  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+  const [isRemovingCollaborator, setIsRemovingCollaborator] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
@@ -50,6 +54,8 @@ import { useToast } from "@/hooks/use-toast";
   
   // Ref to track if we're programmatically updating content (to avoid triggering unsaved changes)
   const isProgrammaticUpdate = useRef(false);
+  // Ref to avoid fetching the same post multiple times (prevents double-loading)
+  const fetchedPostIdRef = useRef(null);
   
   // Ref to store the content to use for editor re-mount (with DigitalOcean URLs)
   const contentForReMount = useRef(null);
@@ -73,14 +79,13 @@ import { useToast } from "@/hooks/use-toast";
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     
-    // Cleanup blob URLs when component unmounts (but keep pending deletions)
+    // Cleanup blob URLs when component unmounts
+    // (Actual file deletion happens during navigation in handleNavigateAway)
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       
-      // Only clean up blob URLs, NOT pending deletions
       import("@/lib/media-manager").then(({ mediaManager }) => {
-        mediaManager.cleanup(); // This now only cleans blob URLs, keeps deletions
-        console.log("[BlogEditor] Component unmounted - cleaned up blob URLs (kept pending deletions)");
+        mediaManager.cleanup();
       });
     };
   }, [hasUnsavedChanges]);
@@ -101,13 +106,16 @@ import { useToast } from "@/hooks/use-toast";
         const userData = data.user || data;
         setCurrentUserId(userData.id || userData._id);
         
-        // Set owner as current user (for both create and edit mode)
-        setOwner({
-          id: userData.id || userData._id,
-          name: userData.name || "Unknown",
-          division: userData.division || "Unknown",
-          avatar: userData.profilePicture || userData.profile_photo || "/placeholder.svg"
-        });
+        // Set owner as current user ONLY in create mode
+        // In edit mode, owner will be set from worklog data
+        if (!postId) {
+          setOwner({
+            id: userData.id || userData._id,
+            name: userData.name || "Unknown",
+            division: userData.division || "Unknown",
+            avatar: userData.profile_photo || userData.profilePicture || "/placeholder.svg"
+          });
+        }
       } catch (err) {
         console.error('Error fetching current user:', err);
       }
@@ -127,7 +135,6 @@ import { useToast } from "@/hooks/use-toast";
       // Reset media manager for new post
       import("@/lib/media-manager").then(({ mediaManager }) => {
         mediaManager.reset();
-        console.log("[BlogEditor] Media manager reset for new post");
       });
       
       // Reset flag after state updates
@@ -139,6 +146,7 @@ import { useToast } from "@/hooks/use-toast";
     }
 
     const fetchPost = async () => {
+      setIsLoadingWorklog(true);
       try {
         const token = sessionStorage.getItem('token');
         const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
@@ -149,7 +157,6 @@ import { useToast } from "@/hooks/use-toast";
           }
         });
         const data = await response.json();
-        console.log('Post response:', data);
         
         // Check access before setting data
         if (currentUserId) {
@@ -176,26 +183,37 @@ import { useToast } from "@/hooks/use-toast";
         // Reset media manager when loading existing content
         const { mediaManager } = await import("@/lib/media-manager");
         mediaManager.reset();
-        console.log("[BlogEditor] Media manager reset for existing content");
         
         // Set owner for CollabList
         if (data.user) {
+          const ownerAvatar = data.user.profile_photo || 
+                             data.user.profilePicture || 
+                             data.user.avatar || 
+                             "/placeholder.svg";
+          
           setOwner({
             id: data.user._id || data.user.id,
             name: data.user.name || "Unknown",
             division: data.user.division || "Unknown",
-            avatar: data.user.profilePicture || data.user.profile_photo || "/placeholder.svg"
+            avatar: ownerAvatar
           });
         }
         
         // Set collaborators for CollabList
         if (data.collaborators && data.collaborators.length > 0) {
-          setCollaborators(data.collaborators.map(collab => ({
-            id: collab._id || collab.id,
-            name: collab.name || "Unknown",
-            division: collab.division || "Unknown",
-            avatar: collab.profilePicture || collab.profile_photo || "/placeholder.svg"
-          })));
+          setCollaborators(data.collaborators.map(collab => {
+            const collabAvatar = collab.profile_photo || 
+                                collab.profilePicture || 
+                                collab.avatar || 
+                                "/placeholder.svg";
+            
+            return {
+              id: collab._id || collab.id,
+              name: collab.name || "Unknown",
+              division: collab.division || "Unknown",
+              avatar: collabAvatar
+            };
+          }));
         }
         
         // Reset the programmatic update flag after the state has been updated
@@ -209,10 +227,18 @@ import { useToast } from "@/hooks/use-toast";
       } catch (err) {
         console.error('Error fetching post:', err);
         navigate(-1);
+      } finally {
+        setIsLoadingWorklog(false);
       }
     };
+    // Prevent fetching the same post multiple times (avoids double-loading)
+    if (fetchedPostIdRef.current === postId) {
+      return;
+    }
+    fetchedPostIdRef.current = postId;
+
     fetchPost();
-  }, [postId, currentUserId, navigate]);
+  }, [postId, navigate]);
 
   // Fetch friends dari backend
   useEffect(() => {
@@ -244,16 +270,22 @@ import { useToast } from "@/hooks/use-toast";
     .filter((friend) => {
   const friendId = friend._id || friend.id;
   // Filter out current user (owner)
-  if (friendId === currentUserId) return false;  // ← PENAMBAHAN INI
+  if (friendId === currentUserId) return false;
   // Filter by search query
   return (friend.name || friend.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
 })
-    .map((friend) => ({
-      id: friend._id || friend.id,
-      name: friend.name || friend.full_name || "Unknown",
-      division: friend.division || "Unknown",
-      avatar: friend.profilePicture || friend.profile_photo || "/placeholder.svg"
-    }));
+    .map((friend) => {
+      const friendAvatar = friend.profile_photo || 
+                          friend.profilePicture || 
+                          friend.avatar || 
+                          "/placeholder.svg";
+      return {
+        id: friend._id || friend.id,
+        name: friend.name || friend.full_name || "Unknown",
+        division: friend.division || "Unknown",
+        avatar: friendAvatar
+      };
+    });
 
   // Sort: collaborators first, then others
   const filteredFriends = allFriends.sort((a, b) => {
@@ -292,7 +324,10 @@ import { useToast } from "@/hooks/use-toast";
   };
 
   const confirmInvite = async () => {
-    console.log("Inviting friends:", selectedFriends);
+    
+    // Close invite dialog and show loading
+    setShowInviteConfirmDialog(false);
+    setIsAddingCollaborator(true);
     
     // Get all selected friends (including already added collaborators)
     const allSelectedIds = [...new Set([...collaboratorIds, ...selectedFriends])];
@@ -320,14 +355,20 @@ import { useToast } from "@/hooks/use-toast";
             media: mediaFiles,
           })
         });
-        console.log("Collaborators auto-saved");
+        
+        // Show success toast notification
+        toast({
+          title: "✅ Collaborators added successfully!",
+          description: "The selected collaborators have been added to this work log.",
+          duration: 3000,
+        });
       } catch (err) {
         console.error('Error auto-saving collaborators:', err);
       }
     }
     
-    // Close confirmation dialog and reset
-    setShowInviteConfirmDialog(false);
+    // Hide loading and reset
+    setIsAddingCollaborator(false);
     setSelectedFriendsToInvite([]);
     setSelectedFriends([]);
     setSearchQuery("");
@@ -344,6 +385,10 @@ import { useToast } from "@/hooks/use-toast";
     if (!collaboratorToRemove) return;
     
     const collaboratorId = collaboratorToRemove.id;
+    
+    // Close remove dialog and show loading
+    setShowRemoveDialog(false);
+    setIsRemovingCollaborator(true);
     
     // Remove from collaborators list
     const updatedCollaborators = collaborators.filter(c => c.id !== collaboratorId);
@@ -371,14 +416,20 @@ import { useToast } from "@/hooks/use-toast";
             media: mediaFiles,
           })
         });
-        console.log("Collaborator removal auto-saved");
+        
+        // Show success toast notification
+        toast({
+          title: "✅ Collaborator removed successfully!",
+          description: `${collaboratorToRemove.name} has been removed from this work log.`,
+          duration: 3000,
+        });
       } catch (err) {
         console.error('Error auto-saving collaborator removal:', err);
       }
     }
     
-    // Close dialog and reset
-    setShowRemoveDialog(false);
+    // Hide loading and reset
+    setIsRemovingCollaborator(false);
     setCollaboratorToRemove(null);
   };
 
@@ -387,21 +438,39 @@ import { useToast } from "@/hooks/use-toast";
       setPendingNavigation(path);
       setShowUnsavedDialog(true);
     } else {
-      if (typeof path === 'function') {
-        path();
-      } else if (typeof path === 'number') {
-        navigate(path);
-      } else {
-        navigate(path);
-      }
+      // Delete pending deletions before navigating away
+      handleNavigateAway(path);
+    }
+  };
+
+  const handleNavigateAway = async (path) => {
+    // Delete pending files before leaving
+    const { mediaManager } = await import("@/lib/media-manager");
+    const { deleteMediaFile } = await import("@/lib/tiptap-utils");
+    const pendingDeletions = mediaManager.getPendingDeletions();
+    
+    if (pendingDeletions.length > 0) {
+      await mediaManager.deleteAllPending(deleteMediaFile);
+    }
+    
+    // Now navigate
+    if (typeof path === 'function') {
+      path();
+    } else if (typeof path === 'number') {
+      navigate(path);
+    } else {
+      navigate(path);
     }
   };
 
   const handleContinueWithoutSaving = async () => {
-    // FULL RESET - clear everything including pending deletions
+    // When discarding unsaved changes, we should NOT delete files
+    // because the saved version still has them!
+    // We only clear the pending deletions queue.
     const { mediaManager } = await import("@/lib/media-manager");
-    mediaManager.reset(); // Full reset - clears uploads AND deletions
-    console.log("[BlogEditor] Full reset - discarded all pending changes including deletions");
+    
+    // FULL RESET - clear everything without deleting files
+    mediaManager.reset();
     
     setShowUnsavedDialog(false);
     setHasUnsavedChanges(false);
@@ -432,8 +501,8 @@ import { useToast } from "@/hooks/use-toast";
     const images = doc.querySelectorAll('img[src]');
     images.forEach(img => {
       const src = img.getAttribute('src');
-      if (src && src.includes('nebwork-storage')) {
-        media.push(src); // Only push the URL string
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
+        media.push(src);
       }
     });
 
@@ -441,8 +510,8 @@ import { useToast } from "@/hooks/use-toast";
     const videos = doc.querySelectorAll('video source[src], video[src]');
     videos.forEach(video => {
       const src = video.getAttribute('src');
-      if (src && src.includes('nebwork-storage')) {
-        media.push(src); // Only push the URL string
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
+        media.push(src);
       }
     });
 
@@ -450,29 +519,29 @@ import { useToast } from "@/hooks/use-toast";
     const audios = doc.querySelectorAll('audio source[src], audio[src]');
     audios.forEach(audio => {
       const src = audio.getAttribute('src');
-      if (src && src.includes('nebwork-storage')) {
-        media.push(src); // Only push the URL string
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
+        media.push(src);
       }
     });
 
     // Extract documents from TipTap document nodes
-    const documentNodes = doc.querySelectorAll('div[data-type="document"][data-src]');
+    const documentNodes = doc.querySelectorAll('div[data-type="document"][data-src], [data-type="document"][data-src]');
     documentNodes.forEach(docNode => {
       const src = docNode.getAttribute('data-src');
-      if (src && src.includes('nebwork-storage')) {
-        media.push(src); // Only push the URL string
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com'))) {
+        media.push(src);
       }
     });
 
     // Also extract documents from regular links and iframes (fallback)
-    const documents = doc.querySelectorAll('a[href*="nebwork-storage"], iframe[src*="nebwork-storage"]');
+    const documents = doc.querySelectorAll('a[href*="nebwork-storage"], a[href*="digitaloceanspaces.com"], iframe[src*="nebwork-storage"], iframe[src*="digitaloceanspaces.com"]');
     documents.forEach(doc => {
       const src = doc.getAttribute('href') || doc.getAttribute('src');
-      if (src && src.includes('nebwork-storage') && !media.includes(src)) {
-        const extension = src.split('.').pop().toLowerCase();
-        const isDoc = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(extension);
+      if (src && (src.includes('nebwork-storage') || src.includes('digitaloceanspaces.com')) && !media.includes(src)) {
+        const extension = src.split('.').pop().toLowerCase().split('?')[0];
+        const isDoc = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'].includes(extension);
         if (isDoc) {
-          media.push(src); // Only push the URL string
+          media.push(src);
         }
       }
     });
@@ -481,7 +550,9 @@ import { useToast } from "@/hooks/use-toast";
   };
 
   const handleSaveBlog = async () => {
-    console.log("Saving blog with message:", commitMessage);
+
+    // Show loading state
+    setIsSaving(true);
 
     try {
       const token = sessionStorage.getItem('token');
@@ -492,85 +563,40 @@ import { useToast } from "@/hooks/use-toast";
       const { handleImageUpload, deleteMediaFile } = await import("@/lib/tiptap-utils");
 
       // Step 1: Upload all pending media files
-      console.log("[BlogEditor] ========== SAVE STARTED ==========");
-      console.log("[BlogEditor] Current content length:", blogContent.length);
-      console.log("[BlogEditor] Pending uploads count:", mediaManager.getPendingUploads().length);
-      
-      // Log pending uploads details
-      const pendingUploads = mediaManager.getPendingUploads();
-      if (pendingUploads.length > 0) {
-        console.log("[BlogEditor] Pending uploads:");
-        pendingUploads.forEach((upload, index) => {
-          console.log(`[BlogEditor]   ${index + 1}. ${upload.file.name} (${upload.blobUrl.substring(0, 60)}...)`);
-        });
-      }
       
       const urlMap = await mediaManager.uploadAllPending(handleImageUpload);
-      console.log("[BlogEditor] Upload complete, mapped URLs:", urlMap.size);
-      
+   
       // Step 2: Replace blob URLs with DigitalOcean URLs in content
-      console.log("[BlogEditor] ========== REPLACING BLOB URLs ==========");
       let finalContent = mediaManager.replaceBlobUrlsInContent(blogContent, urlMap);
-      console.log("[BlogEditor] ========== REPLACEMENT COMPLETE ==========");
       
-      // Step 3: Delete removed media from DigitalOcean
+      // Step 3: SKIP deletion on save - only delete when user leaves editor
+      // This allows undo/redo to work even after saving
       const pendingDeletions = mediaManager.getPendingDeletions();
-      console.log("[BlogEditor] ==========================================");
-      console.log("[BlogEditor] STEP 3: DELETE REMOVED MEDIA");
-      console.log("[BlogEditor] Pending deletions count:", pendingDeletions.length);
-      console.log("[BlogEditor] Pending deletion URLs:", pendingDeletions);
-      console.log("[BlogEditor] ==========================================");
+
       
-      if (pendingDeletions.length > 0) {
-        console.log("[BlogEditor] 🗑️ CALLING deleteAllPending() with deleteMediaFile function");
-        console.log("[BlogEditor] deleteMediaFile function:", typeof deleteMediaFile);
-        
-        await mediaManager.deleteAllPending(deleteMediaFile);
-        
-        console.log("[BlogEditor] ✅ deleteAllPending() completed");
-      } else {
-        console.log("[BlogEditor] ⚠️ No files to delete");
-      }
+      // Note: Deletions are tracked but not executed on save
+      // They will be executed when user navigates away from the editor
 
       // Step 4: Extract media from final content
       const mediaFiles = extractMediaFromContent(finalContent);
-      console.log("[BlogEditor] Extracted media files:", mediaFiles.length);
+
+      // ✅ VALIDATION: Validate before saving
+      const dataToSave = {
+        title: blogTitle || "Untitled Work Log",
+        content: finalContent,
+        tag: blogTags || [],
+        collaborators: collaborators.map(c => c.id),
+        media: mediaFiles,
+      };
 
       if (isEditMode) {
         // update
-        const response = await fetch(WORKLOG_ENDPOINTS.ONE(postId), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: blogTitle || "Untitled Work Log",
-            content: finalContent,
-            tag: blogTags || [],
-            collaborators: collaborators.map(c => c.id),
-            media: mediaFiles,
-          })
-        });
-        createdOrUpdatedWorklog = await response.json();
-
+        const response = await apiHandler.worklog.updateWorklog(postId, dataToSave);
+        createdOrUpdatedWorklog = response;
       } else {
-        // create
-        const response = await fetch(WORKLOG_ENDPOINTS.LIST, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: blogTitle || "Untitled Work Log",
-            content: finalContent,
-            tag: blogTags || [],
-            collaborators: collaborators.map(c => c.id),
-            media: mediaFiles,
-          })
-        });
-        createdOrUpdatedWorklog = await response.json();
+        // create - apiHandler.worklog.saveWorklog already has validation
+        const response = await apiHandler.worklog.saveWorklog(dataToSave);
+        createdOrUpdatedWorklog = response;
       }
 
       // ADD VERSION (LOG HISTORY)
@@ -596,20 +622,13 @@ import { useToast } from "@/hooks/use-toast";
         });
       }
 
-      console.log("[BlogEditor] Save response:", createdOrUpdatedWorklog);
-      console.log("[BlogEditor] ========== SAVE COMPLETED ==========");
       
       // CRITICAL: Update the editor content with final content (blob URLs replaced with DigitalOcean URLs)
       // Set flag to prevent triggering unsaved changes
       isProgrammaticUpdate.current = true;
       
-      console.log("[BlogEditor] 🔄 Updating editor with DigitalOcean URLs...");
-      console.log("[BlogEditor] URL replacements made:", urlMap.size);
-      console.log("[BlogEditor] Final content preview:", finalContent.substring(0, 200));
-      
       // Reset media manager BEFORE updating state (clear blob URLs)
       mediaManager.reset();
-      console.log("[BlogEditor] Media manager reset");
       
       // Store the final content in a ref so it's immediately available for re-mount
       contentForReMount.current = finalContent;
@@ -620,21 +639,21 @@ import { useToast } from "@/hooks/use-toast";
       // Force re-mount the editor with new content
       // The editor will use contentForReMount.current which has DigitalOcean URLs
       setEditorKey(prev => prev + 1);
-      console.log("[BlogEditor] ✅ Editor will re-mount with DigitalOcean URLs");
-      console.log("[BlogEditor] contentForReMount.current has blob:", contentForReMount.current?.includes('blob:'));
-      console.log("[BlogEditor] contentForReMount.current has DO:", contentForReMount.current?.includes('nebwork-storage') || contentForReMount.current?.includes('digitaloceanspaces'));
-      console.log("[BlogEditor] contentForReMount.current set:", contentForReMount.current ? 'YES' : 'NO');
       
       // Reset the flag after re-mount completes
       setTimeout(() => {
         isProgrammaticUpdate.current = false;
-        contentForReMount.current = null; // Clear the ref after re-mount
-        console.log("[BlogEditor] Editor re-mount complete, ready for edits");
-      }, 1000);
+      }, 100);
+      
+      // Reset ONLY uploads after save (keep deletions for undo support)
+      mediaManager.resetUploads();
       
       setSaveOpen(false);
       setCommitMessage("");
       setHasUnsavedChanges(false);
+      
+      // Hide loading state
+      setIsSaving(false);
       
       // Show success toast notification
       toast({
@@ -645,6 +664,13 @@ import { useToast } from "@/hooks/use-toast";
       
       // Only navigate if there's a pending navigation (user tried to leave while editing)
       if (pendingNavigation !== null) {
+        // Delete pending deletions before navigating
+        const pendingDeletions = mediaManager.getPendingDeletions();
+        if (pendingDeletions.length > 0) {
+          await mediaManager.deleteAllPending(deleteMediaFile);
+        }
+        
+        // Now navigate
         if (typeof pendingNavigation === 'function') {
           pendingNavigation();
         } else if (typeof pendingNavigation === 'number') {
@@ -658,27 +684,69 @@ import { useToast } from "@/hooks/use-toast";
     } catch (err) {
       console.error('Error saving blog:', err);
       
+      // Hide loading state on error
+      setIsSaving(false);
+      
       // Handle validation errors
       if (err.validationErrors) {
-        // Display each validation error
+        // Combine all validation errors into one message
         const fieldNames = {
           title: 'Title',
           content: 'Content',
           tag: 'Tags'
         };
         
-        Object.entries(err.validationErrors).forEach(([field, message]) => {
-          const fieldName = fieldNames[field] || field;
-          toast.error(`${fieldName}: ${message}`);
+        const errorList = Object.entries(err.validationErrors)
+          .map(([field, message]) => {
+            const fieldName = fieldNames[field] || field;
+            return `${fieldName}: ${message}`;
+          });
+        
+        toast({
+          variant: "destructive",
+          title: "Validation Failed",
+          description: (
+            <div className="space-y-1">
+              {errorList.map((error, index) => (
+                <div key={index}>• {error}</div>
+              ))}
+            </div>
+          ),
+          duration: 5000,
         });
       } else if (err.message === 'No authentication token found') {
-        toast.error('Session expired. Please login again.');
+        toast({
+          variant: "destructive",
+          title: "Session Expired",
+          description: "Please login again.",
+          duration: 3000,
+        });
         navigate('/login');
+      } else if (err.message === 'Validation failed') {
+        toast({
+          variant: "destructive",
+          title: "Validation Failed",
+          description: "Please check your input and try again.",
+          duration: 3000,
+        });
       } else {
-        toast.error('Failed to save worklog. Please try again.');
+        toast({
+          variant: "destructive",
+          title: "Save Failed",
+          description: "Failed to save worklog. Please try again.",
+          duration: 3000,
+        });
       }
+      
+      // Hide loading state on error
+      setIsSaving(false);
     }
   };
+
+  // Show loading while fetching worklog in edit mode
+  if (isLoadingWorklog && isEditMode) {
+    return <Loading fullScreen message="Loading worklog..." />;
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -947,6 +1015,61 @@ import { useToast } from "@/hooks/use-toast";
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Saving Progress Dialog */}
+      <AlertDialog open={isSaving}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Saving Work Log
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-8 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <p className="text-center text-muted-foreground">
+              Saving work log, please wait...
+            </p>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Adding Collaborator Progress Dialog */}
+      <AlertDialog open={isAddingCollaborator}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Adding Collaborators
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-8 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <p className="text-center text-muted-foreground">
+              Adding collaborators, please wait...
+            </p>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Removing Collaborator Progress Dialog */}
+      <AlertDialog open={isRemovingCollaborator}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Removing Collaborator
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="py-8 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <p className="text-center text-muted-foreground">
+              Removing collaborator, please wait...
+            </p>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
          {/* Remove Collaborator Confirmation Dialog */}
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent className="max-w-md">

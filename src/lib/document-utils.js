@@ -37,12 +37,10 @@ export const isBlobUrl = (url) => {
  */
 export const isGoogleDocsSupported = (filename) => {
   if (!filename) {
-    console.log('[isGoogleDocsSupported] No filename provided')
     return false
   }
   const ext = filename.split('.').pop()?.toLowerCase()
   const isSupported = ext && GOOGLE_DOCS_SUPPORTED.includes(ext)
-  console.log('[isGoogleDocsSupported]', { filename, ext, isSupported, supportedFormats: GOOGLE_DOCS_SUPPORTED })
   return isSupported
 }
 
@@ -77,7 +75,6 @@ export const getDocumentViewerUrl = (fileUrl, filename) => {
  * @returns Promise that resolves when viewer is opened
  */
 export const openDocumentViewer = async (fileUrl, filename) => {
-  console.log('[openDocumentViewer] Called with:', { fileUrl, filename })
   
   if (!fileUrl) {
     throw new Error('No file URL provided')
@@ -85,7 +82,6 @@ export const openDocumentViewer = async (fileUrl, filename) => {
 
   // Development mode: blob URLs need special handling
   if (isBlobUrl(fileUrl)) {
-    console.log('[openDocumentViewer] Opening blob document (not uploaded yet)')
     try {
       return await openBlobDocument(fileUrl, filename)
     } catch (error) {
@@ -96,11 +92,9 @@ export const openDocumentViewer = async (fileUrl, filename) => {
 
   // Production mode: Use Office/Google Docs Viewer for supported formats
   const isSupported = isGoogleDocsSupported(filename)
-  console.log('[openDocumentViewer] Is Google Docs supported?', isSupported)
   
   if (isSupported) {
     const viewerUrl = getDocumentViewerUrl(fileUrl, filename)
-    console.log('[openDocumentViewer] Opening viewer:', viewerUrl)
     
     // Open in new window
     const viewerWindow = window.open(viewerUrl, '_blank', VIEWER_CONFIG.POPUP_OPTIONS)
@@ -114,7 +108,6 @@ export const openDocumentViewer = async (fileUrl, filename) => {
   }
 
   // Fallback: Open directly
-  console.log('[openDocumentViewer] Opening direct link (unsupported format)')
   window.open(fileUrl, '_blank', 'noopener,noreferrer')
 }
 

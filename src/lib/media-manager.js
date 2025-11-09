@@ -15,8 +15,6 @@ class MediaManager {
     
     // Track blob URL to DigitalOcean URL mapping
     this.blobToUrlMap = new Map()
-    
-    console.log(`[MediaManager] Initialized with ${this.pendingDeletions.size} pending deletions from storage`)
   }
   
   /**
@@ -34,7 +32,6 @@ class MediaManager {
   addPendingUpload(file) {
     const blobUrl = URL.createObjectURL(file)
     this.pendingUploads.set(blobUrl, file)
-    console.log(`[MediaManager] Added pending upload: ${file.name} -> ${blobUrl}`)
     return blobUrl
   }
 
@@ -45,7 +42,6 @@ class MediaManager {
   addPendingDeletion(url) {
     // If it's a blob URL (not uploaded yet), just revoke it
     if (url.startsWith('blob:')) {
-      console.log(`[MediaManager] Removing pending upload: ${url}`)
       this.pendingUploads.delete(url)
       URL.revokeObjectURL(url)
       return
@@ -58,10 +54,8 @@ class MediaManager {
                               url.includes('.cdn.digitaloceanspaces.com')
     
     if (isDigitalOceanUrl) {
-      console.log(`[MediaManager] ✅ Marked for deletion: ${url}`)
       this.pendingDeletions.add(url)
       this.saveDeletionsToStorage() // Persist to localStorage
-      console.log(`[MediaManager] Saved to localStorage, total pending deletions: ${this.pendingDeletions.size}`)
     } else {
       console.warn(`[MediaManager] ⚠️ URL not recognized as DigitalOcean URL: ${url}`)
     }
@@ -93,17 +87,14 @@ class MediaManager {
    */
   async uploadAllPending(uploadFn) {
     const uploads = this.getPendingUploads()
-    console.log(`[MediaManager] Uploading ${uploads.length} pending files...`)
     
     const urlMap = new Map()
     
     for (const { blobUrl, file } of uploads) {
       try {
-        console.log(`[MediaManager] Uploading ${file.name}...`)
         const digitalOceanUrl = await uploadFn(file)
         urlMap.set(blobUrl, digitalOceanUrl)
         this.blobToUrlMap.set(blobUrl, digitalOceanUrl)
-        console.log(`[MediaManager] Uploaded: ${blobUrl} -> ${digitalOceanUrl}`)
       } catch (error) {
         console.error(`[MediaManager] Failed to upload ${file.name}:`, error)
         throw error
@@ -122,12 +113,8 @@ class MediaManager {
    */
   async deleteAllPending(deleteFn) {
     const deletions = this.getPendingDeletions()
-    console.log(`[MediaManager] ========== DELETION PROCESS STARTED ==========`)
-    console.log(`[MediaManager] Total files to delete: ${deletions.length}`)
-    console.log(`[MediaManager] Files to delete:`, deletions)
     
     if (deletions.length === 0) {
-      console.log(`[MediaManager] No files to delete, skipping`)
       return
     }
     
@@ -136,10 +123,8 @@ class MediaManager {
     
     for (const url of deletions) {
       try {
-        console.log(`[MediaManager] [${successCount + failCount + 1}/${deletions.length}] Deleting: ${url}`)
         const result = await deleteFn(url)
         if (result) {
-          console.log(`[MediaManager] ✅ Successfully deleted: ${url}`)
           successCount++
         } else {
           console.error(`[MediaManager] ❌ Delete returned false for: ${url}`)
@@ -152,13 +137,9 @@ class MediaManager {
       }
     }
     
-    console.log(`[MediaManager] ========== DELETION PROCESS COMPLETED ==========`)
-    console.log(`[MediaManager] Success: ${successCount}, Failed: ${failCount}, Total: ${deletions.length}`)
-    
     // Clear pending deletions
     this.pendingDeletions.clear()
     this.saveDeletionsToStorage() // Clear from localStorage too
-    console.log(`[MediaManager] Cleared all pending deletions from memory and storage`)
   }
 
   /**
@@ -169,13 +150,8 @@ class MediaManager {
    */
   replaceBlobUrlsInContent(htmlContent, urlMap) {
     if (!htmlContent) {
-      console.log(`[MediaManager] No content to replace URLs in`)
       return htmlContent
     }
-    
-    console.log(`[MediaManager] ==================== URL REPLACEMENT ====================`)
-    console.log(`[MediaManager] Content length: ${htmlContent.length} characters`)
-    console.log(`[MediaManager] Number of blob → DigitalOcean mappings: ${urlMap.size}`)
     
     let updatedContent = htmlContent
     let replacementCount = 0
@@ -195,24 +171,14 @@ class MediaManager {
       // Verify replacement
       const digitalOceanCount = (updatedContent.match(new RegExp(digitalOceanUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length
       
-      console.log(`[MediaManager] 🔄 ${blobUrl.substring(0, 60)}...`)
-      console.log(`[MediaManager]    → ${digitalOceanUrl}`)
-      console.log(`[MediaManager]    ✅ Replaced ${beforeCount} occurrence(s)`)
-      
       replacementCount += beforeCount
     }
-    
-    console.log(`[MediaManager] ==================== REPLACEMENT COMPLETE ====================`)
-    console.log(`[MediaManager] ✅ Total replacements: ${replacementCount}`)
-    console.log(`[MediaManager] ✅ Updated content length: ${updatedContent.length} characters`)
     
     // Verify no blob URLs remain
     const remainingBlobs = (updatedContent.match(/blob:http[^\s"')]+/g) || [])
     if (remainingBlobs.length > 0) {
       console.warn(`[MediaManager] ⚠️ WARNING: ${remainingBlobs.length} blob URL(s) still in content:`)
       remainingBlobs.forEach(blob => console.warn(`[MediaManager]    - ${blob}`))
-    } else {
-      console.log(`[MediaManager] ✅ No blob URLs remaining in content`)
     }
     
     return updatedContent
@@ -222,8 +188,6 @@ class MediaManager {
    * Clean up blob URLs only (NOT deletions - they persist until save)
    */
   cleanup() {
-    console.log(`[MediaManager] Cleaning up ${this.pendingUploads.size} blob URLs...`)
-    console.log(`[MediaManager] Keeping ${this.pendingDeletions.size} pending deletions (will be deleted on save)`)
     
     for (const blobUrl of this.pendingUploads.keys()) {
       URL.revokeObjectURL(blobUrl)
@@ -249,7 +213,6 @@ class MediaManager {
    * Reset the manager (clear all tracking - only call after successful save)
    */
   reset() {
-    console.log(`[MediaManager] FULL RESET - Clearing all pending operations`)
     
     // Clean up blob URLs
     for (const blobUrl of this.pendingUploads.keys()) {
@@ -263,8 +226,21 @@ class MediaManager {
     
     // Clear from localStorage too
     this.saveDeletionsToStorage()
+  }
+
+  /**
+   * Reset only uploads after save (keep pending deletions for undo support)
+   */
+  resetUploads() {
     
-    console.log(`[MediaManager] Reset complete - all tracking cleared`)
+    // Clean up blob URLs
+    for (const blobUrl of this.pendingUploads.keys()) {
+      URL.revokeObjectURL(blobUrl)
+    }
+    
+    // Clear only uploads and blob map, NOT deletions
+    this.pendingUploads.clear()
+    this.blobToUrlMap.clear()
   }
 }
 

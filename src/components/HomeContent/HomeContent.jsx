@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./HomeContent.css";
 import { AUTH_ENDPOINTS, WORKLOG_ENDPOINTS} from "../../config/api";
+import { Loading } from "@/components/ui/loading";
 
 // Utility function to strip HTML tags
 const stripHtmlTags = (html) => {
@@ -90,8 +91,6 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         const queryString = params.toString();
         const url = `${WORKLOG_ENDPOINTS.FILTER}${queryString ? '?' + queryString : ''}`;
         
-        console.log('Fetching from:', url); // DEBUG
-        
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -110,7 +109,6 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         }
 
         const data = await response.json();
-        console.log('Response data:', data); // Debug response
 
         // Update pagination state
         if (data.pagination) {
@@ -121,14 +119,10 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
         let worklogsArray = [];
         
         if (data?.worklogs && Array.isArray(data.worklogs)) {
-          worklogsArray = data.worklogs.filter(worklog => worklog.user); // Filter out entries without user
+          worklogsArray = data.worklogs.filter(worklog => worklog.user);
         } else if (Array.isArray(data)) {
-          worklogsArray = data.filter(worklog => worklog.user); // Filter out entries without user
+          worklogsArray = data.filter(worklog => worklog.user);
         }
-        
-        console.log('Filtered worklogs:', worklogsArray); // Debug extracted worklogs
-        
-        console.log('Extracted worklogsArray:', worklogsArray);
         
         // Validate it's an array
         if (!Array.isArray(worklogsArray)) {
@@ -137,26 +131,14 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
           setLoading(false);
           return;
         }
-        
-        console.log('Processing', worklogsArray.length, 'worklogs');
-        
     
         // Backend filterWorkLogs() now handles division filtering with JWT token
-        
-        // Log first worklog structure for debugging
-        if (worklogsArray.length > 0) {
-          console.log('First worklog structure:', worklogsArray[0]);
-        }
-        
-        console.log('Starting post conversion with worklogsArray:', worklogsArray);
 
-        const convertedPosts = worklogsArray.map((worklog, index) => {
-          console.log(`Processing worklog ${index}:`, worklog);
-          
+        const convertedPosts = worklogsArray.map((worklog) => {
           // Strip HTML tags from content for preview
           const plainTextContent = stripHtmlTags(worklog.content);
           
-          // Create post object with detailed logging
+          // Create post object
           const post = {
             id: worklog._id || worklog.id,
             title: worklog.title || "Work Log",
@@ -172,23 +154,17 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
             }),
             hashtags: worklog.tag || [],
             content: plainTextContent 
-              ? (plainTextContent.length > 100 
-                  ? `${plainTextContent.substring(0, 100)}...` 
+              ? (plainTextContent.length > 500 
+                  ? `${plainTextContent.substring(0, 500)}...` 
                   : plainTextContent)
               : "",
             image: worklog.media?.[0] || null,
           };
-
-          console.log(`Converted post ${index}:`, post);
           
           return post;
         });
         
-        console.log('Final converted posts:', convertedPosts);
         setPosts(convertedPosts);
-        
-        // Log state update
-        console.log('Updated posts state with', convertedPosts.length, 'items');
       } catch (err) {
         console.error('Error fetching worklogs:', err);
         setPosts([]);
@@ -209,16 +185,34 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
       <h1 className="home-greeting">Hello, {userName}</h1>
 
       {selectedTag && (
-        <div className="mb-4 p-3 bg-purple-100 rounded">
-          <span>Filtering by tag: </span>
-          <strong>{formatHashtag(selectedTag)} </strong>
-          <button onClick={() => navigate('/')}> Clear Filter</button>
+        <div className="filter-tag-banner">
+          <div className="filter-tag-content">
+            <span className="filter-label">Filtering by tag:</span>
+            <span className="filter-tag-value">{formatHashtag(selectedTag)}</span>
+          </div>
+          <button className="clear-filter-btn" onClick={() => navigate('/')}>
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="16" 
+              height="16" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            Clear Filter
+          </button>
         </div>
       )}
       
       
       {loading ? (
-        <div className="text-center py-8">Loading posts...</div>
+        <Loading message="Loading work logs..." />
       ) : posts.length === 0 ? (
         <div className="text-center py-8">No work logs yet</div>
       ) : (

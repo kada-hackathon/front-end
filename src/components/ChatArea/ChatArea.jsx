@@ -6,19 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import "./ChatArea.css";
 
-/**
- * ================================================================
- * CHAT AREA - MESSAGE DISPLAY & INPUT
- * ================================================================
- * 
- * Features:
- * - Display conversation messages
- * - Show loading indicator when waiting for AI
- * - Show metadata (context used, processing time)
- * - Auto-scroll to bottom
- * - Disable input while loading
- * ================================================================
- */
+
 const ChatArea = ({ 
   messages, 
   inputValue, 
@@ -26,7 +14,7 @@ const ChatArea = ({
   onSendMessage, 
   onKeyPress, 
   userProfile,
-  isLoading = false  // Loading state for AI response
+  isLoading = false  
 }) => {
   return (
     <div className="chat-area">

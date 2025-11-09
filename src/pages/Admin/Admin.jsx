@@ -35,7 +35,19 @@ const Admin = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      // Reset to page 1 when search changes
+      setCurrentPage(1);
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch current admin info
   useEffect(() => {
@@ -55,25 +67,28 @@ const Admin = () => {
           });
         }
       } catch (err) {
-        console.error('Error fetching admin info:', err);
+        // Error fetching admin info
       }
     };
     fetchAdminInfo();
   }, []);
 
-  // Fetch all users (employees) with pagination
+  // Fetch all users (employees) with pagination and search
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
         const token = sessionStorage.getItem('token');
-        const response = await fetch(`${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10`, {
+        // Add search query to API call
+        const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : '';
+        const url = `${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10${searchParam}`;
+        
+        const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         const data = await response.json();
-        console.log('Fetched users data:', data);
         
         if (response.ok) {
           const usersArray = data.data || [];
@@ -91,7 +106,6 @@ const Admin = () => {
           setFilteredUsers([]);
         }
       } catch (err) {
-        console.error('Error fetching users:', err);
         toast.error('Error loading users');
         setUsers([]);
         setFilteredUsers([]);
@@ -100,7 +114,7 @@ const Admin = () => {
       }
     };
     fetchUsers();
-  }, [currentPage]);
+  }, [currentPage, debouncedSearch]);
 
   const togglePassword = (userId) => {
     setShowPasswords((prev) => ({
@@ -117,32 +131,16 @@ const Admin = () => {
     }));
   };
 
-  // Search functionality
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredUsers(users);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = users.filter(user => 
-      (user.name || '').toLowerCase().includes(query) ||
-      (user.email || '').toLowerCase().includes(query) ||
-      (user.division || '').toLowerCase().includes(query)
-    );
-    setFilteredUsers(filtered);
-  }, [searchQuery, users]);
-
   // Function to refresh users list
   const refreshUsers = async () => {
     setLoading(true);
     try {
       const token = sessionStorage.getItem('token');
-      const response = await fetch(`${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10`, {
+      const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : '';
+      const response = await fetch(`${ADMIN_ENDPOINTS.EMPLOYEES}?page=${currentPage}&limit=10${searchParam}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
-      console.log('Refreshed users data:', data);
       
       if (response.ok) {
         const usersArray = data.data || [];
@@ -155,7 +153,7 @@ const Admin = () => {
         }
       }
     } catch (err) {
-      console.error('Error refreshing users:', err);
+      // Error refreshing users
     } finally {
       setLoading(false);
     }
@@ -183,7 +181,6 @@ const Admin = () => {
         });
 
         const responseData = await response.json();
-        console.log('Edit response:', responseData);
 
         if (response.ok) {
           toast.success('User updated successfully');
@@ -212,7 +209,6 @@ const Admin = () => {
         });
 
         const responseData = await response.json();
-        console.log('Add response:', responseData);
 
         if (response.ok) {
           toast.success(`User added successfully! Password: ${formData.password || 'Pass@123'}`);
@@ -236,18 +232,27 @@ const Admin = () => {
       setIsEditMode(false);
       setEditingUserId(null);
     } catch (err) {
-      console.error('Error submitting form:', err);
       toast.error('An error occurred');
     }
   };
 
   const handleEdit = (user) => {
+    // Handle join_date properly - extract date part only
+    let joinDate = "";
+    if (user.join_date) {
+      try {
+        joinDate = user.join_date.split('T')[0];
+      } catch (e) {
+        // Error parsing join_date
+      }
+    }
+
     setFormData({
       fullName: user.name || user.fullName || "",
       email: user.email || "",
       division: user.division || "",
       password: "Pass@123",
-      joinedDate: user.join_date ? user.join_date.split('T')[0] : ""
+      joinedDate: joinDate
     });
     setEditingUserId(user._id || user.id);
     setIsEditMode(true);
@@ -258,7 +263,6 @@ const Admin = () => {
     if (window.confirm("Are you sure you want to delete this account?")) {
       try {
         const token = sessionStorage.getItem('token');
-        console.log('Deleting user:', userId);
         
         // DELETE endpoint expects id in URL params, not body
         const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEE(userId), {
@@ -269,7 +273,6 @@ const Admin = () => {
         });
 
         const responseData = await response.json();
-        console.log('Delete response:', responseData);
 
         if (response.ok) {
           toast.success('User deleted successfully');
@@ -285,7 +288,6 @@ const Admin = () => {
           toast.error(responseData.message || 'Failed to delete user');
         }
       } catch (err) {
-        console.error('Error deleting user:', err);
         toast.error('An error occurred');
       }
     }
@@ -418,11 +420,11 @@ const Admin = () => {
                           <button
                             className="edit-btn"
                             onClick={() => handleEdit({
-                              id: user._id || user.id,
-                              fullName: user.name || user.fullName,
+                              _id: user._id || user.id,
+                              name: user.name || user.fullName,
                               email: user.email,
                               division: user.division,
-                              joinedDate: user.join_date ? new Date(user.join_date).toISOString().split('T')[0] : ''
+                              join_date: user.join_date
                             })}
                             aria-label="Edit user"
                           >
@@ -445,7 +447,7 @@ const Admin = () => {
           </div>
 
           {/* Pagination Controls */}
-          {!searchQuery && totalPages > 1 && (
+          {totalPages > 1 && (
             <div style={{ 
               display: 'flex', 
               justifyContent: 'center', 
@@ -590,7 +592,6 @@ const Admin = () => {
                   name="joinedDate"
                   value={formData.joinedDate}
                   onChange={handleInputChange}
-                  required
                 />
               </div>
  

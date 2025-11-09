@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Eye, Clock } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import Menubar from "@/components/Menubar/Menubar";
 import Navbar from "@/components/Navbar/Navbar";
@@ -15,7 +15,6 @@ const WorkLogVersion = () => {
   const [title, setTitle] = useState("");
   const [selectedHistory, setSelectedHistory] = useState(null);
 
-  console.log("ID DARI ROUTER:", id);
 
   useEffect(() => {
     const fetchVersions = async () => {
@@ -32,8 +31,6 @@ const WorkLogVersion = () => {
 
         const data = await res.json();
 
-        console.log("VERSIONS DATA", data);
-
         setVersions(data?.versions ?? []);  // fallback aman
         setTitle(data?.title ?? "");
       } catch (err) {
@@ -48,7 +45,6 @@ const WorkLogVersion = () => {
 
   const fetchSingleHistory = async (hid) => {
     const token = sessionStorage.getItem("token");
-    console.log("[DEBUG] GET LOGHISTORY URL:", WORKLOG_ENDPOINTS.LOGHISTORY_ONE(hid));
 
     const res = await fetch(WORKLOG_ENDPOINTS.LOGHISTORY_ONE(hid), {
       headers: {
@@ -57,7 +53,6 @@ const WorkLogVersion = () => {
     });
 
     const data = await res.json();
-    console.log("[DEBUG] DETAIL HISTORY:", data);
 
     setSelectedHistory(data);
   };
@@ -89,41 +84,56 @@ const WorkLogVersion = () => {
 
             <div className="space-y-4 max-w-4xl">
               {Array.isArray(versions) && versions.map(v => (
-                <div key={v._id} className="bg-card border border-border p-6 rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={v.user?.profile_photo ?? "/placeholder.svg"}
-                        alt={v.user?.name}
-                        className="w-14 h-14 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="font-semibold text-lg">{v.user?.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {v.user?.division}
-                        </p>
+                <div key={v._id} className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        <img
+                          src={v.user?.profile_photo ?? "/placeholder.svg"}
+                          alt={v.user?.name}
+                          className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/10"
+                        />
+                        <div className="flex-1">
+                          <p className="font-semibold text-lg">{v.user?.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {v.user?.division}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          {new Date(v.datetime).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </span>
                       </div>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {/* kalau backend udah kirim datetime → format */}
-                      {new Date(v.datetime).toLocaleDateString()}
-                    </span>
+                    <p className="text-base text-foreground mb-4 pl-[72px]">{v.message}</p>
                   </div>
-                  <p className="font-semibold text-base">{v.message}</p>
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      await fetchSingleHistory(v._id);
-                      navigate(`/blog-post?id=${id}`, {
-                        state: {
-                          snapshot: v.snapshot,
-                          historyId: v._id
-                        }
-                      });
-                    }}
-                  >
-                    Look this version
-                  </Button>
+                  
+                  {/* Action bar at the bottom */}
+                  <div className="bg-muted/30 px-6 py-3 flex items-center justify-end border-t border-border">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="gap-2"
+                      onClick={async () => {
+                        await fetchSingleHistory(v._id);
+                        navigate(`/blog-post?id=${id}`, {
+                          state: {
+                            snapshot: v.snapshot,
+                            historyId: v._id
+                          }
+                        });
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                      View This Version
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

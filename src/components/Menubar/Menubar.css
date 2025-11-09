@@ -101,6 +101,10 @@
   padding: 0.75rem 1rem;
 }
 
+.menubar-collapsed .menubar-nav {
+  padding: 0.75rem 0; /* remove horizontal padding when collapsed for perfect centering */
+}
+
 .menubar-nav-section {
   margin-bottom: 1.5rem;
 }
@@ -118,9 +122,21 @@
   margin-left: 0.5rem; /* shift to the right to match recent projects */
 }
 
+.menubar-collapsed .menubar-nav-items {
+  margin-left: 0; /* remove left margin when collapsed */
+  align-items: center; /* center align items */
+  width: 100%; /* full width for proper centering */
+}
+
 .menubar-nav-items a {
   width: 100%;
   display: block;
+}
+
+.menubar-collapsed .menubar-nav-items a {
+  width: 100%; /* full width to use parent centering */
+  display: flex; /* use flex for centering */
+  justify-content: center; /* center the button */
 }
 
 .menubar-nav-button {
@@ -133,6 +149,14 @@
   text-align: left;
   display: flex;
   align-items: center;
+}
+
+.menubar-collapsed .menubar-nav-button {
+  padding: 0.5rem; /* reset all padding */
+  justify-content: center !important;
+  width: 2.5rem; /* same as icon button size (40px) */
+  height: 2.5rem; /* same as icon button size (40px) */
+  min-width: 2.5rem; /* prevent shrinking */
 }
 
 .menubar-nav-button:hover {
