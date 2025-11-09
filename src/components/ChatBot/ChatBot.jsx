@@ -6,8 +6,6 @@ import ChatHistory from "../ChatHistory/ChatHistory";
 import "./ChatBot.css";
 import { AUTH_ENDPOINTS, CHATBOT_ENDPOINTS } from "../../config/api";
 
-
-
 const ChatBot = () => {
 
   const [messages, setMessages] = useState([]);           // Current session messages

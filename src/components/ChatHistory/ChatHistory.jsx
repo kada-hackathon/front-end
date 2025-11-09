@@ -3,19 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import "./ChatHistory.css";
 
-/**
- * ================================================================
- * CHAT HISTORY SIDEBAR WITH PAGINATION
- * ================================================================
- * 
- * Features:
- * - Display list of all chat sessions
- * - Load more button for pagination
- * - Delete individual sessions
- * - Create new chat
- * - Loading states
- * ================================================================
- */
+
 const ChatHistory = ({ 
   history, 
   onSelectChat, 
@@ -34,6 +22,12 @@ const ChatHistory = ({
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays}d ago`;
     return date.toLocaleDateString();
+  };
+
+  const truncateText = (text, maxLength = 50) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
 
   return (
@@ -70,29 +64,32 @@ const ChatHistory = ({
                 >
                   <div className="chat-history-item-content">
                     <div className="chat-history-item-header">
-                      <h3 className="chat-history-item-title">{chat.title}</h3>
-                      <span className="chat-history-item-time">
-                        {formatTime(chat.timestamp)}
-                      </span>
+                      <h3 className="chat-history-item-title">{truncateText(chat.title, 25)}</h3>
+                      <div className="flex items-center gap-1">
+                        <span className="chat-history-item-time">
+                          {formatTime(chat.timestamp)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="chat-history-delete-button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onDeleteChat(chat.id);
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                    <p className="chat-history-item-preview">{chat.lastMessage}</p>
+                    <p className="chat-history-item-preview">{truncateText(chat.lastMessage, 50)}</p>
                     {chat.messageCount && (
                       <p className="text-xs text-gray-500 mt-1">
                         {chat.messageCount} messages
                       </p>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="chat-history-delete-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteChat(chat.id);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               ))}
 
@@ -102,7 +99,11 @@ const ChatHistory = ({
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={onLoadMore}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      console.log('Load More clicked, hasMore:', hasMore, 'isLoading:', isLoading);
+                      onLoadMore();
+                    }}
                     disabled={isLoading}
                   >
                     {isLoading ? (

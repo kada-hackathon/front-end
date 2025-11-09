@@ -186,7 +186,7 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
       <div className="navbar-search">
         <Search className="navbar-search-icon" />
         <Input
-          placeholder="Search by title or content..."
+          placeholder="Search by title, content, or user..."
           className="navbar-search-input"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
