@@ -178,6 +178,9 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
 
   return (
     <header className="navbar">
+      {/* Left spacer for centering */}
+      <div className="navbar-spacer"></div>
+
       <div className="navbar-search">
         <Search className="navbar-search-icon" />
         <Input

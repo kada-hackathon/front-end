@@ -144,10 +144,6 @@ const BlogPost = () => {
           }
         });
         const data = await response.json();
-        console.log('Post response:', data);
-        console.log('Post media array:', data.media);
-        console.log('Post content:', data.content);
-        console.log('Has document nodes:', data.content?.includes('data-type="document"'));
         setPost(data);
         setLoading(false);
       } catch (err) {

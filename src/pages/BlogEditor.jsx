@@ -107,13 +107,16 @@ import { Loading } from "@/components/ui/loading";
         const userData = data.user || data;
         setCurrentUserId(userData.id || userData._id);
         
-        // Set owner as current user (for both create and edit mode)
-        setOwner({
-          id: userData.id || userData._id,
-          name: userData.name || "Unknown",
-          division: userData.division || "Unknown",
-          avatar: userData.profile_photo || userData.profilePicture || "/placeholder.svg"
-        });
+        // Set owner as current user ONLY in create mode
+        // In edit mode, owner will be set from worklog data
+        if (!postId) {
+          setOwner({
+            id: userData.id || userData._id,
+            name: userData.name || "Unknown",
+            division: userData.division || "Unknown",
+            avatar: userData.profile_photo || userData.profilePicture || "/placeholder.svg"
+          });
+        }
       } catch (err) {
         console.error('Error fetching current user:', err);
       }
@@ -191,13 +194,6 @@ import { Loading } from "@/components/ui/loading";
                              data.user.profilePicture || 
                              data.user.avatar || 
                              "/placeholder.svg";
-          console.log('[BlogEditor] Setting owner:', {
-            name: data.user.name,
-            avatar: ownerAvatar,
-            hasProfilePhoto: !!data.user.profile_photo,
-            hasProfilePicture: !!data.user.profilePicture,
-            hasAvatar: !!data.user.avatar
-          });
           
           setOwner({
             id: data.user._id || data.user.id,
@@ -209,19 +205,11 @@ import { Loading } from "@/components/ui/loading";
         
         // Set collaborators for CollabList
         if (data.collaborators && data.collaborators.length > 0) {
-          console.log('[BlogEditor] Setting collaborators:', data.collaborators.length);
           setCollaborators(data.collaborators.map(collab => {
             const collabAvatar = collab.profile_photo || 
                                 collab.profilePicture || 
                                 collab.avatar || 
                                 "/placeholder.svg";
-            console.log('[BlogEditor] Collaborator:', {
-              name: collab.name,
-              avatar: collabAvatar,
-              hasProfilePhoto: !!collab.profile_photo,
-              hasProfilePicture: !!collab.profilePicture,
-              hasAvatar: !!collab.avatar
-            });
             
             return {
               id: collab._id || collab.id,
@@ -249,7 +237,6 @@ import { Loading } from "@/components/ui/loading";
     };
     // Prevent fetching the same post multiple times (avoids double-loading)
     if (fetchedPostIdRef.current === postId) {
-      console.log('[BlogEditor] Post already fetched for id:', postId);
       return;
     }
     fetchedPostIdRef.current = postId;
