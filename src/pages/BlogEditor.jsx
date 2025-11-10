@@ -45,6 +45,7 @@ import { Loading } from "@/components/ui/loading";
   const [blogTags, setBlogTags] = useState([]);
   const [friends, setFriends] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserDivision, setCurrentUserDivision] = useState(null);
   const [owner, setOwner] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -90,7 +91,7 @@ import { Loading } from "@/components/ui/loading";
     };
   }, [hasUnsavedChanges]);
 
-  // Get current user ID
+  // Get current user ID and division
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -105,6 +106,7 @@ import { Loading } from "@/components/ui/loading";
         const data = await response.json();
         const userData = data.user || data;
         setCurrentUserId(userData.id || userData._id);
+        setCurrentUserDivision(userData.division || null);
         
         // Set owner as current user ONLY in create mode
         // In edit mode, owner will be set from worklog data
@@ -240,8 +242,10 @@ import { Loading } from "@/components/ui/loading";
     fetchPost();
   }, [postId, navigate]);
 
-  // Fetch friends dari backend
+  // Fetch friends dari backend (FILTER by division)
   useEffect(() => {
+    if (!currentUserDivision) return; // Wait for division to load
+    
     const fetchFriends = async () => {
       try {
         const token = sessionStorage.getItem('token');
@@ -253,14 +257,20 @@ import { Loading } from "@/components/ui/loading";
           }
         });
         const data = await response.json();
-        const friendsList = data.data || data.employees || data || [];
+        const allUsers = data.data || data.employees || data || [];
+        
+        // ✅ FILTER: Only show users from the same division
+        const friendsList = allUsers.filter(user => 
+          user.division === currentUserDivision
+        );
+        
         setFriends(friendsList);
       } catch (err) {
         console.error('Error fetching friends:', err);
       }
     };
     fetchFriends();
-  }, []);
+  }, [currentUserDivision]);
 
   // Get collaborator IDs for easier checking
   const collaboratorIds = collaborators.map(c => c.id);
