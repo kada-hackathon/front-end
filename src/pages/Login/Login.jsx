@@ -1,15 +1,17 @@
-import './login.css'
+import './Login.css'
 import logoOnly from '../../assets/Logo/Logo Only_White.png'
 import textOnly from '../../assets/Logo/Text Only_White.png'
 import { useNavigate } from 'react-router-dom';
 import {useState, useEffect} from 'react';
 import { AUTH_ENDPOINTS } from '../../config/api';
+import { Loading } from '@/components/ui/loading';
 
 function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Check if user is already logged in
   // If yes, redirect to home page (avoid staying on login page)
@@ -24,6 +26,7 @@ function Login() {
   const handleLogin = async (e) =>{
     e.preventDefault();
     setErrorMessage('');
+    setIsLoading(true);
 
     try {
       const res = await fetch(AUTH_ENDPOINTS.LOGIN, {
@@ -46,6 +49,7 @@ function Login() {
         // If admin -> /admin page, otherwise -> home page
         const userRole = data.user?.role || 'user';
         
+        // Keep loading state true, will be handled by navigation
         if (userRole === 'admin') {
           navigate('/admin');
         } else {
@@ -53,10 +57,12 @@ function Login() {
         }
       } else {
         setErrorMessage(data.message || 'Login failed');
+        setIsLoading(false);
       }
     } catch (err) {
       console.error('Login error', err);
       setErrorMessage('Login failed');
+      setIsLoading(false);
     }
   }
 
@@ -67,6 +73,8 @@ function Login() {
 
   return (
     <div className="app">
+      {isLoading && <Loading message="Logging in..." fullScreen={true} />}
+      
       <div className="login-container">
         <div className="separator"></div>
         
@@ -145,8 +153,8 @@ function Login() {
             {errorMessage && (
               <p style={{ color: "red", fontSize: "0.9em" }}>{errorMessage}</p>
             )}
-            <button type="submit" className="login-button">
-              LOGIN
+            <button type="submit" className="login-button" disabled={isLoading}>
+              {isLoading ? 'LOGGING IN...' : 'LOGIN'}
             </button>
           </form>
           

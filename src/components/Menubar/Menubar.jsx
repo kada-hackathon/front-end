@@ -12,7 +12,21 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const activeMenu = location.pathname;
-  const [recentProjects, setRecentProjects] = useState([]);
+  const [recentProjects, setRecentProjects] = useState([
+    {
+      id: "loading-1",
+      title: "Loading..."
+    },
+    {
+      id: "loading-2",
+      title: "Loading..."
+    },
+    {
+      id: "loading-3",
+      title: "Loading..."
+    }
+  ]);
+  const [loading, setLoading] = useState(true);
 
   // Fetch 3 newest work logs from current user
   useEffect(() => {
@@ -21,6 +35,8 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
         const token = sessionStorage.getItem('token');
         if (!token) {
           console.warn('No token available');
+          setRecentProjects([]);
+          setLoading(false);
           return;
         }
         
@@ -49,6 +65,7 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
           const errorText = await worklogsResponse.text();
           console.error('Error response:', errorText);
           setRecentProjects([]);
+          setLoading(false);
           return;
         }
         
@@ -76,9 +93,11 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
         }));
         
         setRecentProjects(recent3);
+        setLoading(false);
       } catch (err) {
         console.error('Error fetching recent projects:', err);
         setRecentProjects([]);
+        setLoading(false);
       }
     };
     
@@ -86,6 +105,9 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
   }, []);
 
   const handleRecentProjectClick = (projectId) => {
+    // Don't navigate if still loading
+    if (loading) return;
+    
     const path = `/blog-post?id=${projectId}`;
     if (onNavigate) {
       onNavigate(path);
@@ -213,6 +235,8 @@ const Menubar = ({ collapsed, onToggleCollapse, onNavigate }) => {
                     className="menubar-recent-button"
                     onClick={() => handleRecentProjectClick(project.id)}
                     title={project.title}
+                    disabled={loading}
+                    style={{ cursor: loading ? 'default' : 'pointer' }}
                   >
                     {project.title}
                   </button>

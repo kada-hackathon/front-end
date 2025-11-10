@@ -510,7 +510,7 @@ const BlogPost = () => {
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <Avatar className="w-16 h-16">
-                      <AvatarImage src={post.user?.profilePicture || post.user?.profile_photo || "/placeholder.svg"} />
+                      <AvatarImage src={post.user?.profilePicture || post.user?.profile_photo || "/placeholder.jpeg"} />
                       <AvatarFallback>
                         {(post.user?.name || "Unknown").substring(0, 2).toUpperCase()}
                       </AvatarFallback>
@@ -615,4 +615,5 @@ const BlogPost = () => {
 };
 
 export default BlogPost;
+
 

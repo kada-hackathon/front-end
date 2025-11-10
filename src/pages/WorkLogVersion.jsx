@@ -89,7 +89,7 @@ const WorkLogVersion = () => {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-4 flex-1">
                         <img
-                          src={v.user?.profile_photo ?? "/placeholder.svg"}
+                          src={v.user?.profile_photo ?? "/placeholder.jpeg"}
                           alt={v.user?.name}
                           className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/10"
                         />
@@ -147,4 +147,5 @@ const WorkLogVersion = () => {
 };
 
 export default WorkLogVersion;
+
 

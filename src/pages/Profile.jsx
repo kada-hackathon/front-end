@@ -41,7 +41,7 @@ const Profile = () => {
     name: "",
     division: "",
     email: "",
-    profilePicture: "/placeholder.svg",
+    profilePicture: "/placeholder.jpeg",
     dateOfJoin: ""
   });
 
@@ -95,7 +95,7 @@ const Profile = () => {
     // Update preview to placeholder and mark as changed
     setProfileData(prev => ({
       ...prev,
-      profilePicture: "/placeholder.svg"
+      profilePicture: "/placeholder.jpeg"
     }));
     setHasChanges(true);
     setShowDeleteDialog(false);
@@ -221,7 +221,7 @@ const Profile = () => {
           const user = allEmployees.find(emp => emp._id === viewUserId);
           
           if (user) {
-            const profilePic = user.profilePicture || user.profile_photo || "/placeholder.svg";
+            const profilePic = user.profilePicture || user.profile_photo || "/placeholder.jpeg";
             setProfileData({
               id: user._id || "",
               name: user.name || "",
@@ -250,7 +250,7 @@ const Profile = () => {
         .then(data => {
           const user = data.user || data;
 
-          const profilePic = user.profilePicture || "/placeholder.svg";
+          const profilePic = user.profilePicture || "/placeholder.jpeg";
           setProfileData({
             id: user.id || user._id || "",
             name: user.name || "",
@@ -332,7 +332,7 @@ const Profile = () => {
                         variant="outline" 
                         className="w-48"
                         onClick={handlePhotoDelete}
-                        disabled={uploading || profileData.profilePicture === "/placeholder.svg"}
+                        disabled={uploading || profileData.profilePicture === "/placeholder.jpeg"}
                       >
                         Delete Photo
                       </Button>

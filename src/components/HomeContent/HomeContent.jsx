@@ -145,7 +145,7 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
             author: {
               name: worklog.user?.name || "User",
               division: worklog.user?.division || "Unknown Division",
-              avatar: worklog.user?.profilePicture || worklog.user?.profile_photo || "/placeholder.svg",
+              avatar: worklog.user?.profilePicture || worklog.user?.profile_photo || "/placeholder.jpeg",
             },
             date: new Date(worklog.datetime || worklog.createdAt).toLocaleDateString('id-ID', {
               day: '2-digit',
@@ -338,3 +338,4 @@ const HomeContent = ({ filters = { searchQuery: "", selectedTags: [], dateRange:
 };
 
 export default HomeContent;
+

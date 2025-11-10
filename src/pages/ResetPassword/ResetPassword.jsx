@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "../Login/login.css";
+import "../Login/Login.css";
 import "./ResetPassword.css";
 import { AUTH_ENDPOINTS } from "../../config/api";
 import logoWithText from "../../assets/Logo/Logo with Text_White.png";

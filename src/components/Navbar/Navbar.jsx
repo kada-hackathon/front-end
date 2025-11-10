@@ -23,7 +23,7 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
   const [employee, setEmployee] = useState({
     name: "Loading...",
     division: "Loading...",
-    profilePicture: "/placeholder.svg"
+    profilePicture: "/placeholder.jpeg"
   });
   const [loading, setLoading] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
@@ -63,7 +63,7 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
       setEmployee({
         name: "User",
         division: "Employee",
-        profilePicture: "/placeholder.svg"
+        profilePicture: "/placeholder.jpeg"
       });
       return;
     }
@@ -83,7 +83,7 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
         setEmployee({
           name: userData.name || "User",
           division: division,
-          profilePicture: userData.profilePicture || "/placeholder.svg"
+          profilePicture: userData.profilePicture || "/placeholder.jpeg"
         });
         setLoading(false);
       })
@@ -323,3 +323,4 @@ const Navbar = ({ children, onFilterChange, onNavigate }) => {
 };
 
 export default Navbar;
+
