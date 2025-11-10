@@ -374,7 +374,22 @@ import { Loading } from "@/components/ui/loading";
         });
       } catch (err) {
         console.error('Error auto-saving collaborators:', err);
+        toast({
+          variant: "destructive",
+          title: "Failed to add collaborators",
+          description: "Please try again or save the work log to apply changes.",
+          duration: 3000,
+        });
       }
+    } else {
+    
+      toast({
+        title: "✅ Collaborators selected!",
+        description: "Collaborators will be added when you save this work log.",
+        duration: 3000,
+      });
+      // Mark as unsaved changes
+      setHasUnsavedChanges(true);
     }
     
     // Hide loading and reset
@@ -435,7 +450,22 @@ import { Loading } from "@/components/ui/loading";
         });
       } catch (err) {
         console.error('Error auto-saving collaborator removal:', err);
+        toast({
+          variant: "destructive",
+          title: "Failed to remove collaborator",
+          description: "Please try again or save the work log to apply changes.",
+          duration: 3000,
+        });
       }
+    } else {
+      // CREATE MODE: Show info that removal will be applied when worklog is saved
+      toast({
+        title: "✅ Collaborator removed!",
+        description: "Changes will be applied when you save this work log.",
+        duration: 3000,
+      });
+      // Mark as unsaved changes
+      setHasUnsavedChanges(true);
     }
     
     // Hide loading and reset
