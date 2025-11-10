@@ -166,18 +166,25 @@ const Admin = () => {
     try {
       if (isEditMode) {
         // Update existing user
+        // Only include email if it's not empty
+        const updateData = {
+          name: formData.fullName,
+          division: formData.division,
+          join_date: formData.joinedDate
+        };
+        
+        // Only add email to update if it's provided
+        if (formData.email && formData.email.trim() !== '') {
+          updateData.email = formData.email;
+        }
+        
         const response = await fetch(ADMIN_ENDPOINTS.EMPLOYEE(editingUserId), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            name: formData.fullName,
-            email: formData.email,
-            division: formData.division,
-            join_date: formData.joinedDate
-          })
+          body: JSON.stringify(updateData)
         });
 
         const responseData = await response.json();
@@ -293,6 +300,33 @@ const Admin = () => {
     }
   };
 
+  const handleToggleStatus = async (userId, currentStatus) => {
+    const action = currentStatus ? 'block' : 'unblock';
+    if (window.confirm(`Are you sure you want to ${action} this user?`)) {
+      try {
+        const token = sessionStorage.getItem('token');
+        
+        const response = await fetch(ADMIN_ENDPOINTS.TOGGLE_STATUS(userId), {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const responseData = await response.json();
+
+        if (response.ok) {
+          toast.success(responseData.message);
+          await refreshUsers();
+        } else {
+          toast.error(responseData.message || 'Failed to toggle user status');
+        }
+      } catch (err) {
+        toast.error('An error occurred');
+      }
+    }
+  };
+
   const handleLogout = () => {
     // Clear session storage
     sessionStorage.removeItem('token');
@@ -397,13 +431,14 @@ const Admin = () => {
                   <th>Email</th>
                   <th>Division</th>
                   <th>Joined Date</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {!Array.isArray(filteredUsers) || filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
                       {searchQuery ? 'No users found matching your search' : 'No users found'}
                     </td>
                   </tr>
@@ -415,6 +450,18 @@ const Admin = () => {
                       <td className="email-cell">{user.email}</td>
                       <td>{user.division}</td>
                       <td>{user.join_date ? new Date(user.join_date).toLocaleDateString('id-ID') : '-'}</td>
+                      <td>
+                        <span style={{
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '1rem',
+                          fontSize: '0.85rem',
+                          fontWeight: '500',
+                          backgroundColor: user.isActive === false ? '#fee' : '#efe',
+                          color: user.isActive === false ? '#c33' : '#3c3'
+                        }}>
+                          {user.isActive === false ? 'Blocked' : 'Active'}
+                        </span>
+                      </td>
                       <td>
                         <div className="action-buttons">
                           <button
@@ -429,6 +476,22 @@ const Admin = () => {
                             aria-label="Edit user"
                           >
                             Edit
+                          </button>
+                          <button
+                            className={user.isActive === false ? "unblock-btn" : "block-btn"}
+                            onClick={() => handleToggleStatus(user._id || user.id, user.isActive)}
+                            aria-label={user.isActive === false ? "Unblock user" : "Block user"}
+                            style={{
+                              backgroundColor: user.isActive === false ? '#4CAF50' : '#FF9800',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              border: 'none',
+                              borderRadius: '0.5rem',
+                              cursor: 'pointer',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            {user.isActive === false ? 'Unblock' : 'Block'}
                           </button>
                           <button
                             className="delete-btn"
@@ -545,7 +608,7 @@ const Admin = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  required
+                  required={!isEditMode}
                 />
               </div>
 

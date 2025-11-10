@@ -1,9 +1,9 @@
 // Centralized API Configuration
 // Update BASE_URL here to change all API endpoints globally
 
-const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
+//const BASE_URL = 'https://nebwork-backend-fx667.ondigitalocean.app';
 // const BASE_URL = 'https://test-dev-lw9pz.ondigitalocean.app';
- //const BASE_URL = 'http://localhost:5000';
+ const BASE_URL = 'http://localhost:5000';
 
 // AUTH ENDPOINTS
 export const AUTH_ENDPOINTS = {
@@ -27,6 +27,7 @@ export const WORKLOG_ENDPOINTS = {
 export const ADMIN_ENDPOINTS = {
   EMPLOYEES: `${BASE_URL}/api/admin/employees`,                // GET all, DELETE user
   EMPLOYEE: (id) => `${BASE_URL}/api/admin/employees/${id}`,   // GET single user
+  TOGGLE_STATUS: (id) => `${BASE_URL}/api/admin/employees/${id}/toggle-status`, // PATCH toggle block/unblock
   VERSION: (id) => `${BASE_URL}/api/admin/employees/${id}/versions`,  // GET single user
 };
 
